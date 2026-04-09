@@ -78,6 +78,7 @@ import { Toaster } from './components/Toaster'
 import { LocationWidget } from './components/LocationWidget'
 import { LandingPage } from './modules/LandingPage'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { Analytics } from '@vercel/analytics/react'
 
 type NavigationItem = {
   path: string
@@ -434,6 +435,7 @@ function App() {
     <AuthProvider>
       <AnimatedBackground />
       <AppRouter />
+      <Analytics />
     </AuthProvider>
   )
 }
