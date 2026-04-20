@@ -1,168 +1,196 @@
 import { motion } from 'framer-motion'
-import { Sparkles, Brain, Clock, Sigma, BarChart3, LogIn, Layers, Calendar } from 'lucide-react'
+import {
+  ArrowRight,
+  CreditCard,
+  Globe2,
+  LogIn,
+  Package,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Truck,
+  Zap,
+} from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+
+const vibeTiles = [
+  {
+    name: 'Runway Monochrome',
+    description: 'Editorial black-and-ivory layouts with cinematic contrast.',
+    color: 'from-zinc-100/90 via-zinc-300/70 to-zinc-500/50',
+  },
+  {
+    name: 'Risograph Blocks',
+    description: 'Inky overlays, grain, and bold geometry for campaign drops.',
+    color: 'from-fuchsia-300/80 via-amber-300/70 to-cyan-300/70',
+  },
+  {
+    name: 'Technicolour Neon',
+    description: 'Saturated highlights and fluid motion accents for hero promos.',
+    color: 'from-blue-400/80 via-violet-500/70 to-pink-500/70',
+  },
+  {
+    name: 'Gothic Clay',
+    description: 'Dark luxe tones with tactile depth for premium product stories.',
+    color: 'from-stone-700/80 via-red-900/60 to-zinc-900/70',
+  },
+]
+
+const paymentRail = [
+  {
+    name: 'Razorpay',
+    detail: 'UPI, cards, and wallets for domestic checkout in India.',
+    icon: CreditCard,
+  },
+  {
+    name: 'Cashfree',
+    detail: 'Fast settlement rails and multi-channel payment collection.',
+    icon: ShieldCheck,
+  },
+  {
+    name: 'Wise + PayPal',
+    detail: 'Cross-border payout + trusted global buyer checkout options.',
+    icon: Globe2,
+  },
+]
+
+const commerceRail = [
+  {
+    title: 'Launch-ready storefront',
+    detail: 'Premium sections for lookbooks, launches, and story-led capsules.',
+    icon: ShoppingBag,
+  },
+  {
+    title: 'Qikink POD shipping',
+    detail: 'Print-on-demand flow aligned for order routing and delivery handling.',
+    icon: Truck,
+  },
+  {
+    title: 'Micro-motion UI',
+    detail: 'Smooth page transitions, hover depth, and ambient motion graphics.',
+    icon: Zap,
+  },
+]
 
 export function LandingPage() {
   const { signInWithGoogle } = useAuth()
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white selection:bg-blue-500/30">
-      {/* Decorative gradients */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-[20%] -top-[10%] h-[500px] w-[500px] rounded-full bg-blue-600/20 blur-[120px]" />
-        <div className="absolute -right-[10%] top-[40%] h-[400px] w-[400px] rounded-full bg-indigo-600/20 blur-[120px]" />
+    <div className="min-h-screen overflow-hidden bg-[#08080d] text-zinc-100 selection:bg-fuchsia-400/30">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-[10%] top-[10%] h-[380px] w-[380px] rounded-full bg-fuchsia-500/20 blur-[120px]" />
+        <div className="absolute right-[5%] top-[5%] h-[300px] w-[300px] rounded-full bg-blue-500/20 blur-[110px]" />
+        <div className="absolute bottom-[-10%] left-[35%] h-[420px] w-[420px] rounded-full bg-amber-500/10 blur-[140px]" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-5 py-6 md:px-8">
-        
-        {/* Navigation Bar */}
-        <nav className="flex items-center justify-between">
-          <div className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
-            <Sparkles className="h-5 w-5 text-blue-500" />
-            AI Learning OS
+      <div className="relative mx-auto max-w-7xl px-5 py-8 md:px-8">
+        <nav className="flex items-center justify-between rounded-full border border-white/10 bg-white/[0.03] px-4 py-3 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-sm font-semibold tracking-[0.16em] uppercase">
+            <Sparkles className="h-4 w-4 text-fuchsia-300" />
+            Build Web Apps Studio
           </div>
-          <button 
+          <button
             onClick={signInWithGoogle}
-            className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-semibold backdrop-blur-md transition hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold transition hover:bg-white/20"
           >
             <LogIn className="h-4 w-4" />
             Sign in with Google
           </button>
         </nav>
 
-        {/* Hero Section */}
-        <main className="mt-24 md:mt-32 flex flex-col items-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="space-y-6 max-w-4xl"
-          >
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400">
-              Welcome to the future of learning
-            </div>
-            
-            <h1 className="font-display text-5xl font-bold leading-tight tracking-[-0.04em] sm:text-6xl md:text-7xl">
-              Stop memorizing. <br />
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Start understanding.</span>
-            </h1>
-            
-            <p className="mx-auto max-w-2xl text-lg leading-relaxed text-slate-400">
-              An all-in-one workspace designed for students who want to cut the noise. Generate summaries, get step-by-step homework solutions, test yourself, and lock in deep work with a unified Pomodoro timer.
-            </p>
+        <main className="pt-16 md:pt-24">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.9fr] lg:items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="space-y-7"
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-200/30 bg-fuchsia-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-100">
+                Premium Fashion Commerce UX
+              </div>
 
-            <div className="pt-8">
-              <button 
-                onClick={signInWithGoogle}
-                className="relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-full bg-blue-600 px-8 py-4 font-semibold text-white transition-all hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(37,99,235,0.4)]"
-              >
-                <span>Continue with Google</span>
-              </button>
-              <p className="mt-4 text-sm text-slate-500">Secure OAuth. Connect directly with your Google account.</p>
-            </div>
-          </motion.div>
+              <h1 className="font-display text-5xl font-bold leading-[0.95] tracking-[-0.04em] md:text-7xl">
+                Monochrome drama.
+                <br />
+                <span className="bg-gradient-to-r from-cyan-200 via-fuchsia-200 to-amber-200 bg-clip-text text-transparent">
+                  Technicolour motion.
+                </span>
+              </h1>
+
+              <p className="max-w-2xl text-lg leading-relaxed text-zinc-300">
+                A premium storefront direction for your new clothing brand with runway-grade layout, smooth motion graphics,
+                colourblock campaigns, and production-ready commerce rails.
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {commerceRail.map(({ title, detail, icon: Icon }, index) => (
+                  <motion.div
+                    key={title}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + index * 0.08 }}
+                    className="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
+                  >
+                    <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <p className="font-semibold">{title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-zinc-400">{detail}</p>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-3">
+                <button
+                  onClick={signInWithGoogle}
+                  className="inline-flex items-center gap-2 rounded-full bg-white text-zinc-900 px-6 py-3 font-semibold transition hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Start building store
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <span className="text-sm text-zinc-400">Checkout-ready: Razorpay, Cashfree, Wise, PayPal • Shipping: Qikink POD</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.55, delay: 0.15 }}
+              className="rounded-[2rem] border border-white/10 bg-black/30 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                {vibeTiles.map((tile) => (
+                  <div key={tile.name} className="rounded-3xl border border-white/10 bg-white/[0.03] p-3">
+                    <div className={`h-24 rounded-2xl bg-gradient-to-br ${tile.color}`} />
+                    <p className="mt-3 text-sm font-semibold">{tile.name}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-400">{tile.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-200">
+                  <Package className="h-4 w-4" />
+                  Payments & Delivery Stack
+                </div>
+                <div className="space-y-2">
+                  {paymentRail.map(({ name, detail, icon: Icon }) => (
+                    <div key={name} className="flex items-start gap-3 rounded-2xl border border-white/8 bg-white/[0.02] px-3 py-2">
+                      <div className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-xl bg-white/10">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{name}</p>
+                        <p className="text-xs text-zinc-400">{detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </main>
-
-        {/* Features Grids */}
-        <section className="mt-32 grid gap-6 md:grid-cols-2 lg:grid-cols-3 pb-32">
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-          >
-            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
-              <Brain className="h-6 w-6" />
-            </div>
-            <h3 className="font-display text-2xl font-semibold">Study Copilot</h3>
-            <p className="mt-3 text-slate-400 leading-relaxed">
-              Upload your raw chaotic notes and immediately transform them into flashcards, bullet points, and multi-choice quizzes using state-of-the-art open source models.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            viewport={{ once: true }}
-            className="rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-          >
-            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
-              <Sigma className="h-6 w-6" />
-            </div>
-            <h3 className="font-display text-2xl font-semibold">Homework Solver</h3>
-            <p className="mt-3 text-slate-400 leading-relaxed">
-              Don't just copy answers. Get step-by-step logic, simpler explanations, and the underlying formulas right inside the workspace context.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            viewport={{ once: true }}
-            className="rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-          >
-            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
-              <BarChart3 className="h-6 w-6" />
-            </div>
-            <h3 className="font-display text-2xl font-semibold">Performance Tracking</h3>
-            <p className="mt-3 text-slate-400 leading-relaxed">
-              Log your grades over time and let the AI find your weak spots. It automatically drafts a tailored study plan hitting the exact chapters you struggle with.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            viewport={{ once: true }}
-            className="rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-          >
-            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
-              <Clock className="h-6 w-6" />
-            </div>
-            <h3 className="font-display text-2xl font-semibold">Focus Engine</h3>
-            <p className="mt-3 text-slate-400 leading-relaxed">
-              A built in Pomodoro timer with animated radial progress. Keep your time tracked and your mind focused with ambient sounds and a streak tracker.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            viewport={{ once: true }}
-            className="rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-          >
-            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              <Layers className="h-6 w-6" />
-            </div>
-            <h3 className="font-display text-2xl font-semibold">Flashcard Studio</h3>
-            <p className="mt-3 text-slate-400 leading-relaxed">
-              Generate 3D animated flip-cards from your notes using AI. Test your active recall and track your mastery sequentially across your entire deck.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            viewport={{ once: true }}
-            className="rounded-[34px] border border-white/10 bg-white/5 p-8 backdrop-blur-xl"
-          >
-            <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              <Calendar className="h-6 w-6" />
-            </div>
-            <h3 className="font-display text-2xl font-semibold">Study Planner</h3>
-            <p className="mt-3 text-slate-400 leading-relaxed">
-              Design a visual color-coded weekly schedule. Hit blockages? Let the AI analyze your weak subjects and auto-generate a balanced plan for you.
-            </p>
-          </motion.div>
-
-        </section>
-
       </div>
     </div>
   )

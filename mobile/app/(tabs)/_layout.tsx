@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { NotebookPen, Timer, UserCircle, Sigma, BarChart3 } from 'lucide-react-native';
+import { NotebookPen, Timer, UserCircle, Sigma, BarChart3, Home } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -24,7 +24,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Study Copilot',
+          title: 'Home',
+          tabBarIcon: ({ color }) => <Home color={color} size={24} />,
+        }}
+      />
+      <Tabs.Screen
+        name="study"
+        options={{
+          title: 'Copilot',
           tabBarIcon: ({ color }) => <NotebookPen color={color} size={24} />,
         }}
       />

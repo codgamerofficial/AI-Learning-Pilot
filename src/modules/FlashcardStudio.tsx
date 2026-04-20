@@ -11,8 +11,13 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
+  CloudUpload,
+  AlertCircle,
+  IndianRupee,
 } from 'lucide-react'
 import { toast } from '../lib/toast'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 
 import { generateFlashcards } from '../lib/ai'
 import { downloadTextFile } from '../lib/export'
@@ -34,6 +39,9 @@ export function FlashcardStudio() {
   const [isFlipped, setIsFlipped] = useState(false)
   const [isBusy, setIsBusy] = useState(false)
   const [studyMode, setStudyMode] = useState(false)
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
+  const [publishForm, setPublishForm] = useState({ title: '', description: '', price: 0 })
+  const { user, profile } = useAuth()
 
   const masteredCount = cards.filter((c) => c.mastered).length
   const remainingCount = cards.length - masteredCount
@@ -113,6 +121,44 @@ export function FlashcardStudio() {
     downloadTextFile('ai-learning-os-flashcards.txt', exportContent)
   }
 
+  async function handlePublish() {
+    if (!user) {
+      toast({ title: 'Auth Required', message: 'Sign in to share with community.', type: 'error' })
+      return
+    }
+
+    if (!publishForm.title.trim()) {
+      toast({ title: 'Missing Title', message: 'Please give your deck a catchy name.', type: 'error' })
+      return
+    }
+
+    setIsBusy(true)
+    try {
+      const { error } = await supabase.from('cloud_library').insert({
+        user_id: user.id,
+        author_name: user.user_metadata?.full_name || 'Anonymous',
+        title: publishForm.title,
+        description: publishForm.description,
+        type: 'flashcard',
+        content_json: cards,
+        price_usd: publishForm.price,
+      })
+
+      if (error) throw error
+
+      toast({
+        title: 'Published! 🚀',
+        message: 'Your deck is now live in the Cloud Library.',
+        type: 'success',
+      })
+      setIsPublishModalOpen(false)
+    } catch (error) {
+      toast({ title: 'Publish Failed', message: String(error), type: 'error' })
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -174,6 +220,21 @@ export function FlashcardStudio() {
                 <Layers className="h-4 w-4" />
                 Load Demo
               </button>
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2.5 text-sm font-semibold text-purple-400 transition hover:-translate-y-0.5 hover:bg-purple-500/20 disabled:opacity-60"
+                onClick={() => {
+                  setPublishForm({ 
+                    title: `Flashcards: ${notes.split('\n')[0].substring(0, 40)}${notes.length > 40 ? '...' : ''}`, 
+                    description: 'AI-generated cards for targeted revision.', 
+                    price: 0 
+                  });
+                  setIsPublishModalOpen(true);
+                }}
+                disabled={cards.length === 0}
+              >
+                <CloudUpload className="h-4 w-4" />
+                Publish to Cloud
+              </button>
             </div>
           </Panel>
 
@@ -194,33 +255,33 @@ export function FlashcardStudio() {
             <div className="flex justify-center">
               <div className="relative w-36 h-36 flex items-center justify-center">
                 <svg className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
-                  <circle
-                    className="text-[rgb(var(--line))] stroke-current"
-                    strokeWidth="6"
-                    cx="50"
-                    cy="50"
-                    r="42"
-                    fill="transparent"
-                  />
-                  <motion.circle
-                    className="text-[rgb(var(--accent))] stroke-current"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    cx="50"
-                    cy="50"
-                    r="42"
-                    fill="transparent"
-                    strokeDasharray={`${(progressPercent / 100) * 264} 264`}
-                    initial={{ strokeDasharray: '0 264' }}
-                    animate={{ strokeDasharray: `${(progressPercent / 100) * 264} 264` }}
-                    transition={{ duration: 0.8, ease: 'easeInOut' }}
-                  />
-                </svg>
-                <span className="text-2xl font-display font-bold text-[rgb(var(--text))] z-10">
-                  {progressPercent}%
-                </span>
+                    <circle
+                      className="text-[rgb(var(--line))] stroke-current"
+                      strokeWidth="6"
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="transparent"
+                    />
+                    <motion.circle
+                      className="text-[rgb(var(--accent))] stroke-current"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="transparent"
+                      strokeDasharray={`${(progressPercent / 100) * 264} 264`}
+                      initial={{ strokeDasharray: '0 264' }}
+                      animate={{ strokeDasharray: `${(progressPercent / 100) * 264} 264` }}
+                      transition={{ duration: 0.8, ease: 'easeInOut' }}
+                    />
+                  </svg>
+                  <span className="text-2xl font-display font-bold text-[rgb(var(--text))] z-10">
+                    {progressPercent}%
+                  </span>
+                </div>
               </div>
-            </div>
 
             {/* Card Preview Grid */}
             {cards.length > 0 && (
@@ -380,6 +441,112 @@ export function FlashcardStudio() {
           )}
         </Panel>
       )}
+
+      {/* ─── Publish Modal ─── */}
+      <AnimatePresence>
+        {isPublishModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPublishModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg overflow-hidden rounded-[32px] border border-[rgb(var(--line))] bg-[rgb(var(--panel))] p-8 shadow-2xl"
+            >
+              <div className="space-y-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-display text-2xl font-bold text-[rgb(var(--text))]">Publish to Library</h3>
+                    <p className="text-sm text-[rgb(var(--muted))]">Share or sell your study materials with the community.</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsPublishModalOpen(false)} 
+                    className="rounded-full p-2 text-[rgb(var(--muted))] hover:bg-white/10 transition"
+                    title="Close"
+                    aria-label="Close"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[rgb(var(--text))]">Title</label>
+                    <input
+                      type="text"
+                      value={publishForm.title}
+                      onChange={e => setPublishForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full rounded-xl border border-[rgb(var(--line))] bg-[rgb(var(--panel-strong))] px-4 py-2.5 text-sm outline-none focus:border-[rgb(var(--accent))]"
+                      placeholder="e.g. Advanced Calculus Deck"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-[rgb(var(--text))]">Description</label>
+                    <textarea
+                      value={publishForm.description}
+                      onChange={e => setPublishForm(prev => ({ ...prev, description: e.target.value }))}
+                      className="w-full h-24 rounded-xl border border-[rgb(var(--line))] bg-[rgb(var(--panel-strong))] px-4 py-2.5 text-sm outline-none focus:border-[rgb(var(--accent))]"
+                      placeholder="Briefly describe what this deck covers..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold text-[rgb(var(--text))]">Set Price (₹)</label>
+                      <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-bold text-blue-400">MARKETPLACE</span>
+                    </div>
+                    <div className="relative">
+                      <IndianRupee className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[rgb(var(--muted))]" />
+                      <input
+                        type="number"
+                        value={publishForm.price}
+                        onChange={e => setPublishForm(prev => ({ ...prev, price: Number(e.target.value) }))}
+                        className="w-full rounded-xl border border-[rgb(var(--line))] bg-[rgb(var(--panel-strong))] pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[rgb(var(--accent))]"
+                        placeholder="0 for free"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-[rgb(var(--text))]">Platform Protocol</p>
+                      <p className="text-[11px] leading-4 text-[rgb(var(--muted))]">
+                        {profile?.subscription_status === 'pro' 
+                          ? 'OS Pro users enjoy 0% platform fees. You receive 100% of the sale price.'
+                          : 'As a Basic user, a 15% marketplace fee applies to sales. Upgrade to Pro for 0% commission.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    className="flex-1 rounded-full border border-[rgb(var(--line))] py-3 text-sm font-semibold text-[rgb(var(--text))] hover:bg-white/5"
+                    onClick={() => setIsPublishModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="flex-1 rounded-full bg-gradient-to-r from-[rgb(var(--accent))] to-blue-600 py-3 text-sm font-semibold text-white shadow-lg hover:brightness-110 disabled:opacity-50"
+                    onClick={handlePublish}
+                    disabled={isBusy}
+                  >
+                    {isBusy ? <LoaderCircle className="h-4 w-4 animate-spin mx-auto" /> : 'Confirm Publish'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

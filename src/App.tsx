@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { pageTransition } from './lib/animations'
 import {
   AlertTriangle,
   BarChart3,
@@ -15,6 +16,8 @@ import {
   SunMedium,
   Layers,
   Calendar,
+  LibraryBig,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react'
 import {
@@ -74,11 +77,29 @@ const StudyPlanner = lazy(() =>
   })),
 )
 
+const CloudLibrary = lazy(() =>
+  import('./modules/CloudLibrary').then((module) => ({
+    default: module.CloudLibrary,
+  })),
+)
+
+const Billing = lazy(() =>
+  import('./modules/Billing').then((module) => ({
+    default: module.Billing,
+  })),
+)
+
+
+
+
 import { Toaster } from './components/Toaster'
 import { LocationWidget } from './components/LocationWidget'
-import { LandingPage } from './modules/LandingPage'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
+
+import Dashboard from './modules/Dashboard/Dashboard'
+import { LandingPage } from './modules/LandingPage'
+import FloatingNavbar from './components/FloatingNavbar'
 
 type NavigationItem = {
   path: string
@@ -130,6 +151,20 @@ const navigation: NavigationItem[] = [
     description: 'Weekly schedule and AI suggestions.',
     detail: 'Visualize your weekly study blocks and keep sessions balanced.',
     icon: Calendar,
+  },
+  {
+    path: '/library',
+    label: 'Cloud Library',
+    description: 'Community sourced study materials.',
+    detail: 'Share, fork, and upvote authentic study content generated globally.',
+    icon: LibraryBig,
+  },
+  {
+    path: '/billing',
+    label: 'OS Pro Upgrade',
+    description: 'Manage SaaS subscription.',
+    detail: 'Unlock advanced models and clear marketplace fees.',
+    icon: CreditCard,
   },
   {
     path: '/profile',
@@ -291,10 +326,15 @@ function AppFrame({
         )}
       </AnimatePresence>
 
-      <div className="mx-auto grid max-w-[1600px] gap-4 lg:grid-cols-[290px_minmax(0,1fr)]">
-        <aside className="hidden lg:flex lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] overflow-y-auto rounded-[34px] border border-[rgb(var(--sidebar-line))] bg-[rgb(var(--sidebar-bg))] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)]">
-          <SidebarContent aiRuntime={aiRuntime} />
-        </aside>
+     {/* Floating Bottom Navbar (mobile only) */}
+     <div className="lg:hidden">
+       <FloatingNavbar />
+     </div>
+
+     <div className="mx-auto grid max-w-[1600px] gap-4 lg:grid-cols-[290px_minmax(0,1fr)]">
+         <aside className="hidden lg:flex lg:sticky lg:top-5 lg:h-[calc(100vh-2.5rem)] overflow-y-auto rounded-[34px] border border-[rgb(var(--sidebar-line))] bg-[rgb(var(--sidebar-bg))] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.24)]">
+           <SidebarContent aiRuntime={aiRuntime} />
+         </aside>
 
         <main className="rounded-[34px] border border-[rgb(var(--line))] bg-[rgb(var(--shell))] shadow-[var(--panel-shadow)] backdrop-blur-xl">
           <header className="border-b border-[rgb(var(--line))] px-5 py-5 md:px-8 md:py-6">
@@ -366,23 +406,35 @@ function AppFrame({
             </div>
           ) : null}
 
-          <div className="px-5 py-5 md:px-8 md:py-8 overflow-hidden relative">
-            <Suspense fallback={<ModuleFallback />}>
-              <AnimatePresence mode="wait">
-                <Routes location={location} key={location.pathname}>
-                  <Route path="/" element={<Navigate to="/study" replace />} />
-                  <Route path="/study" element={<StudyCopilot />} />
-                  <Route path="/performance" element={<PerformanceDashboard />} />
-                  <Route path="/homework" element={<HomeworkSolver />} />
-                  <Route path="/flashcards" element={<FlashcardStudio />} />
-                  <Route path="/focus" element={<FocusTimer />} />
-                  <Route path="/planner" element={<StudyPlanner />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="*" element={<Navigate to="/study" replace />} />
-                </Routes>
-              </AnimatePresence>
-            </Suspense>
-          </div>
+           <div className="px-5 py-5 md:px-8 md:py-8 overflow-hidden relative">
+             <Suspense fallback={<ModuleFallback />}>
+               <AnimatePresence mode="wait">
+                  <motion.div
+                    key={location.pathname}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    variants={pageTransition}
+                    layoutId="page-container"
+                  >
+                    <Routes location={location}>
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/study" element={<StudyCopilot />} />
+                      <Route path="/performance" element={<PerformanceDashboard />} />
+                      <Route path="/homework" element={<HomeworkSolver />} />
+                      <Route path="/flashcards" element={<FlashcardStudio />} />
+                      <Route path="/focus" element={<FocusTimer />} />
+                      <Route path="/planner" element={<StudyPlanner />} />
+                      <Route path="/library" element={<CloudLibrary />} />
+                      <Route path="/billing" element={<Billing />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                    </Routes>
+                  </motion.div>
+               </AnimatePresence>
+             </Suspense>
+           </div>
         </main>
       </div>
     </div>

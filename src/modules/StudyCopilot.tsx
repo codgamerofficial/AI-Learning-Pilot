@@ -18,7 +18,7 @@ import {
   generateSummary,
 } from '../lib/ai'
 import { downloadTextFile } from '../lib/export'
-import { useLocalStorageState } from '../hooks/useLocalStorageState'
+import { useCloudState } from '../hooks/useCloudState'
 import {
   sampleChat,
   sampleQuiz,
@@ -35,15 +35,15 @@ const secondaryButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-full border border-[rgb(var(--line))] bg-[rgb(var(--panel-strong))] px-4 py-2.5 text-sm font-semibold text-[rgb(var(--text))] transition hover:-translate-y-0.5 hover:border-[rgb(var(--accent))] hover:text-[rgb(var(--accent-strong))] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0'
 
 export function StudyCopilot() {
-  const [notes, setNotes] = useLocalStorageState('ailos.study.notes', sampleStudyNotes)
-  const [summary, setSummary] = useLocalStorageState('ailos.study.summary', sampleStudySummary)
-  const [quiz, setQuiz] = useLocalStorageState<QuizQuestion[]>('ailos.study.quiz', sampleQuiz)
-  const [chat, setChat] = useLocalStorageState<ChatMessage[]>('ailos.study.chat', sampleChat)
-  const [question, setQuestion] = useLocalStorageState(
+  const [notes, setNotes] = useCloudState('ailos.study.notes', sampleStudyNotes)
+  const [summary, setSummary] = useCloudState('ailos.study.summary', sampleStudySummary)
+  const [quiz, setQuiz] = useCloudState<QuizQuestion[]>('ailos.study.quiz', sampleQuiz)
+  const [chat, setChat] = useCloudState<ChatMessage[]>('ailos.study.chat', sampleChat)
+  const [question, setQuestion] = useCloudState(
     'ailos.study.question',
     'What factors affect the rate of photosynthesis?',
   )
-  const [activeTab, setActiveTab] = useLocalStorageState<StudyTab>(
+  const [activeTab, setActiveTab] = useCloudState<StudyTab>(
     'ailos.study.tab',
     'summary',
   )

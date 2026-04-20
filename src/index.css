@@ -1,46 +1,130 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
 
 :root {
-  --canvas: 248 250 252;
-  --shell: 255 255 255 / 0.6;
-  --panel: 255 255 255 / 0.8;
-  --panel-strong: 255 255 255 / 0.95;
-  --text: 15 23 42;
-  --muted: 100 116 139;
-  --line: 226 232 240;
-  /* Punchy Electric Blue */
-  --accent: 37 99 235;
-  --accent-strong: 29 78 216;
-  --accent-soft: 219 234 254;
-  --accent-border: 147 197 253;
-  --sidebar-bg: 30 41 59 / 0.96;
-  --sidebar-line: 255 255 255 / 0.1;
-  --sidebar-text: 248 250 252;
-  --sidebar-muted: 148 163 184;
-  --panel-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.1), 0 0 20px rgba(37, 99, 235, 0.05); /* Glowing shadow */
-  --font-display: 'Space Grotesk', system-ui, sans-serif;
-  --font-sans: 'Outfit', system-ui, sans-serif;
+  /* Monochrome Runway Palette (7 Shades) */
+  --runway-0: 252 252 252;
+  --runway-1: 245 245 245;
+  --runway-2: 229 229 229;
+  --runway-3: 163 163 163;
+  --runway-4: 115 115 115;
+  --runway-5: 64 64 64;
+  --runway-6: 23 23 23;
+
+  /* Technicolor Dye Set */
+  --tech-red: 239 68 68;
+  --tech-cyan: 34 211 238;
+  --tech-yellow: 250 204 21;
+  --tech-magenta: 236 72 153;
+  --tech-indigo: 99 102 241;
+
+  /* Gothic Clay System */
+  --clay-light: 248 247 244;
+  --clay-mid: 214 211 205;
+  --clay-dark: 107 102 95;
+  --clay-deep: 56 53 49;
+  --clay-black: 26 24 22;
+
+  /* Core Variables */
+  --canvas: var(--clay-light);
+  --shell: var(--runway-0) / 0.7;
+  --panel: var(--runway-0) / 0.85;
+  --panel-strong: var(--runway-0) / 0.97;
+  --text: var(--clay-black);
+  --muted: var(--clay-dark);
+  --line: var(--clay-mid) / 0.4;
+
+  --accent: var(--tech-indigo);
+  --accent-strong: 79 70 229;
+  --accent-soft: var(--tech-indigo) / 0.08;
+  --accent-border: var(--tech-indigo) / 0.25;
+
+  --sidebar-bg: var(--clay-deep) / 0.97;
+  --sidebar-line: var(--clay-light) / 0.06;
+  --sidebar-text: var(--clay-light);
+  --sidebar-muted: var(--clay-mid);
+
+  /* Clay Shadows */
+  --clay-shadow-soft: 0 12px 48px -16px rgba(var(--clay-deep), 0.18), 0 2px 12px rgba(var(--clay-deep), 0.06);
+  --clay-shadow-medium: 0 20px 64px -20px rgba(var(--clay-deep), 0.24), 0 4px 18px rgba(var(--clay-deep), 0.09);
+  --clay-shadow-strong: 0 28px 80px -24px rgba(var(--clay-deep), 0.32), 0 6px 24px rgba(var(--clay-deep), 0.12);
+
+  /* Risograph Print Effect */
+  --riso-offset: 0.7px;
+  --riso-blur: 0.3px;
+  --riso-opacity: 0.92;
+
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-sans: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Type Scale */
+  --text-xs: 0.7rem;
+  --text-sm: 0.85rem;
+  --text-base: 0.95rem;
+  --text-lg: 1.1rem;
+  --text-xl: 1.35rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 2.8rem;
 }
 
 html[data-theme='dark'] {
-  --canvas: 9 9 11;
-  --shell: 16 16 20 / 0.7;
-  --panel: 20 20 25 / 0.8;
-  --panel-strong: 28 28 35 / 0.95;
-  --text: 248 250 252;
-  --muted: 148 163 184;
-  --line: 51 65 85 / 0.5;
-  /* Punchy Sunset Electric Orange / Neon */
-  --accent: 255 87 34;
-  --accent-strong: 255 122 80;
-  --accent-soft: 255 87 34 / 0.15;
-  --accent-border: 255 87 34 / 0.3;
-  --sidebar-bg: 5 5 7 / 0.98;
-  --sidebar-line: 255 255 255 / 0.05;
-  --sidebar-text: 248 250 252;
-  --sidebar-muted: 148 163 184;
-  --panel-shadow: 0 20px 40px -15px rgba(255, 87, 34, 0.15), 0 0 30px rgba(255, 87, 34, 0.05); /* Neon orange glow */
+  --canvas: var(--clay-black);
+  --shell: var(--runway-6) / 0.75;
+  --panel: var(--runway-6) / 0.88;
+  --panel-strong: var(--runway-6) / 0.97;
+  --text: var(--clay-light);
+  --muted: var(--clay-mid);
+  --line: var(--clay-dark) / 0.3;
+
+  --accent: var(--tech-cyan);
+  --accent-strong: 6 182 212;
+  --accent-soft: var(--tech-cyan) / 0.1;
+  --accent-border: var(--tech-cyan) / 0.25;
+
+  --sidebar-bg: var(--runway-6) / 0.98;
+  --sidebar-line: var(--clay-light) / 0.04;
+  --sidebar-text: var(--clay-light);
+  --sidebar-muted: var(--clay-dark);
+
+  --clay-shadow-soft: 0 12px 48px -16px rgba(0, 0, 0, 0.45), 0 2px 12px rgba(0, 0, 0, 0.2);
+  --clay-shadow-medium: 0 20px 64px -20px rgba(0, 0, 0, 0.55), 0 4px 18px rgba(0, 0, 0, 0.25);
+  --clay-shadow-strong: 0 28px 80px -24px rgba(0, 0, 0, 0.65), 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Risograph Effects */
+.riso-text {
+  text-shadow:
+    calc(var(--riso-offset) * -1) 0 rgba(var(--tech-red), 0.35),
+    var(--riso-offset) 0 rgba(var(--tech-cyan), 0.35);
+  filter: blur(var(--riso-blur));
+  opacity: var(--riso-opacity);
+}
+
+.riso-border {
+  box-shadow:
+    calc(var(--riso-offset) * -1) 0 0 rgba(var(--tech-red), 0.25),
+    var(--riso-offset) 0 0 rgba(var(--tech-cyan), 0.25);
+}
+
+.all-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+/* Utility Classes */
+.text-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
 }
 
 * {

@@ -1,49 +1,84 @@
-import { useEffect, useState } from 'react'
+import { createContext, useEffect, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import { AuthContext } from './AuthContextInstance'
+
+export interface UserProfile {
+  id: string
+  subscription_status: 'free' | 'pro'
+  tokens_used: number
+  razorpay_customer_id?: string
+  updated_at: string
+}
+
+interface AuthContextType {
+  user: User | null
+  session: Session | null
+  profile: UserProfile | null
+  isLoading: boolean
+  signInWithGoogle: () => Promise<void>
+  signOut: () => Promise<void>
+  refreshProfile: () => Promise<void>
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signup: (data: { name: string; email: string; password: string; emergencyContact: string }) => Promise<{ success: boolean; error?: string }>
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    // Safety timeout to prevent silent "white screen" if Supabase hangs
-    const timeout = setTimeout(() => {
-      setIsLoading(false)
-    }, 5000)
+  const refreshProfile = useCallback(async () => {
+    if (!user) return
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timeout)
-      setSession(session)
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-    }).catch(() => {
-      clearTimeout(timeout)
-      setIsLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setIsLoading(false)
-    })
-
-    return () => {
-      clearTimeout(timeout)
-      subscription.unsubscribe()
+    if (!error && data) {
+      setProfile(data as UserProfile)
     }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      refreshProfile()
+    } else {
+      setProfile(null)
+    }
+  }, [user, refreshProfile])
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+    })
+
+    // Listen to auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const signInWithGoogle = async () => {
-    // If the developer decides to implement mobile standalone routing differently, origin is a safe web default.
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
-      },
+        redirectTo: `${window.location.origin}/dashboard`
+      }
     })
   }
 
@@ -51,10 +86,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  const login = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) return { success: false, error: error.message }
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Login failed' }
+    }
+  }
+
+  const signup = async (data: { name: string; email: string; password: string; emergencyContact: string }) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.name,
+            emergency_contact: data.emergencyContact
+          }
+        }
+      })
+      if (error) return { success: false, error: error.message }
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Signup failed' }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ session, user, isLoading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, isLoading, signInWithGoogle, signOut, refreshProfile, login, signup }}>
       {children}
     </AuthContext.Provider>
   )
 }
-

@@ -1,6 +1,41 @@
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
-import { motion, useMotionValue, useMotionTemplate, type HTMLMotionProps } from 'framer-motion'
+import { motion, useMotionValue, useMotionTemplate, type HTMLMotionProps, type Variants } from 'framer-motion'
+
+// Animation Primitives
+export const baseEase = 'easeOut'
+export const softEase = 'easeInOut'
+export const snappyEase = 'easeIn'
+
+export const entranceVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: baseEase } },
+  exit: { opacity: 0, y: 16, transition: { duration: 0.35, ease: snappyEase } }
+}
+
+export const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1
+    }
+  }
+}
+
+export const hoverVariants: Variants = {
+  rest: { scale: 1, y: 0 },
+  hover: { scale: 1.02, y: -4, transition: { duration: 0.3, ease: softEase } },
+  tap: { scale: 0.98, y: 0 }
+}
+
+export const layoutTransition = {
+  type: "spring",
+  stiffness: 350,
+  damping: 30,
+  ease: baseEase
+}
 
 export function Panel({
   children,
@@ -18,29 +53,30 @@ export function Panel({
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      variants={entranceVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
       className={clsx(
-        'group relative overflow-hidden rounded-[30px] border border-[rgb(var(--line))] bg-[rgb(var(--panel))] shadow-[var(--panel-shadow)] backdrop-blur-xl',
+        'group relative overflow-hidden rounded-[28px] border border-[rgb(var(--line))] bg-[rgb(var(--panel))] shadow-[var(--clay-shadow-medium)] backdrop-blur-xl transition-all duration-400 hover:shadow-[var(--clay-shadow-strong)]',
         className,
       )}
       onMouseMove={handleMouseMove}
       {...props}
     >
       <motion.div
-        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100"
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-400 group-hover:opacity-100"
         style={{
           background: useMotionTemplate`
             radial-gradient(
-              650px circle at ${mouseX}px ${mouseY}px,
-              rgba(var(--accent-strong), 0.08),
-              transparent 80%
+              720px circle at ${mouseX}px ${mouseY}px,
+              rgba(var(--accent), 0.06),
+              transparent 75%
             )
           `,
         }}
       />
-      <div className="relative z-10 p-5 md:p-6 h-full">
+      <div className="relative z-10 p-5 md:p-7 h-full">
         {children as ReactNode}
       </div>
     </motion.section>
@@ -138,7 +174,7 @@ export function MetricCard({
 }: {
   label: string
   value: string
-  tone?: 'neutral' | 'accent'
+  tone?: 'neutral' | 'accent' | 'positive' | 'negative'
 }) {
   const mouseX = useMotionValue(0)
   const mouseY = useMotionValue(0)
@@ -148,6 +184,8 @@ export function MetricCard({
     mouseX.set(clientX - left)
     mouseY.set(clientY - top)
   }
+
+
 
   return (
     <motion.div
