@@ -28,14 +28,16 @@ async function search(query, maxResults = 10, options = {}) {
 
     if (!response.data || !response.data.items) return [];
 
-    return response.data.items.map((item, index) => ({
-      id: item.id.videoId,
-      title: item.snippet.title,
-      artist: item.snippet.channelTitle,
-      artwork: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
-      color: BLOCK_COLORS[index % BLOCK_COLORS.length],
-      source: 'youtube'
-    }));
+    return response.data.items
+      .filter(item => item.id?.videoId) // Filter out items without videoId
+      .map((item, index) => ({
+        id: item.id.videoId,
+        title: item.snippet.title,
+        artist: item.snippet.channelTitle,
+        artwork: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+        color: BLOCK_COLORS[index % BLOCK_COLORS.length],
+        source: 'youtube'
+      }));
   } catch (error) {
     const message = error.response?.data?.error?.message || error.message;
     if (throwOnError) throw new Error(message);

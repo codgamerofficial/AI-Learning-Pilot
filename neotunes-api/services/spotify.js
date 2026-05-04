@@ -48,16 +48,19 @@ async function search(query, limit = 15, options = {}) {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    return response.data.tracks.items.map(item => ({
-      id: `spot_${item.id}`,
-      title: item.name,
-      artist: item.artists[0].name,
-      artwork: item.album.images[0]?.url || '',
-      duration_ms: item.duration_ms,
-      // We will proxy resolution to youtube for audio
-      source: 'spotify_proxy',
-      searchQuery: `${item.name} ${item.artists[0].name} Audio`
-    }));
+    const items = response.data?.tracks?.items || [];
+    
+    return items
+      .filter(item => item?.id && item?.name && item?.artists?.length > 0 && item?.album?.images?.length > 0)
+      .map(item => ({
+        id: `spot_${item.id}`,
+        title: item.name,
+        artist: item.artists[0].name,
+        artwork: item.album.images[0].url,
+        duration_ms: item.duration_ms,
+        source: 'spotify_proxy',
+        searchQuery: `${item.name} ${item.artists[0].name} Audio`
+      }));
   } catch (error) {
     const message = error.response?.data?.error?.message || error.response?.data?.error_description || error.message;
     if (throwOnError) throw new Error(message);
