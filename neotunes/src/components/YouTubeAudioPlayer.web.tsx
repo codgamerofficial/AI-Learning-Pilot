@@ -11,6 +11,7 @@ import { usePlayerStore } from '../store/playerStore';
 
 interface Props {
   videoId: string;
+  audioUrl?: string;
   play: boolean;
   onStateChange?: (state: string) => void;
 }

@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 // Web and iOS simulator can use standard localhost.
 const BASE_URL = Platform.OS === 'android'
   ? process.env.EXPO_PUBLIC_API_URL_ANDROID ?? 'http://10.0.2.2:4000'
-  : process.env.EXPO_PUBLIC_API_URL ?? '/api';
+  : process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export type ApiProviderError = {
   provider: string;
@@ -96,11 +96,17 @@ export async function fetchTrending(region: 'global' | 'india' = 'global') {
   return await response.json();
 }
 
-export async function fetchResolve(searchQuery: string) {
+export type ResolveResponse = {
+  url?: string | null;
+  id?: string;
+  resolvedSource?: 'youtube' | 'jamendo' | string;
+};
+
+export async function fetchResolve(searchQuery: string): Promise<ResolveResponse | null> {
   try {
     const res = await fetch(`${BASE_URL}/resolve?searchQuery=${encodeURIComponent(searchQuery)}`);
     if (!res.ok) throw new Error('Network response was not ok');
-    return await res.json();
+    return (await res.json()) as ResolveResponse;
   } catch (err) {
     console.error('API Error (Resolve):', err);
     return null;

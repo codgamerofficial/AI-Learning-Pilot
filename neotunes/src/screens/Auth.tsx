@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { makeRedirectUri } from 'expo-auth-session';
+import BrandLogo from '../components/BrandLogo';
 
 export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
@@ -47,23 +48,10 @@ export default function AuthScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center' }}>
 
-        {/* Abstract Logo Mark */}
-        <View className="items-center mb-14">
-          {/* Outer ring */}
-          <View className="relative items-center justify-center">
-            <View className="w-36 h-36 bg-neonPurple border-8 border-acidGreen rounded-full items-center justify-center shadow-[12px_12px_0px_rgba(0,212,255,1)]">
-              {/* Inner block */}
-              <View className="w-12 h-20 bg-electricBlue border-4 border-deepBlack absolute -rotate-12" />
-              <View className="w-20 h-12 bg-acidGreen border-4 border-deepBlack absolute rotate-12" />
-              <View className="w-14 h-14 bg-deepBlack rounded-full z-10" />
-            </View>
-          </View>
+        <View className="items-center mb-10">
+          <BrandLogo style={{ width: 280, height: 180 }} />
         </View>
 
-        {/* App Name */}
-        <Text className="text-white text-6xl font-black uppercase tracking-tighter mb-1">
-          NeoTunes.
-        </Text>
         <Text className="text-electricBlue text-xl font-bold mb-3">
           Streaming, Recoded.
         </Text>

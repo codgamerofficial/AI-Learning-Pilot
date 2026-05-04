@@ -71,21 +71,31 @@ app.get('/search', async (req, res) => {
 });
 
 // Resolve Proxy Audio Endpoint
-// When the frontend tries to play a `spotify_proxy` track, it asks the backend to
-// magically "resolve" it into a YouTube or Jamendo direct stream.
+// Prefer direct Jamendo audio when possible so native playback can keep running in the background.
 app.get('/resolve', async (req, res) => {
   try {
     const { searchQuery } = req.query;
     if (!searchQuery) return res.status(400).json({ error: 'Missing searchQuery' });
-    
-    // We just do a hidden background YouTube search for the exact Spotify artist + title combo
-    const tracks = await youtubeService.search(searchQuery, 1);
-    
-    if (tracks.length > 0) {
-      res.json({ url: null, id: tracks[0].id, resolvedSource: 'youtube' });
-    } else {
-      res.status(404).json({ error: 'Could not resolve audio for track.' });
+
+    const jamendoTracks = await jamendoService.search(searchQuery, 1);
+    if (jamendoTracks.length > 0 && jamendoTracks[0].url) {
+      return res.json({
+        url: jamendoTracks[0].url,
+        id: jamendoTracks[0].id,
+        resolvedSource: 'jamendo',
+      });
     }
+
+    const youtubeTracks = await youtubeService.search(searchQuery, 1);
+    if (youtubeTracks.length > 0) {
+      return res.json({
+        url: null,
+        id: youtubeTracks[0].id,
+        resolvedSource: 'youtube',
+      });
+    }
+
+    res.status(404).json({ error: 'Could not resolve audio for track.' });
   } catch (error) {
     console.error('Resolve Error:', error);
     res.status(500).json({ error: 'Failed to resolve' });

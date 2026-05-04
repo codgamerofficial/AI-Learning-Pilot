@@ -114,7 +114,8 @@ function GlobalAudioEngine() {
 
   return (
     <YouTubeAudioPlayer
-      videoId={currentTrack.id}
+      videoId={currentTrack.playbackId ?? currentTrack.id}
+      audioUrl={currentTrack.url}
       play={isPlaying}
       onStateChange={handleStateChange}
     />

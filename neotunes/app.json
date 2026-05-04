@@ -1,33 +1,46 @@
 {
   "expo": {
-    "name": "neotunes",
+    "name": "NeoTunes",
     "slug": "neotunes",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "neotunes",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0A0A0A"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.codgamerofficial.neotunes"
     },
     "android": {
+      "package": "com.codgamerofficial.neotunes",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0A0A0A"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "NeoTunes",
+      "shortName": "NeoTunes",
+      "themeColor": "#0A0A0A",
+      "backgroundColor": "#0A0A0A",
+      "display": "standalone"
     },
     "plugins": [
       "expo-web-browser"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "498fb2bc-f736-40a1-92e1-c812b0045062"
+      }
+    }
   }
 }

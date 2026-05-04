@@ -6,13 +6,18 @@
     "dev": "npm --prefix neotunes run dev:full",
     "dev:web": "npm --prefix neotunes run web",
     "dev:api": "npm --prefix neotunes-api run dev",
+    "build:apk": "npm --prefix neotunes run build:apk",
     "start": "npm run dev"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.102.1",
     "axios": "^1.15.0",
-    "expo": "^55.0.15",
+    "expo": "^55.0.17",
     "react": "^19.2.4",
     "react-native": "0.81.5"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.10",
+    "typescript": "~5.9.2"
   }
 }

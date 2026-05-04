@@ -25,6 +25,7 @@ import { shadow } from '../lib/shadow';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { getThemePalette } from '../lib/themePalette';
 import { useJamStore } from '../store/jamStore';
+import BrandLogo from '../components/BrandLogo';
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -387,9 +388,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         {/* Header */}
         <View className="flex-row justify-between items-center mt-4 mb-2">
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ color: palette.text, fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1 }}>
-              NeoTunes.
-            </Text>
+            <BrandLogo style={{ width: 210, height: 74, marginLeft: -4 }} />
             <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }} numberOfLines={1}>
               {greeting}
             </Text>

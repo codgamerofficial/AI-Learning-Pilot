@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { useRecentStore } from './recentStore';
 
@@ -10,6 +11,7 @@ export interface Track {
   color: string;
   source?: string;
   searchQuery?: string;
+  playbackId?: string;
 }
 
 export type RepeatMode = 'off' | 'all' | 'one';
@@ -80,21 +82,54 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   _seekFn: null,
 
   setCurrentTrack: async (track) => {
-    set({ currentTrack: track, isPlaying: true, currentTime: 0, duration: 0 });
-    useRecentStore.getState().addRecentTrack(track);
-    
-    if (track.source === 'spotify_proxy' && track.searchQuery) {
-      // Lazy load actual audio from youtube proxy
+    const nextTrack = { ...track };
+    set({ currentTrack: nextTrack, isPlaying: true, currentTime: 0, duration: 0 });
+    useRecentStore.getState().addRecentTrack(nextTrack);
+
+    const resolveQuery = track.searchQuery?.trim() || `${track.title} ${track.artist}`.trim();
+    const shouldResolveOnNative = Platform.OS !== 'web' && (!track.url || track.source === 'spotify_proxy');
+
+    if (!shouldResolveOnNative || !resolveQuery) {
+      return;
+    }
+
+    try {
       const { fetchResolve } = require('../lib/apiClient');
-      const resolved = await fetchResolve(track.searchQuery);
-      if (resolved && resolved.id) {
-        set((state) => {
-          if (state.currentTrack?.id === track.id) {
-            return { currentTrack: { ...track, id: resolved.id, source: resolved.resolvedSource } };
-          }
-          return state;
-        });
+      const resolved = await fetchResolve(resolveQuery);
+
+      if (!resolved) {
+        return;
       }
+
+      set((state) => {
+        if (state.currentTrack?.id !== track.id) {
+          return state;
+        }
+
+        if (resolved.url) {
+          return {
+            currentTrack: {
+              ...track,
+              url: resolved.url,
+              source: resolved.resolvedSource ?? track.source,
+            },
+          };
+        }
+
+        if (resolved.id) {
+          return {
+            currentTrack: {
+              ...track,
+              playbackId: resolved.id,
+              source: resolved.resolvedSource ?? track.source,
+            },
+          };
+        }
+
+        return state;
+      });
+    } catch {
+      // Keep the original track if resolution fails.
     }
   },
 
