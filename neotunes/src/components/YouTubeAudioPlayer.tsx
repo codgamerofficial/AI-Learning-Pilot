@@ -36,7 +36,7 @@ async function ensureAudioMode() {
   audioModeConfigured = true;
 }
 
-function NativeAudioPlayer({ audioUrl, play, onStateChange }: Omit<Props, 'videoId'>) {
+function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   const soundRef = React.useRef<Audio.Sound | null>(null);
 
   React.useEffect(() => {
@@ -138,5 +138,5 @@ function NativeAudioPlayer({ audioUrl, play, onStateChange }: Omit<Props, 'video
 }
 
 export default function YouTubeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
-  return <NativeAudioPlayer audioUrl={audioUrl} play={play} onStateChange={onStateChange} />;
+  return <NativeAudioPlayer videoId={videoId} audioUrl={audioUrl} play={play} onStateChange={onStateChange} />;
 }

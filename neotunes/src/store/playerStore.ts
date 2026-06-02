@@ -87,9 +87,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     useRecentStore.getState().addRecentTrack(nextTrack);
 
     const resolveQuery = track.searchQuery?.trim() || `${track.title} ${track.artist}`.trim();
-    const shouldResolveOnNative = Platform.OS !== 'web' && (!track.url || track.source === 'spotify_proxy');
+    const shouldResolve = (!track.url && !track.playbackId) || track.source === 'spotify_proxy';
 
-    if (!shouldResolveOnNative || !resolveQuery) {
+    if (!shouldResolve || !resolveQuery) {
       return;
     }
 

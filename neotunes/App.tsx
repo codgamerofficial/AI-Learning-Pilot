@@ -1,6 +1,6 @@
 import './global.css';
 import React from 'react';
-import { Text, ActivityIndicator, View, LogBox } from 'react-native';
+import { Text, ActivityIndicator, View, LogBox, Platform } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -89,6 +89,7 @@ function GlobalAudioEngine() {
   const play = usePlayerStore((state) => state.play);
   const pause = usePlayerStore((state) => state.pause);
   const nextTrack = usePlayerStore((state) => state.nextTrack);
+  const prevTrack = usePlayerStore((state) => state.prevTrack);
 
   const handleStateChange = React.useCallback((state: string) => {
     if (state === 'ended') {
@@ -103,12 +104,81 @@ function GlobalAudioEngine() {
     }
 
     if (state === 'paused' && currentlyPlaying) {
+      if (Platform.OS === 'web') {
+        // On web, ignore paused state sync from the player component to prevent autoplay lockups
+        return;
+      }
       if (typeof document !== 'undefined' && document.hidden) {
         return;
       }
       pause();
     }
   }, [nextTrack, play, pause]);
+
+  // Synchronize MediaSession metadata
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !('mediaSession' in navigator) || !currentTrack) {
+      return;
+    }
+
+    try {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        album: 'NeoTunes',
+        artwork: [
+          {
+            src: currentTrack.artwork || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&q=80',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
+      });
+    } catch (e) {
+      console.warn('[MediaSession] metadata setup failed:', e);
+    }
+  }, [currentTrack]);
+
+  // Synchronize MediaSession action handlers
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !('mediaSession' in navigator) || !currentTrack) {
+      return;
+    }
+
+    try {
+      navigator.mediaSession.setActionHandler('play', () => {
+        usePlayerStore.getState().play();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        usePlayerStore.getState().pause();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        usePlayerStore.getState().prevTrack();
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        usePlayerStore.getState().nextTrack();
+      });
+    } catch (e) {
+      console.warn('[MediaSession] action handlers registration failed:', e);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+        navigator.mediaSession.setActionHandler('previoustrack', null);
+        navigator.mediaSession.setActionHandler('nexttrack', null);
+      }
+    };
+  }, [currentTrack]);
+
+  // Synchronize MediaSession playback state
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined' || !('mediaSession' in navigator)) {
+      return;
+    }
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+  }, [isPlaying]);
 
   if (!currentTrack) return null;
 
@@ -188,6 +258,7 @@ function MainTabs() {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const isDark = themeMode === 'dark';
   const shellBackground = isDark ? '#0A0A0A' : '#F3F4F6';
+  const accentColor = isDark ? '#00FF85' : '#0A84FF';
 
   return (
     <View style={{ flex: 1, backgroundColor: shellBackground }}>
@@ -195,24 +266,58 @@ function MainTabs() {
         screenOptions={({ route }) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: isDark ? '#0A0A0A' : '#FFFFFF',
-            borderTopWidth: 4,
-            borderTopColor: isDark ? '#1C1C1E' : '#D1D5DB',
-            height: 80,
-            paddingBottom: 10,
+            position: 'absolute',
+            bottom: 12,
+            left: 16,
+            right: 16,
+            height: 72,
+            borderRadius: 28,
+            borderWidth: 1.5,
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: isDark ? 'rgba(20,20,22,0.75)' : 'rgba(255,255,255,0.78)',
+            paddingBottom: 8,
+            paddingTop: 8,
+            elevation: 20,
+            shadowColor: isDark ? '#000' : '#6B7280',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: isDark ? 0.6 : 0.18,
+            shadowRadius: 24,
+            // @ts-ignore — Web glassmorphism
+            backdropFilter: 'blur(28px) saturate(180%)',
+            borderTopWidth: 0,
           },
           sceneStyle: { backgroundColor: shellBackground },
-          tabBarActiveTintColor: isDark ? '#00FF85' : '#0A84FF',
-          tabBarInactiveTintColor: isDark ? '#FFF' : '#4B5563',
-          tabBarIcon: ({ color, size }) => {
-            if (route.name === 'HomeTab') return <Home stroke={color} size={size} />;
-            if (route.name === 'SearchTab') return <Search stroke={color} size={size} />;
-            if (route.name === 'LibraryTab') return <Library stroke={color} size={size} />;
-            if (route.name === 'ProfileTab') return <User stroke={color} size={size} />;
-            return null;
+          tabBarActiveTintColor: accentColor,
+          tabBarInactiveTintColor: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.35)',
+          tabBarIcon: ({ color, focused, size }) => {
+            const iconSize = focused ? size + 2 : size;
+            return (
+              <View style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...(focused ? {
+                  backgroundColor: isDark ? 'rgba(0,255,133,0.12)' : 'rgba(10,132,255,0.1)',
+                  borderRadius: 16,
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                } : {}),
+              }}>
+                {route.name === 'HomeTab' && <Home stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
+                {route.name === 'SearchTab' && <Search stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
+                {route.name === 'LibraryTab' && <Library stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
+                {route.name === 'ProfileTab' && <User stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
+              </View>
+            );
           },
-          tabBarLabel: ({ color }) => (
-            <Text style={{ color, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' }}>
+          tabBarLabel: ({ color, focused }) => (
+            <Text style={{
+              color,
+              fontSize: 9,
+              fontWeight: focused ? '800' : '600',
+              textTransform: 'uppercase',
+              letterSpacing: focused ? 1.2 : 0.8,
+              marginTop: -2,
+            }}>
               {route.name.replace('Tab', '')}
             </Text>
           ),
@@ -224,7 +329,7 @@ function MainTabs() {
         <Tab.Screen name="ProfileTab" component={ProfileScreen} />
       </Tab.Navigator>
 
-      {/* Mini Player floats above tab bar on all tabs */}
+      {/* Mini Player floats above the glass tab bar */}
       <MiniPlayer />
     </View>
   );

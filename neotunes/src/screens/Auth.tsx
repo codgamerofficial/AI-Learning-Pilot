@@ -6,6 +6,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { makeRedirectUri } from 'expo-auth-session';
 import BrandLogo from '../components/BrandLogo';
+import { shadow } from '../lib/shadow';
 
 export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
@@ -45,57 +46,157 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A', overflow: 'hidden' }}>
+      {/* Dynamic Visual Spheres in Background */}
+      <View style={{
+        position: 'absolute', top: -100, right: -100, width: 300, height: 300, borderRadius: 150,
+        backgroundColor: '#7B61FF', opacity: 0.15,
+        // @ts-ignore
+        filter: 'blur(80px)'
+      }} />
+      <View style={{
+        position: 'absolute', bottom: -50, left: -100, width: 250, height: 250, borderRadius: 125,
+        backgroundColor: '#00FF85', opacity: 0.12,
+        // @ts-ignore
+        filter: 'blur(70px)'
+      }} />
+      <View style={{
+        position: 'absolute', top: '40%', left: '30%', width: 180, height: 180, borderRadius: 90,
+        backgroundColor: '#00D4FF', opacity: 0.08,
+        // @ts-ignore
+        filter: 'blur(60px)'
+      }} />
+
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center' }}>
 
-        <View className="items-center mb-10">
-          <BrandLogo style={{ width: 280, height: 180 }} />
-        </View>
-
-        <Text className="text-electricBlue text-xl font-bold mb-3">
-          Streaming, Recoded.
-        </Text>
-        <Text className="text-white/40 font-bold uppercase tracking-widest text-xs mb-14">
-          Sign in to access your music universe
-        </Text>
-
-        {/* Error Message */}
-        {error !== '' && (
-          <View className="bg-red-600 border-4 border-white p-4 mb-6 shadow-[4px_4px_0px_rgba(255,255,255,1)]">
-            <Text className="text-white font-bold text-sm">{error}</Text>
+        <View style={[
+          {
+            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            borderWidth: 1.5,
+            borderColor: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: 24,
+            padding: 28,
+            // @ts-ignore - Web-only glassmorphism blur
+            backdropFilter: 'blur(20px)',
+          },
+          shadow('0px 12px 24px rgba(0, 0, 0, 0.3)', {
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.3,
+            shadowRadius: 24,
+            elevation: 10,
+          })
+        ]}>
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <BrandLogo style={{ width: 260, height: 80 }} />
           </View>
-        )}
 
-        {/* Google Sign In Button */}
-        {loading ? (
-          <View className="h-20 items-center justify-center">
-            <ActivityIndicator size="large" color="#00FF85" />
-            <Text className="text-white/60 font-bold uppercase tracking-widest text-xs mt-3">
-              Connecting to Google...
-            </Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            onPress={handleGoogleSignIn}
-            activeOpacity={0.85}
-            className="flex-row items-center justify-center bg-white border-4 border-deepBlack h-20 shadow-[6px_6px_0px_rgba(0,255,133,1)]"
-          >
-            {/* Google "G" logo built with pure blocks */}
-            <View className="w-10 h-10 mr-4 items-center justify-center">
-              <View className="w-10 h-10 rounded-full border-4 border-deepBlack overflow-hidden bg-white items-center justify-center">
-                <Text style={{ fontSize: 22, fontWeight: '900', color: '#4285F4', fontFamily: 'serif' }}>G</Text>
-              </View>
+          <Text style={{
+            color: '#00D4FF',
+            fontSize: 18,
+            fontWeight: '800',
+            marginBottom: 8,
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: 2,
+          }}>
+            Streaming, Recoded.
+          </Text>
+          <Text style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontWeight: '700',
+            textTransform: 'uppercase',
+            fontSize: 11,
+            letterSpacing: 1.2,
+            marginBottom: 40,
+            textAlign: 'center',
+          }}>
+            Sign in to access your music universe
+          </Text>
+
+          {/* Error Message */}
+          {error !== '' && (
+            <View style={[
+              {
+                backgroundColor: 'rgba(239,68,68,0.15)',
+                borderWidth: 1.5,
+                borderColor: '#EF4444',
+                borderRadius: 16,
+                padding: 14,
+                marginBottom: 20
+              },
+              shadow('0px 4px 12px rgba(239,68,68,0.1)')
+            ]}>
+              <Text style={{ color: '#FF9D9D', fontWeight: '700', fontSize: 13, textAlign: 'center' }}>{error}</Text>
             </View>
-            <Text className="text-deepBlack font-black text-xl uppercase tracking-widest">
-              Continue with Google
-            </Text>
-          </TouchableOpacity>
-        )}
+          )}
 
-        {/* Terms footnote */}
-        <Text className="text-white/30 font-bold text-center text-xs uppercase tracking-wider mt-10">
-          By continuing you agree to our terms of service
-        </Text>
+          {/* Google Sign In Button */}
+          {loading ? (
+            <View style={{ height: 80, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color="#00FF85" />
+              <Text style={{
+                color: 'rgba(255,255,255,0.6)',
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                fontSize: 11,
+                letterSpacing: 1.2,
+                marginTop: 12,
+              }}>
+                Connecting to Google...
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={handleGoogleSignIn}
+              activeOpacity={0.85}
+              style={[
+                {
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: 16,
+                  height: 60,
+                  width: '100%'
+                },
+                shadow('0px 8px 24px rgba(255,255,255,0.15)', {
+                  shadowColor: '#FFF',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 8,
+                  elevation: 4
+                })
+              ]}
+            >
+              {/* Google logo */}
+              <View style={{ width: 30, height: 30, marginRight: 12, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{
+                  width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#E5E7EB',
+                  overflow: 'hidden', backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Text style={{ fontSize: 16, fontWeight: '900', color: '#4285F4', fontFamily: 'serif' }}>G</Text>
+                </View>
+              </View>
+              <Text style={{ color: '#0A0A0A', fontWeight: '800', fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Terms footnote */}
+          <Text style={{
+            color: 'rgba(255,255,255,0.3)',
+            fontWeight: '700',
+            textTransform: 'uppercase',
+            fontSize: 9,
+            letterSpacing: 1,
+            textAlign: 'center',
+            marginTop: 40
+          }}>
+            By continuing you agree to our terms of service
+          </Text>
+        </View>
 
       </ScrollView>
     </SafeAreaView>

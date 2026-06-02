@@ -13,7 +13,7 @@ app.use(express.json());
 // Main Search Endpoint — Unifies YouTube & Jamendo
 app.get('/search', async (req, res) => {
   try {
-    const { q, source = 'all' } = req.query;
+    const { q, source = 'all', videoCategoryId } = req.query;
     if (!q) return res.status(400).json({ error: 'Missing query parameter "q"' });
 
     const allowedSources = new Set(['all', 'youtube', 'jamendo', 'spotify']);
@@ -35,7 +35,7 @@ app.get('/search', async (req, res) => {
 
     // Fetch from Youtube
     if (source === 'all' || source === 'youtube') {
-      await collectProvider('youtube', () => youtubeService.search(q, 10, { throwOnError: true }));
+      await collectProvider('youtube', () => youtubeService.search(q, 10, { videoCategoryId, throwOnError: true }));
     }
 
     // Fetch from Jamendo

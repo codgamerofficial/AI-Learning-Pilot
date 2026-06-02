@@ -3,7 +3,8 @@ import {
   View, Text, TextInput, SafeAreaView, ScrollView,
   TouchableOpacity, Image, ActivityIndicator, Alert
 } from 'react-native';
-import { Search as SearchIcon, Play, X } from 'lucide-react-native';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { Search as SearchIcon, Play, X, TrendingUp, Sparkles } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fetchSearch, fetchTrending, extractApiError, type ApiProviderError } from '../lib/apiClient';
@@ -12,6 +13,8 @@ import { recordPlaylistGenerated, recordTrackImpressions, recordTrackPlay } from
 import { usePreferencesStore } from '../store/preferencesStore';
 import { getThemePalette } from '../lib/themePalette';
 import { useJamStore } from '../store/jamStore';
+import { shadow } from '../lib/shadow';
+import SafeImage from '../components/SafeImage';
 
 export type RootStackParamList = {
   Main: undefined;
@@ -45,14 +48,23 @@ interface Track {
 const BLOCK_COLORS = ['#7B61FF', '#00FF85', '#00D4FF', '#FF6B6B', '#FFD700', '#FF4ECD', '#7B61FF', '#00FF85'];
 
 const GENRES = [
-  { label: 'Hip Hop', query: 'hip hop hits 2024', bg: '#7B61FF', text: '#FFF', border: '#0A0A0A' },
-  { label: 'Electronic', query: 'electronic dance music 2024', bg: '#00D4FF', text: '#0A0A0A', border: '#0A0A0A' },
-  { label: 'Rock', query: 'rock music hits 2024', bg: '#00FF85', text: '#0A0A0A', border: '#0A0A0A' },
-  { label: 'Jazz', query: 'jazz music playlist', bg: '#FFF', text: '#0A0A0A', border: '#0A0A0A' },
-  { label: 'Bollywood', query: 'bollywood hits 2024', bg: '#FF6B6B', text: '#FFF', border: '#0A0A0A' },
-  { label: 'Pop', query: 'pop music 2024', bg: '#FF4ECD', text: '#FFF', border: '#0A0A0A' },
-  { label: 'Classical', query: 'classical music relaxing', bg: '#FFD700', text: '#0A0A0A', border: '#0A0A0A' },
-  { label: 'Lo-Fi', query: 'lofi hip hop chill beats', bg: '#1C1C1E', text: '#FFF', border: '#7B61FF' },
+  { label: 'Hip Hop', query: 'hip hop hits 2024', gradient: ['#7B61FF', '#9B84FF'], icon: '🎤' },
+  { label: 'Electronic', query: 'electronic dance music 2024', gradient: ['#00D4FF', '#4DDDFF'], icon: '⚡' },
+  { label: 'Rock', query: 'rock music hits 2024', gradient: ['#FF6B6B', '#FF9B9B'], icon: '🎸' },
+  { label: 'Jazz', query: 'jazz music playlist', gradient: ['#FFD700', '#FFE44D'], icon: '🎷' },
+  { label: 'Bollywood', query: 'bollywood hits 2024', gradient: ['#FF9933', '#FFB366'], icon: '🎬' },
+  { label: 'Pop', query: 'pop music 2024', gradient: ['#FF4ECD', '#FF7DDD'], icon: '🎵' },
+  { label: 'Classical', query: 'classical music relaxing', gradient: ['#00FF85', '#4DFFA8'], icon: '🎻' },
+  { label: 'Lo-Fi', query: 'lofi hip hop chill beats', gradient: ['#7B61FF', '#A18AFF'], icon: '🌙' },
+];
+
+const TRENDING_SEARCHES = [
+  'Arijit Singh latest',
+  'Taylor Swift Eras Tour',
+  'Lo-fi study beats',
+  'Bollywood party mix',
+  'Billie Eilish new album',
+  'Punjabi hits 2024',
 ];
 
 function blendGlobalIndiaTracks(globalTracks: Track[], indiaTracks: Track[], limit = 24): Track[] {
@@ -98,9 +110,8 @@ function EditorialTagStrip({ tags }: { tags: EditorialTag[] }) {
           <View
             key={tag}
             style={{
-              backgroundColor: theme.background,
-              borderColor: theme.border,
-              borderWidth: 2,
+              backgroundColor: `${theme.background}CC`,
+              borderRadius: 6,
               paddingHorizontal: 6,
               paddingVertical: 2,
               marginRight: 6,
@@ -110,10 +121,10 @@ function EditorialTagStrip({ tags }: { tags: EditorialTag[] }) {
             <Text
               style={{
                 color: theme.text,
-                fontWeight: '900',
+                fontWeight: '800',
                 fontSize: 9,
                 textTransform: 'uppercase',
-                letterSpacing: 0.8,
+                letterSpacing: 0.6,
               }}
             >
               {tag}
@@ -130,6 +141,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const palette = getThemePalette(themeMode);
   const jamConnected = useJamStore((state) => state.isConnected);
   const jamRole = useJamStore((state) => state.role);
+  const isDark = themeMode === 'dark';
+  const accentColor = isDark ? '#00FF85' : '#0A84FF';
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Track[]>([]);
@@ -238,145 +251,141 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
       <View style={{ padding: 24, flex: 1 }}>
 
         {/* Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <Text style={{ color: palette.text, fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1 }}>
-            {'Search.'}
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <Text style={{ color: palette.text, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 }}>
+            Search
           </Text>
           {(results.length > 0 || activeGenre !== '') && (
-            <TouchableOpacity onPress={clearResults} style={{ padding: 8 }}>
-              <X stroke={palette.text} size={24} />
+            <TouchableOpacity onPress={clearResults} style={{
+              width: 36, height: 36, borderRadius: 18,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <X stroke={palette.text} size={18} />
             </TouchableOpacity>
           )}
-        </View>
+        </Animated.View>
 
         {/* Search Input */}
-        <View style={{
-          flexDirection: 'row', alignItems: 'center',
-          backgroundColor: '#FFF', borderWidth: 4, borderColor: palette.accent,
-          paddingHorizontal: 16, paddingVertical: 12, marginBottom: 24,
-          shadowColor: palette.accent, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0,
-        }}>
-          <SearchIcon stroke="#0A0A0A" size={22} />
-          <TextInput
-            style={{ flex: 1, color: '#0A0A0A', fontWeight: '700', fontSize: 18, marginLeft: 12, textTransform: 'uppercase', letterSpacing: 2 }}
-            placeholder="FIND MUSIC..."
-            placeholderTextColor="rgba(10,10,10,0.4)"
-            value={query}
-            onChangeText={setQuery}
-            onSubmitEditing={handleSearch}
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={() => setQuery('')}>
-              <X stroke="#0A0A0A" size={18} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <TouchableOpacity
-          onPress={handleGenerateFusionPlaylist}
-          activeOpacity={0.88}
-          style={{
-            borderWidth: 4,
-            borderColor: palette.border,
-            backgroundColor: palette.surface,
-            padding: 14,
-            marginBottom: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            shadowColor: palette.accent,
-            shadowOffset: { width: 4, height: 4 },
-            shadowOpacity: 1,
-            shadowRadius: 0,
-          }}
-        >
-          <View style={{ flex: 1, paddingRight: 12 }}>
-            <Text style={{ color: palette.accent, fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
-              Global x India Playlist
-            </Text>
-            <Text style={{ color: palette.textMuted, fontWeight: '700', fontSize: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-              One tap to generate a blended cross-market playlist for worldwide and India-first audiences.
-            </Text>
-          </View>
-          <View
-            style={{
-              minWidth: 86,
-              borderWidth: 3,
-              borderColor: palette.accent,
-              backgroundColor: palette.accent,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              alignItems: 'center',
-            }}
-          >
-            {generatingFusion ? (
-              <ActivityIndicator size="small" color="#0A0A0A" />
-            ) : (
-              <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
-                {lastFusionGenerated ? 'Regenerate' : 'Generate'}
-              </Text>
+        <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <View style={[
+            {
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: isDark ? 'rgba(28,28,30,0.6)' : 'rgba(0,0,0,0.04)',
+              borderWidth: 1.5,
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              borderRadius: 16,
+              paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20,
+              // @ts-ignore
+              backdropFilter: 'blur(20px)',
+            },
+            shadow('0 2px 12px rgba(0,0,0,0.06)', {
+              shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
+              elevation: 4,
+            })
+          ]}>
+            <SearchIcon stroke={palette.textSubtle} size={20} />
+            <TextInput
+              style={{ flex: 1, color: palette.text, fontWeight: '600', fontSize: 15, marginLeft: 12, letterSpacing: 0.3 }}
+              placeholder="Songs, artists, podcasts..."
+              placeholderTextColor={palette.textMuted}
+              value={query}
+              onChangeText={setQuery}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')}>
+                <X stroke={palette.textMuted} size={16} />
+              </TouchableOpacity>
             )}
           </View>
-        </TouchableOpacity>
+        </Animated.View>
+
+        {/* Fusion Playlist Generator */}
+        <Animated.View entering={FadeInDown.delay(150).springify()}>
+          <TouchableOpacity
+            onPress={handleGenerateFusionPlaylist}
+            activeOpacity={0.85}
+            style={[
+              {
+                borderWidth: 1.5,
+                borderColor: isDark ? `${accentColor}30` : `${accentColor}20`,
+                backgroundColor: isDark ? `${accentColor}08` : `${accentColor}06`,
+                borderRadius: 16,
+                padding: 16,
+                marginBottom: 16,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              },
+              shadow(`0 4px 16px ${accentColor}15`, {
+                shadowColor: accentColor, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12,
+                elevation: 4,
+              })
+            ]}
+          >
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Sparkles stroke={accentColor} size={14} />
+                <Text style={{ color: accentColor, fontWeight: '800', fontSize: 13, marginLeft: 6, letterSpacing: 0.3 }}>
+                  Global × India Playlist
+                </Text>
+              </View>
+              <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 11, lineHeight: 15 }}>
+                Generate a blended cross-market playlist
+              </Text>
+            </View>
+            <View style={{
+              paddingHorizontal: 16, paddingVertical: 10,
+              borderRadius: 12,
+              backgroundColor: accentColor,
+            }}>
+              {generatingFusion ? (
+                <ActivityIndicator size="small" color={isDark ? '#0A0A0A' : '#FFF'} />
+              ) : (
+                <Text style={{ color: isDark ? '#0A0A0A' : '#FFF', fontWeight: '800', fontSize: 11 }}>
+                  {lastFusionGenerated ? 'Refresh' : 'Generate'}
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
 
         {lastFusionGenerated && (
-          <View
-            style={{
-              borderWidth: 3,
-              borderColor: palette.accentStrong,
-              backgroundColor: palette.surface,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              marginBottom: 16,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Text style={{ color: palette.accentStrong, fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
+          <View style={{
+            borderRadius: 12,
+            backgroundColor: isDark ? 'rgba(0,255,133,0.06)' : 'rgba(10,132,255,0.06)',
+            paddingHorizontal: 14, paddingVertical: 10,
+            marginBottom: 14,
+            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <Text style={{ color: accentColor, fontWeight: '700', fontSize: 11 }}>
               Generated Playlist
             </Text>
-            <Text style={{ color: palette.textMuted, fontWeight: '700', fontSize: 10, textTransform: 'uppercase' }}>
+            <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10 }}>
               {lastFusionGenerated.trackCount} tracks at {fusionGeneratedLabel}
             </Text>
           </View>
         )}
 
         {searchError && (
-          <View
-            style={{
-              borderWidth: 3,
-              borderColor: '#FF6B6B',
-              backgroundColor: palette.dangerSurface,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              marginBottom: 16,
-            }}
-          >
-            <Text
-              style={{
-                color: '#FF9D9D',
-                fontWeight: '900',
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-              }}
-            >
+          <View style={{
+            borderRadius: 12,
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,107,107,0.2)',
+            backgroundColor: isDark ? 'rgba(255,107,107,0.08)' : 'rgba(255,107,107,0.06)',
+            paddingHorizontal: 14, paddingVertical: 12,
+            marginBottom: 14,
+          }}>
+            <Text style={{ color: '#FF6B6B', fontWeight: '700', fontSize: 11 }}>
               {searchError}
             </Text>
             {searchProviderErrors.map((providerError, index) => (
               <Text
                 key={`${providerError.provider}-${index}`}
-                style={{
-                  color: '#FFFFFF',
-                  opacity: 0.85,
-                  fontWeight: '700',
-                  fontSize: 10,
-                  marginTop: 6,
-                  textTransform: 'uppercase',
-                }}
+                style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10, marginTop: 4 }}
               >
                 {providerError.provider}: {providerError.error}
               </Text>
@@ -388,8 +397,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
 
           {/* Active Genre Tag */}
           {activeGenre !== '' && !loading && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ color: palette.accentStrong, fontWeight: '700', fontSize: 13, textTransform: 'uppercase', letterSpacing: 3 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+              <Text style={{ color: accentColor, fontWeight: '700', fontSize: 13, letterSpacing: 0.5 }}>
                 {activeGenre} Picks
               </Text>
             </View>
@@ -397,88 +406,151 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
 
           {/* Loading */}
           {loading && (
-            <ActivityIndicator size="large" color={palette.accent} style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={accentColor} style={{ marginTop: 40 }} />
           )}
 
           {/* Results */}
           {!loading && results.length > 0 && (
             <View>
-              {results.map((item) => {
+              {results.map((item, index) => {
                 const tags = getEditorialTags(item, getResultHint(activeGenre));
                 return (
-                  <TouchableOpacity
-                    key={item.id}
-                    onPress={() => playSong(item)}
-                    activeOpacity={0.88}
-                    style={{
-                      flexDirection: 'row', alignItems: 'center',
-                      backgroundColor: item.color,
-                      borderWidth: 4, borderColor: '#FFF',
-                      padding: 12, marginBottom: 12,
-                      shadowColor: '#FFF', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0,
-                    }}
-                  >
-                    <Image
-                      source={{ uri: item.artwork }}
-                      style={{ width: 60, height: 60, borderWidth: 2, borderColor: '#0A0A0A', marginRight: 12 }}
-                      resizeMode="cover"
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 15, textTransform: 'uppercase' }} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      <Text style={{ color: '#0A0A0A', fontWeight: '700', fontSize: 12, marginTop: 4, opacity: 0.7 }} numberOfLines={1}>
-                        {item.artist}
-                      </Text>
-                      <EditorialTagStrip tags={tags} />
-                    </View>
-                    <View style={{ width: 40, height: 40, backgroundColor: '#0A0A0A', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginLeft: 8 }}>
-                      <Play stroke="#FFF" fill="#FFF" size={16} />
-                    </View>
-                  </TouchableOpacity>
+                  <Animated.View key={item.id} entering={FadeInRight.delay(index * 60).springify()}>
+                    <TouchableOpacity
+                      onPress={() => playSong(item)}
+                      activeOpacity={0.85}
+                      style={[
+                        {
+                          flexDirection: 'row', alignItems: 'center',
+                          backgroundColor: isDark ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.8)',
+                          borderWidth: 1.5,
+                          borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                          borderRadius: 16,
+                          padding: 12, marginBottom: 10,
+                          // @ts-ignore
+                          backdropFilter: 'blur(20px)',
+                        },
+                        shadow('0 2px 8px rgba(0,0,0,0.06)', {
+                          shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6,
+                          elevation: 3,
+                        })
+                      ]}
+                    >
+                      <View style={[
+                        { borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: `${item.color}40` },
+                        shadow(`0 2px 8px ${item.color}20`, {
+                          shadowColor: item.color, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4,
+                          elevation: 3,
+                        })
+                      ]}>
+                        <SafeImage
+                          uri={item.artwork}
+                          style={{ width: 52, height: 52 }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={{ color: palette.textSubtle, fontWeight: '600', fontSize: 11, marginTop: 2, opacity: 0.8 }} numberOfLines={1}>
+                          {item.artist}
+                        </Text>
+                        <EditorialTagStrip tags={tags} />
+                      </View>
+                      <View style={{
+                        width: 34, height: 34, borderRadius: 17,
+                        backgroundColor: item.color,
+                        alignItems: 'center', justifyContent: 'center', marginLeft: 8,
+                      }}>
+                        <Play stroke="#FFF" fill="#FFF" size={12} />
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
                 );
               })}
-              <View style={{ height: 80 }} />
+              <View style={{ height: 120 }} />
             </View>
           )}
 
-          {/* Genre Grid - shown when no results */}
+          {/* Browse Genres & Trending - shown when no results */}
           {showGenres && (
             <View>
-              <Text style={{ color: palette.accentStrong, fontWeight: '700', fontSize: 16, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 16 }}>
+              {/* Trending Searches */}
+              <Animated.View entering={FadeInDown.delay(200).springify()}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <TrendingUp stroke={accentColor} size={16} />
+                  <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 8 }}>
+                    Trending Searches
+                  </Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+                  {TRENDING_SEARCHES.map((term, i) => (
+                    <TouchableOpacity
+                      key={term}
+                      onPress={() => { setQuery(term); setActiveGenre(''); performSearch(term, 'neutral'); }}
+                      activeOpacity={0.8}
+                      style={{
+                        paddingHorizontal: 16, paddingVertical: 10,
+                        borderRadius: 20,
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                        borderWidth: 1,
+                        borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                        marginRight: 10,
+                      }}
+                    >
+                      <Text style={{ color: palette.text, fontWeight: '600', fontSize: 12 }}>{term}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Animated.View>
+
+              {/* Genre Grid */}
+              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
                 Browse Genres
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                {GENRES.map((genre) => (
-                  <TouchableOpacity
-                    key={genre.label}
-                    onPress={() => handleGenre(genre)}
-                    activeOpacity={0.85}
-                    style={{
-                      width: '47%',
-                      backgroundColor: genre.bg,
-                      borderWidth: 4,
-                      borderColor: genre.border,
-                      padding: 20,
-                      marginBottom: 16,
-                      height: 110,
-                      justifyContent: 'flex-end',
-                      shadowColor: '#FFF',
-                      shadowOffset: { width: 4, height: 4 },
-                      shadowOpacity: 1,
-                      shadowRadius: 0,
-                    }}
-                  >
-                    <Text style={{ color: genre.text, fontWeight: '900', fontSize: 20, textTransform: 'uppercase' }}>
-                      {genre.label}
-                    </Text>
-                    <Text style={{ color: genre.text, fontWeight: '700', fontSize: 11, opacity: 0.7, marginTop: 2 }}>
-                      TAP TO EXPLORE →
-                    </Text>
-                  </TouchableOpacity>
+                {GENRES.map((genre, index) => (
+                  <Animated.View key={genre.label} entering={FadeInDown.delay(250 + index * 60).springify()} style={{ width: '48%', marginBottom: 14 }}>
+                    <TouchableOpacity
+                      onPress={() => handleGenre(genre)}
+                      activeOpacity={0.85}
+                      style={[
+                        {
+                          backgroundColor: genre.gradient[0],
+                          borderRadius: 20,
+                          padding: 18,
+                          height: 110,
+                          justifyContent: 'space-between',
+                          overflow: 'hidden',
+                        },
+                        shadow(`0 4px 16px ${genre.gradient[0]}40`, {
+                          shadowColor: genre.gradient[0],
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 12,
+                          elevation: 6,
+                        })
+                      ]}
+                    >
+                      {/* Decorative gradient circle */}
+                      <View style={{
+                        position: 'absolute', top: -20, right: -20,
+                        width: 80, height: 80, borderRadius: 40,
+                        backgroundColor: genre.gradient[1],
+                        opacity: 0.4,
+                      }} />
+                      <Text style={{ fontSize: 28, marginBottom: 4 }}>{genre.icon}</Text>
+                      <View>
+                        <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16, letterSpacing: 0.3 }}>
+                          {genre.label}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
                 ))}
               </View>
-              <View style={{ height: 80 }} />
+              <View style={{ height: 200 }} />
             </View>
           )}
 

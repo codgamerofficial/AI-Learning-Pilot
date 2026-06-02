@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, TextInput } from 'react-native';
-import { Play, Trash2 } from 'lucide-react-native';
+import { Play, Trash2, Users } from 'lucide-react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePlayerStore } from '../store/playerStore';
@@ -11,6 +11,9 @@ import { RootStackParamList } from './Search';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { getThemePalette } from '../lib/themePalette';
 import { useJamStore } from '../store/jamStore';
+import { fetchSearch } from '../lib/apiClient';
+import { shadow } from '../lib/shadow';
+import SafeImage from '../components/SafeImage';
 
 type LibraryScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -34,6 +37,17 @@ interface Playlist {
 
 const LOCAL_PLAYLISTS_KEY = 'neotunes_local_playlists_v1';
 const PLAYLISTS_BACKEND_DISABLED_KEY = 'neotunes_playlists_backend_disabled_v1';
+
+const AVAILABLE_ARTISTS = [
+  { name: 'Arijit Singh', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop', color: '#FF9933' },
+  { name: 'Taylor Swift', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=300&auto=format&fit=crop', color: '#7B61FF' },
+  { name: 'Billie Eilish', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop', color: '#00FF85' },
+  { name: 'The Weeknd', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop', color: '#FF6B6B' },
+  { name: 'Diljit Dosanjh', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop', color: '#FFD700' },
+  { name: 'Drake', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=300&auto=format&fit=crop', color: '#00D4FF' },
+  { name: 'Shreya Ghoshal', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300&auto=format&fit=crop', color: '#FF4ECD' },
+  { name: 'Bruno Mars', avatar: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?q=80&w=300&auto=format&fit=crop', color: '#00FF85' }
+];
 
 function isPlaylistsTableMissing(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;
@@ -101,6 +115,9 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
   const [retryingPlaylists, setRetryingPlaylists] = useState(false);
   const [newPlaylistTitle, setNewPlaylistTitle] = useState('');
   const [loading, setLoading] = useState(true);
+  const [activeSegment, setActiveSegment] = useState<'playlists' | 'tracks' | 'artists'>('tracks');
+  const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
+  const [loadingCombo, setLoadingCombo] = useState(false);
   const setCurrentTrack = usePlayerStore((state) => state.setCurrentTrack);
   const setQueue = usePlayerStore((state) => state.setQueue);
   const { user } = useAuthStore();
@@ -248,99 +265,445 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
     setRetryingPlaylists(false);
   };
 
+  const toggleArtist = (name: string) => {
+    setSelectedArtists(prev =>
+      prev.includes(name) ? prev.filter(a => a !== name) : [...prev, name]
+    );
+  };
+
+  const launchArtistComboStation = async () => {
+    if (selectedArtists.length === 0) {
+      Alert.alert('Selection Required', 'Select at least one artist to launch your custom combo station!');
+      return;
+    }
+
+    if (jamConnected && jamRole === 'guest') {
+      Alert.alert('Jam Mode Active', 'Only the host can change queue and tracks during a Jam session.');
+      return;
+    }
+
+    setLoadingCombo(true);
+    try {
+      const promises = selectedArtists.map(artist =>
+        fetchSearch(`${artist} greatest hits popular songs`, 'youtube').catch(() => [])
+      );
+      const resultsArray = await Promise.all(promises);
+
+      const blended: any[] = [];
+      const maxLength = Math.max(...resultsArray.map(r => r.length));
+
+      for (let i = 0; i < maxLength; i += 1) {
+        for (let j = 0; j < resultsArray.length; j += 1) {
+          const track = resultsArray[j]?.[i];
+          if (track) {
+            blended.push({
+              ...track,
+              color: AVAILABLE_ARTISTS.find(a => a.name === selectedArtists[j])?.color ?? '#7B61FF'
+            });
+          }
+        }
+      }
+
+      if (blended.length === 0) {
+        Alert.alert('No Tracks Found', 'Unable to find any songs for the selected artists. Try again.');
+        return;
+      }
+
+      setQueue(blended);
+      setCurrentTrack(blended[0]);
+      navigation.navigate('Player');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Station Launch Failed', 'We encountered an error setting up your combo station.');
+    } finally {
+      setLoadingCombo(false);
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
       <View style={{ flex: 1, padding: 24 }}>
         
         {/* Header */}
-        <Text style={{ color: palette.text, fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1, marginBottom: 32 }}>
+        <Text style={{ color: palette.text, fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1, marginBottom: 20 }}>
           My Library.
         </Text>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* PLAYLISTS SECTION */}
-          <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Playlists</Text>
-
-          {playlistSource === 'local' && (
-            <View style={{ backgroundColor: '#2A1A00', borderWidth: 2, borderColor: '#FF9933', padding: 10, marginBottom: 12 }}>
-              <Text style={{ color: '#FFB366', fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-                Backend playlists table missing. Saving playlists locally until schema fix is applied.
-              </Text>
+        {/* Dynamic iOS-like Segment Switcher */}
+        <View style={{
+          flexDirection: 'row',
+          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(0,0,0,0.04)',
+          borderRadius: 24,
+          padding: 4,
+          marginBottom: 24,
+          borderWidth: 1.5,
+          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+          // @ts-ignore
+          backdropFilter: 'blur(20px)',
+        }}>
+          {[
+            { key: 'playlists', label: 'Playlists' },
+            { key: 'tracks', label: 'Saved Tracks' },
+            { key: 'artists', label: 'Artists Combo' }
+          ].map((seg) => {
+            const isActive = activeSegment === seg.key;
+            return (
               <TouchableOpacity
-                onPress={retryPlaylistBackend}
-                disabled={retryingPlaylists}
-                style={{ marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#FF9933', paddingHorizontal: 10, paddingVertical: 6 }}
+                key={seg.key}
+                onPress={() => setActiveSegment(seg.key as any)}
+                activeOpacity={0.8}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: isActive ? palette.accent : 'transparent',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 11, textTransform: 'uppercase' }}>
-                  {retryingPlaylists ? 'Checking...' : 'Retry Backend'}
-                </Text>
+                <Text style={{
+                  color: isActive ? '#0A0A0A' : palette.text,
+                  fontWeight: '900',
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                }}>{seg.label}</Text>
               </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* ── PLAYLISTS SEGMENT ── */}
+          {activeSegment === 'playlists' && (
+            <View>
+              <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Playlists</Text>
+
+              {playlistSource === 'local' && (
+                <View style={{
+                  backgroundColor: themeMode === 'dark' ? 'rgba(255, 153, 51, 0.08)' : 'rgba(255, 153, 51, 0.06)',
+                  borderWidth: 1.5,
+                  borderColor: 'rgba(255, 153, 51, 0.35)',
+                  padding: 16,
+                  marginBottom: 16,
+                  borderRadius: 14,
+                }}>
+                  <Text style={{ color: themeMode === 'dark' ? '#FFB366' : '#D46B08', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, lineHeight: 16 }}>
+                    Backend playlists table missing. Saving playlists locally until schema fix is applied.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={retryPlaylistBackend}
+                    disabled={retryingPlaylists}
+                    activeOpacity={0.8}
+                    style={[
+                      {
+                        marginTop: 12,
+                        alignSelf: 'flex-start',
+                        backgroundColor: '#FF9933',
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                      },
+                      shadow('0px 4px 10px rgba(255,153,51,0.3)', {
+                        shadowColor: '#FF9933',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 4,
+                        elevation: 3,
+                      })
+                    ]}
+                  >
+                    <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {retryingPlaylists ? 'Checking...' : 'Retry Backend'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              <View style={[
+                {
+                  flexDirection: 'row',
+                  marginBottom: 24,
+                  borderWidth: 1.5,
+                  borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                  backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  // @ts-ignore
+                  backdropFilter: 'blur(20px)',
+                },
+                shadow('0px 4px 12px rgba(0,0,0,0.08)', {
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 6,
+                  elevation: 2,
+                })
+              ]}>
+                <TextInput 
+                  style={{
+                    flex: 1,
+                    backgroundColor: 'transparent',
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    fontWeight: '600',
+                    color: palette.text,
+                    fontSize: 15,
+                    letterSpacing: 0.3,
+                  }}
+                  placeholder="NEW PLAYLIST NAME..."
+                  placeholderTextColor={palette.textMuted}
+                  value={newPlaylistTitle}
+                  onChangeText={setNewPlaylistTitle}
+                  onSubmitEditing={createPlaylist}
+                />
+                <TouchableOpacity 
+                  onPress={createPlaylist}
+                  style={{
+                    backgroundColor: palette.accentStrong,
+                    justifyContent: 'center',
+                    paddingHorizontal: 20,
+                  }}
+                >
+                  <Text style={{ color: themeMode === 'dark' ? '#0A0A0A' : '#FFF', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>CREATE</Text>
+                </TouchableOpacity>
+              </View>
+
+              {playlists.map((pl) => (
+                <View key={pl.id} style={[
+                  { 
+                    backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)', 
+                    borderWidth: 1.5, 
+                    borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', 
+                    borderRadius: 16,
+                    padding: 14, 
+                    marginBottom: 10, 
+                    flexDirection: 'row', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    // @ts-ignore
+                    backdropFilter: 'blur(20px)',
+                  },
+                  shadow('0px 4px 12px rgba(0,0,0,0.06)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 })
+                ]}>
+                  <Text style={{ color: palette.text, fontSize: 17, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>{pl.title}</Text>
+                </View>
+              ))}
+              {playlists.length === 0 && (
+                <View style={{ alignItems: 'center', marginTop: 40 }}>
+                  <Text style={{ color: palette.textMuted, fontWeight: '800', textTransform: 'uppercase', fontSize: 11 }}>No playlists created yet.</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ── SAVED TRACKS SEGMENT ── */}
+          {activeSegment === 'tracks' && (
+            <View>
+              <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Saved Tracks</Text>
+              
+              {loading ? (
+                <ActivityIndicator size="large" color={palette.accentStrong} style={{ marginTop: 24 }} />
+              ) : savedTracks.length > 0 ? (
+                <View>
+                  {savedTracks.map((item) => (
+                    <TouchableOpacity 
+                      key={item.id} 
+                      onPress={() => playSong(item)}
+                      activeOpacity={0.9} 
+                      style={[
+                        { 
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          borderWidth: 1.5, 
+                          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', 
+                          borderRadius: 16, 
+                          padding: 12, 
+                          marginBottom: 12, 
+                          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)', 
+                          // @ts-ignore
+                          backdropFilter: 'blur(20px)',
+                        },
+                        shadow(`0px 6px 16px ${item.color}25`, { shadowColor: item.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 })
+                      ]}
+                    >
+                      <SafeImage uri={item.artwork} style={{ width: 56, height: 56, borderRadius: 12, marginRight: 12 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: palette.text, fontWeight: '900', fontSize: 15, textTransform: 'uppercase' }} numberOfLines={1}>{item.title}</Text>
+                        <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, marginTop: 2 }}>{item.artist}</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => removeTrack(item.id)} style={{ marginRight: 16, padding: 4 }}>
+                        <Trash2 stroke="#FF6B6B" size={20} />
+                      </TouchableOpacity>
+                      <View style={{ width: 36, height: 36, backgroundColor: item.color, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
+                        <Play stroke="#FFF" fill="#FFF" size={14} style={{ marginLeft: 2 }} />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 40 }}>
+                  <View style={[
+                    {
+                      width: 80,
+                      height: 80,
+                      backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                      borderWidth: 1.5,
+                      borderColor: 'rgba(0, 212, 255, 0.35)',
+                      borderRadius: 40,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      alignSelf: 'center',
+                      marginBottom: 20,
+                    },
+                    shadow('0px 8px 24px rgba(0, 212, 255, 0.25)', {
+                      shadowColor: '#00D4FF',
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 10,
+                      elevation: 4,
+                    })
+                  ]}>
+                    <Play stroke="#00D4FF" fill="#00D4FF" size={28} style={{ marginLeft: 4 }} />
+                  </View>
+                  <Text style={{ color: palette.text, fontSize: 22, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -0.5, textAlign: 'center' }}>It's quiet here.</Text>
+                  <Text style={{ color: palette.textMuted, fontWeight: '700', textAlign: 'center', marginTop: 8 }}>
+                    Go to Search to find and save some tracks to your library.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* ── PREFERRED ARTISTS SEGMENT ── */}
+          {activeSegment === 'artists' && (
+            <View>
+              <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
+                Favorite Artists Combo
+              </Text>
+              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 20 }}>
+                Choose creators to compile a personalized round-robin blended combo station!
+              </Text>
+
+              {/* Combo Station Action Banner */}
+              <TouchableOpacity
+                onPress={launchArtistComboStation}
+                disabled={loadingCombo || selectedArtists.length === 0}
+                activeOpacity={0.88}
+                style={[
+                  {
+                    backgroundColor: selectedArtists.length === 0 ? palette.surface : palette.accentStrong,
+                    borderWidth: 1.5,
+                    borderColor: selectedArtists.length === 0 ? (themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : palette.accentStrong,
+                    borderRadius: 20,
+                    padding: 16,
+                    marginBottom: 24,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    // @ts-ignore
+                    backdropFilter: 'blur(20px)',
+                  },
+                  shadow(selectedArtists.length === 0 ? '0px 4px 12px rgba(0,0,0,0.1)' : `0px 8px 24px ${palette.accentStrong}40`, {
+                    shadowColor: selectedArtists.length === 0 ? '#000' : palette.accentStrong,
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: selectedArtists.length === 0 ? 0.1 : 0.3,
+                    shadowRadius: 10,
+                    elevation: selectedArtists.length === 0 ? 2 : 5,
+                  })
+                ]}
+              >
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ color: selectedArtists.length === 0 ? palette.text : (themeMode === 'dark' ? '#0A0A0A' : '#FFF'), fontWeight: '900', fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    {loadingCombo ? 'COMPILING COMBOS...' : 'LAUNCH COMBO STATION 🎚️'}
+                  </Text>
+                  <Text style={{ color: selectedArtists.length === 0 ? palette.textSubtle : (themeMode === 'dark' ? 'rgba(10,10,10,0.72)' : 'rgba(255,255,255,0.75)'), fontWeight: '700', fontSize: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    {selectedArtists.length === 0 
+                      ? 'SELECT AT LEAST ONE CREATOR BELOW' 
+                      : `BLENDING HITS FROM ${selectedArtists.length} FAVORITE CREATORS`
+                    }
+                  </Text>
+                </View>
+                <View style={{ width: 44, height: 44, backgroundColor: selectedArtists.length === 0 ? (themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)') : (themeMode === 'dark' ? '#0A0A0A' : '#FFF'), borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
+                  {loadingCombo ? (
+                    <ActivityIndicator size="small" color={selectedArtists.length === 0 ? palette.text : palette.accentStrong} />
+                  ) : (
+                    <Users stroke={selectedArtists.length === 0 ? palette.textSubtle : (themeMode === 'dark' ? palette.accentStrong : '#000')} size={18} />
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
+                {AVAILABLE_ARTISTS.map((artist) => {
+                  const isSelected = selectedArtists.includes(artist.name);
+                  return (
+                    <TouchableOpacity
+                      key={artist.name}
+                      onPress={() => toggleArtist(artist.name)}
+                      activeOpacity={0.9}
+                      style={[
+                        {
+                          width: '47%',
+                          borderRadius: 24,
+                          borderWidth: 1.5,
+                          borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.55)' : 'rgba(255,255,255,0.75)',
+                          padding: 16,
+                          alignItems: 'center',
+                          marginBottom: 16,
+                          // @ts-ignore
+                          backdropFilter: 'blur(20px)',
+                        },
+                        shadow(isSelected ? `0px 8px 24px ${palette.accentStrong}25` : '0px 4px 12px rgba(0,0,0,0.08)', {
+                          shadowColor: isSelected ? palette.accentStrong : '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: isSelected ? 0.25 : 0.08,
+                          shadowRadius: 8,
+                          elevation: 3,
+                        })
+                      ]}
+                    >
+                      <View style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 40,
+                        borderWidth: 1.5,
+                        borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
+                        overflow: 'hidden',
+                        marginBottom: 12,
+                      }}>
+                        <SafeImage uri={artist.avatar} style={{ width: '100%', height: '100%' }} />
+                      </View>
+                      
+                      <Text style={{ color: palette.text, fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={1}>
+                        {artist.name}
+                      </Text>
+
+                      <View style={{
+                        marginTop: 8,
+                        backgroundColor: isSelected ? palette.accentStrong : 'transparent',
+                        borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'),
+                        borderWidth: 1,
+                        borderRadius: 12,
+                        paddingHorizontal: 10,
+                        paddingVertical: 3,
+                      }}>
+                        <Text style={{
+                          color: isSelected ? '#0A0A0A' : palette.textSubtle,
+                          fontWeight: '800',
+                          fontSize: 9,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.5,
+                        }}>{isSelected ? 'SELECTED' : 'SELECT'}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           )}
           
-          <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-            <TextInput 
-              style={{ flex: 1, backgroundColor: '#FFF', paddingHorizontal: 16, paddingVertical: 12, fontWeight: 'bold', color: '#0A0A0A', fontSize: 16 }}
-              placeholder="NEW PLAYLIST NAME..."
-              placeholderTextColor="rgba(0,0,0,0.4)"
-              value={newPlaylistTitle}
-              onChangeText={setNewPlaylistTitle}
-              onSubmitEditing={createPlaylist}
-            />
-            <TouchableOpacity 
-              onPress={createPlaylist}
-              style={{ backgroundColor: '#00FF85', justifyContent: 'center', paddingHorizontal: 24, borderLeftWidth: 4, borderLeftColor: '#0A0A0A' }}>
-              <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 16 }}>CREATE</Text>
-            </TouchableOpacity>
-          </View>
-
-          {playlists.map((pl) => (
-            <View key={pl.id} style={{ backgroundColor: palette.surface, borderWidth: 2, borderColor: palette.border, padding: 16, marginBottom: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ color: palette.text, fontSize: 18, fontWeight: '800' }}>{pl.title}</Text>
-            </View>
-          ))}
-
-          <View style={{ height: 40 }} />
-
-          {/* SAVED TRACKS SECTION */}
-          <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Saved Tracks</Text>
-          {loading ? (
-            <ActivityIndicator size="large" color={palette.accentStrong} className="mt-8" />
-          ) : savedTracks.length > 0 ? (
-            <View>
-              {savedTracks.map((item) => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  onPress={() => playSong(item)}
-                  activeOpacity={0.9} 
-                  style={{ backgroundColor: item.color }}
-                  className="flex-row items-center border-4 border-white p-4 mb-4 shadow-[4px_4px_0px_rgba(255,255,255,1)]"
-                >
-                  <Image source={{ uri: item.artwork }} className="w-16 h-16 border-2 border-deepBlack mr-4" />
-                  <View className="flex-1">
-                    <Text className="text-deepBlack font-black text-lg uppercase" numberOfLines={1}>{item.title}</Text>
-                    <Text className="text-deepBlack font-bold text-md mt-1">{item.artist}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => removeTrack(item.id)} className="mr-3">
-                    <Trash2 stroke="#0A0A0A" size={24} />
-                  </TouchableOpacity>
-                  <View className="w-10 h-10 bg-deepBlack rounded-full items-center justify-center">
-                    <Play stroke="#FFF" fill="#FFF" size={16} style={{ marginLeft: 4 }} />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View className="items-center justify-center mt-20">
-              <View className="w-24 h-24 bg-electricBlue border-4 border-white rounded-full items-center justify-center shadow-[4px_4px_0px_rgba(255,255,255,1)] mb-6">
-                <Play stroke="#FFF" fill="#FFF" size={40} style={{ marginLeft: 8 }} />
-              </View>
-              <Text style={{ color: palette.text, fontSize: 24, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -0.5 }}>It's quiet here.</Text>
-              <Text style={{ color: palette.textMuted, fontWeight: '700', textAlign: 'center', marginTop: 8 }}>
-                Go to Search to find and save some tracks to your library.
-              </Text>
-            </View>
-          )}
+          <View style={{ height: 200 }} />
         </ScrollView>
 
       </View>

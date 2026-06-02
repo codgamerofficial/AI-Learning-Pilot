@@ -3,7 +3,11 @@ import {
   View, Text, SafeAreaView, ScrollView,
   TouchableOpacity, Alert, Platform, TextInput
 } from 'react-native';
-import { LogOut, Music, Clock, Trash2, RotateCcw, Sun, Moon } from 'lucide-react-native';
+import Animated, {
+  useSharedValue, useAnimatedStyle, withRepeat, withTiming,
+  withSequence, Easing, FadeInDown, FadeInRight,
+} from 'react-native-reanimated';
+import { LogOut, Music, Clock, Trash2, RotateCcw, Sun, Moon, Shield, Palette, Headphones, Zap } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
 import { useRecentStore } from '../store/recentStore';
@@ -11,6 +15,7 @@ import { clearCache } from '../lib/cache';
 import { resetMarketTelemetry } from '../lib/marketTelemetry';
 import { shadow } from '../lib/shadow';
 import { usePreferencesStore } from '../store/preferencesStore';
+import { getThemePalette } from '../lib/themePalette';
 
 export default function ProfileScreen() {
   const { user } = useAuthStore();
@@ -33,6 +38,57 @@ export default function ProfileScreen() {
     ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : '—';
 
+  const palette = getThemePalette(themeMode);
+  const isDark = themeMode === 'dark';
+  const accentColor = isDark ? '#00FF85' : '#0A84FF';
+
+  // Avatar ring animation
+  const ringAnim = useSharedValue(0);
+  useEffect(() => {
+    ringAnim.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedRingStyle = useAnimatedStyle(() => ({
+    borderColor: `rgba(${isDark ? '0,255,133' : '10,132,255'}, ${0.3 + ringAnim.value * 0.5})`,
+    transform: [{ scale: 1 + ringAnim.value * 0.03 }],
+  }));
+
+  // Compute listening stats
+  const totalTracks = recentTracks.length;
+  const uniqueArtists = new Set(recentTracks.map((t) => t.artist)).size;
+
+  // Top genres mock from play data
+  const genreMap: Record<string, number> = {};
+  recentTracks.forEach((t) => {
+    const genre = /(bollywood|hindi|indian)/i.test(`${t.title} ${t.artist}`) ? 'Bollywood'
+      : /(pop|party)/i.test(`${t.title}`) ? 'Pop'
+      : /(rock|metal)/i.test(`${t.title}`) ? 'Rock'
+      : /(lofi|chill|study)/i.test(`${t.title}`) ? 'Lo-Fi'
+      : /(electronic|edm|dance)/i.test(`${t.title}`) ? 'Electronic'
+      : 'Other';
+    genreMap[genre] = (genreMap[genre] || 0) + 1;
+  });
+  const topGenres = Object.entries(genreMap)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 4);
+  const maxGenreCount = topGenres.length > 0 ? topGenres[0][1] : 1;
+
+  const genreColors: Record<string, string> = {
+    Bollywood: '#FF9933',
+    Pop: '#FF4ECD',
+    Rock: '#FF6B6B',
+    'Lo-Fi': '#7B61FF',
+    Electronic: '#00D4FF',
+    Other: '#6B7280',
+  };
+
   const handleSaveProfile = () => {
     setDisplayName(draftDisplayName);
     Alert.alert('Profile Updated', draftDisplayName.trim() === ''
@@ -52,7 +108,6 @@ export default function ProfileScreen() {
           style: 'destructive',
           onPress: async () => {
             await supabase.auth.signOut();
-            // authStore onAuthStateChange fires → user = null → Auth screen shown
           },
         },
       ]
@@ -115,193 +170,347 @@ export default function ProfileScreen() {
     );
   };
 
-  const StatCard = ({ icon, label, value, color }: {
-    icon: React.ReactNode; label: string; value: string; color: string;
+  // Glass card wrapper helper
+  const GlassCard = ({ children, style, delay = 0 }: { children: React.ReactNode; style?: any; delay?: number }) => (
+    <Animated.View
+      entering={FadeInDown.delay(delay).springify().damping(18)}
+      style={[
+        {
+          borderRadius: 20,
+          borderWidth: 1.5,
+          borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+          backgroundColor: isDark ? 'rgba(28,28,30,0.6)' : 'rgba(255,255,255,0.75)',
+          padding: 20,
+          marginBottom: 16,
+          // @ts-ignore
+          backdropFilter: 'blur(24px) saturate(160%)',
+        },
+        shadow('0 4px 20px rgba(0,0,0,0.1)', {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowRadius: 16,
+          elevation: 8,
+        }),
+        style,
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+
+  const ActionButton = ({ icon, label, onPress, color, delay = 0 }: {
+    icon: React.ReactNode; label: string; onPress: () => void; color: string; delay?: number;
   }) => (
-    <View style={[
-      { flex: 1, backgroundColor: color, borderWidth: 4, borderColor: '#0A0A0A', padding: 16, alignItems: 'center' },
-      shadow('4px 4px 0px rgba(255,255,255,1)', { shadowColor: '#FFF', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0 }),
-    ]}>
-      {icon}
-      <Text style={{ color: '#0A0A0A', fontSize: 28, fontWeight: '900', marginTop: 8 }}>{value}</Text>
-      <Text style={{ color: '#0A0A0A', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, opacity: 0.7 }}>{label}</Text>
-    </View>
+    <Animated.View entering={FadeInRight.delay(delay).springify()}>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.75}
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            backgroundColor: isDark ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
+            padding: 16,
+            marginBottom: 10,
+            // @ts-ignore
+            backdropFilter: 'blur(20px)',
+          },
+          shadow('0 2px 12px rgba(0,0,0,0.06)', {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.06,
+            shadowRadius: 8,
+            elevation: 4,
+          }),
+        ]}
+      >
+        <View style={{
+          width: 40, height: 40, borderRadius: 12,
+          backgroundColor: `${color}18`,
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          {icon}
+        </View>
+        <Text style={{
+          color: palette.text,
+          fontWeight: '700',
+          fontSize: 14,
+          marginLeft: 14,
+          flex: 1,
+          letterSpacing: 0.3,
+        }}>
+          {label}
+        </Text>
+        <Text style={{ color: palette.textMuted, fontSize: 16 }}>›</Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0A' }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 180 }} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
-        <Text style={{ color: '#FFF', fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1, marginBottom: 24 }}>
-          Profile.
-        </Text>
-
-        {/* Avatar + Email */}
-        <View style={[
-          { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderWidth: 4, borderColor: '#7B61FF', padding: 16, marginBottom: 24 },
-          shadow('6px 6px 0px rgba(123,97,255,1)', { shadowColor: '#7B61FF', shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, shadowRadius: 0 }),
-        ]}>
-          <View style={{
-            width: 64, height: 64, borderRadius: 32,
-            backgroundColor: '#7B61FF', borderWidth: 4, borderColor: '#FFF',
-            alignItems: 'center', justifyContent: 'center', marginRight: 16,
+        <Animated.View entering={FadeInDown.delay(50).springify()}>
+          <Text style={{
+            color: palette.text,
+            fontSize: 32,
+            fontWeight: '800',
+            letterSpacing: -0.5,
+            marginBottom: 24,
           }}>
-            <Text style={{ color: '#FFF', fontSize: 24, fontWeight: '900' }}>{initials}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 16, textTransform: 'uppercase' }} numberOfLines={1}>
+            Profile
+          </Text>
+        </Animated.View>
+
+        {/* Avatar + User Info Card */}
+        <GlassCard delay={100}>
+          <View style={{ alignItems: 'center' }}>
+            <Animated.View style={[
+              {
+                width: 88, height: 88, borderRadius: 44,
+                borderWidth: 3,
+                alignItems: 'center', justifyContent: 'center',
+                marginBottom: 16,
+              },
+              animatedRingStyle,
+            ]}>
+              <View style={{
+                width: 76, height: 76, borderRadius: 38,
+                backgroundColor: accentColor,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '900' }}>{initials}</Text>
+              </View>
+            </Animated.View>
+
+            <Text style={{
+              color: palette.text,
+              fontWeight: '800',
+              fontSize: 20,
+              letterSpacing: 0.3,
+            }} numberOfLines={1}>
               {profileLabel}
             </Text>
-            <Text style={{ color: '#FFF', opacity: 0.65, fontWeight: '700', fontSize: 11, marginTop: 4 }} numberOfLines={1}>
+            <Text style={{
+              color: palette.textSubtle,
+              fontWeight: '600',
+              fontSize: 12,
+              marginTop: 4,
+              opacity: 0.7,
+            }} numberOfLines={1}>
               {email}
             </Text>
-            <Text style={{ color: '#FFF', opacity: 0.5, fontWeight: '700', fontSize: 12, textTransform: 'uppercase', letterSpacing: 2, marginTop: 4 }}>
-              Member since {joinedDate}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={{ color: '#00D4FF', fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12 }}>
-          Profile Settings
-        </Text>
-        <View style={{ flexDirection: 'row', marginBottom: 24 }}>
-          <TextInput
-            style={{
-              flex: 1,
-              backgroundColor: '#FFFFFF',
-              borderWidth: 4,
-              borderColor: '#00D4FF',
-              color: '#0A0A0A',
-              fontWeight: '800',
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: 8,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              borderRadius: 12,
               paddingHorizontal: 12,
-              paddingVertical: 10,
-            }}
-            placeholder="Display Name"
-            placeholderTextColor="rgba(10,10,10,0.4)"
-            value={draftDisplayName}
-            onChangeText={setDraftDisplayName}
-            returnKeyType="done"
-            onSubmitEditing={handleSaveProfile}
-          />
-          <TouchableOpacity
-            onPress={handleSaveProfile}
-            activeOpacity={0.85}
-            style={{
-              marginLeft: 10,
-              backgroundColor: '#00FF85',
-              borderWidth: 4,
-              borderColor: '#0A0A0A',
-              justifyContent: 'center',
-              paddingHorizontal: 16,
-            }}
-          >
-            <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
-              Save
-            </Text>
-          </TouchableOpacity>
-        </View>
+              paddingVertical: 4,
+            }}>
+              <Shield stroke={palette.textMuted} size={12} />
+              <Text style={{
+                color: palette.textMuted,
+                fontWeight: '600',
+                fontSize: 10,
+                marginLeft: 6,
+                letterSpacing: 0.5,
+              }}>
+                Member since {joinedDate}
+              </Text>
+            </View>
+          </View>
+        </GlassCard>
 
-        {/* Stats row */}
-        <Text style={{ color: '#00FF85', fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12 }}>
-          Your Stats
+        {/* Display Name Editor */}
+        <GlassCard delay={150}>
+          <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
+            Display Name
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TextInput
+              style={{
+                flex: 1,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                borderWidth: 1.5,
+                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                borderRadius: 14,
+                color: palette.text,
+                fontWeight: '700',
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                fontSize: 14,
+              }}
+              placeholder="Enter display name"
+              placeholderTextColor={palette.textMuted}
+              value={draftDisplayName}
+              onChangeText={setDraftDisplayName}
+              returnKeyType="done"
+              onSubmitEditing={handleSaveProfile}
+            />
+            <TouchableOpacity
+              onPress={handleSaveProfile}
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: accentColor,
+                borderRadius: 14,
+                justifyContent: 'center',
+                paddingHorizontal: 20,
+              }}
+            >
+              <Text style={{ color: isDark ? '#0A0A0A' : '#FFF', fontWeight: '800', fontSize: 13 }}>
+                Save
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </GlassCard>
+
+        {/* Listening Stats */}
+        <GlassCard delay={200}>
+          <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
+            Listening Stats
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            {[
+              { icon: <Headphones stroke={accentColor} size={20} />, value: String(totalTracks), label: 'Tracks Played', bg: accentColor },
+              { icon: <Music stroke="#FF4ECD" size={20} />, value: String(uniqueArtists), label: 'Artists', bg: '#FF4ECD' },
+              { icon: <Zap stroke="#FFD700" size={20} />, value: totalTracks > 0 ? `${Math.round((totalTracks / 20) * 100)}%` : '0%', label: 'History Full', bg: '#FFD700' },
+            ].map((stat, i) => (
+              <View key={i} style={{
+                flex: 1,
+                alignItems: 'center',
+                borderRadius: 16,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                paddingVertical: 16,
+                paddingHorizontal: 8,
+              }}>
+                <View style={{
+                  width: 44, height: 44, borderRadius: 14,
+                  backgroundColor: `${stat.bg}15`,
+                  alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 8,
+                }}>
+                  {stat.icon}
+                </View>
+                <Text style={{ color: palette.text, fontWeight: '900', fontSize: 20 }}>{stat.value}</Text>
+                <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2, textAlign: 'center' }}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+        </GlassCard>
+
+        {/* Music DNA */}
+        {topGenres.length > 0 && (
+          <GlassCard delay={250}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+              <Palette stroke={accentColor} size={16} />
+              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginLeft: 8 }}>
+                Your Music DNA
+              </Text>
+            </View>
+            {topGenres.map(([genre, count], i) => {
+              const barWidth = `${Math.round((count / maxGenreCount) * 100)}%` as `${number}%`;
+              const barColor = genreColors[genre] ?? '#6B7280';
+              return (
+                <View key={genre} style={{ marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ color: palette.text, fontWeight: '700', fontSize: 12 }}>{genre}</Text>
+                    <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 11 }}>{count} plays</Text>
+                  </View>
+                  <View style={{
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+                    overflow: 'hidden',
+                  }}>
+                    <View style={{
+                      height: '100%',
+                      width: barWidth,
+                      borderRadius: 4,
+                      backgroundColor: barColor,
+                    }} />
+                  </View>
+                </View>
+              );
+            })}
+          </GlassCard>
+        )}
+
+        {/* Account Actions */}
+        <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12, marginTop: 8 }}>
+          Settings
         </Text>
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 28 }}>
-          <StatCard
-            icon={<Clock stroke="#0A0A0A" size={24} />}
-            label="Recently Played"
-            value={String(recentTracks.length)}
-            color="#00FF85"
-          />
-          <StatCard
-            icon={<Music stroke="#0A0A0A" size={24} />}
-            label="In History"
-            value={recentTracks.length > 0 ? `${recentTracks.length}/20` : '0'}
-            color="#00D4FF"
-          />
-        </View>
 
-        {/* Actions */}
-        <Text style={{ color: '#7B61FF', fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 12 }}>
-          Account
-        </Text>
-
-        <TouchableOpacity
+        <ActionButton
+          icon={isDark ? <Sun stroke="#FFD700" size={20} /> : <Moon stroke="#7B61FF" size={20} />}
+          label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           onPress={toggleTheme}
-          activeOpacity={0.85}
-          style={[
-            { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderWidth: 4, borderColor: '#FFD700', padding: 16, marginBottom: 12 },
-            shadow('4px 4px 0px rgba(255,215,0,1)', { shadowColor: '#FFD700', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0 }),
-          ]}
-        >
-          {themeMode === 'dark'
-            ? <Sun stroke="#FFD700" size={22} />
-            : <Moon stroke="#FFD700" size={22} />
-          }
-          <Text style={{ color: '#FFD700', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, marginLeft: 12, flex: 1 }}>
-            {themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          </Text>
-        </TouchableOpacity>
+          color={isDark ? '#FFD700' : '#7B61FF'}
+          delay={300}
+        />
 
-        {/* Clear history */}
-        <TouchableOpacity
+        <ActionButton
+          icon={<Clock stroke={palette.textSubtle} size={20} />}
+          label="Clear Play History"
           onPress={handleClearHistory}
-          activeOpacity={0.85}
-          style={[
-            { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderWidth: 4, borderColor: '#FFF', padding: 16, marginBottom: 12 },
-            shadow('4px 4px 0px rgba(255,255,255,1)', { shadowColor: '#FFF', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0 }),
-          ]}
-        >
-          <Clock stroke="#FFF" size={22} />
-          <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, marginLeft: 12, flex: 1 }}>
-            Clear Play History
-          </Text>
-          <Trash2 stroke="#FFF" size={18} />
-        </TouchableOpacity>
+          color={palette.textSubtle}
+          delay={350}
+        />
 
-        {/* Clear cache */}
-        <TouchableOpacity
+        <ActionButton
+          icon={<Trash2 stroke="#00D4FF" size={20} />}
+          label="Clear API Cache"
           onPress={handleClearCache}
-          activeOpacity={0.85}
-          style={[
-            { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderWidth: 4, borderColor: '#00D4FF', padding: 16, marginBottom: 12 },
-            shadow('4px 4px 0px rgba(0,212,255,1)', { shadowColor: '#00D4FF', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0 }),
-          ]}
-        >
-          <Trash2 stroke="#00D4FF" size={22} />
-          <Text style={{ color: '#00D4FF', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, marginLeft: 12, flex: 1 }}>
-            Clear API Cache
-          </Text>
-        </TouchableOpacity>
+          color="#00D4FF"
+          delay={400}
+        />
 
-        <TouchableOpacity
+        <ActionButton
+          icon={<RotateCcw stroke="#FF9933" size={20} />}
+          label="Reset Market Telemetry"
           onPress={handleResetTelemetry}
-          activeOpacity={0.85}
-          style={[
-            { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderWidth: 4, borderColor: '#FF9933', padding: 16, marginBottom: 12 },
-            shadow('4px 4px 0px rgba(255,153,51,1)', { shadowColor: '#FF9933', shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0 }),
-          ]}
-        >
-          <RotateCcw stroke="#FF9933" size={22} />
-          <Text style={{ color: '#FF9933', fontWeight: '900', fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, marginLeft: 12, flex: 1 }}>
-            Reset Market Telemetry
-          </Text>
-        </TouchableOpacity>
+          color="#FF9933"
+          delay={450}
+        />
 
         {/* Sign Out */}
-        <TouchableOpacity
-          onPress={handleSignOut}
-          activeOpacity={0.85}
-          style={[
-            { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FF6B6B', borderWidth: 4, borderColor: '#0A0A0A', padding: 18, marginTop: 8 },
-            shadow('6px 6px 0px rgba(10,10,10,1)', { shadowColor: '#0A0A0A', shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, shadowRadius: 0 }),
-          ]}
-        >
-          <LogOut stroke="#FFF" size={22} />
-          <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 18, textTransform: 'uppercase', letterSpacing: 2, marginLeft: 12 }}>
-            Sign Out
-          </Text>
-        </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(500).springify()}>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            activeOpacity={0.8}
+            style={[
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 16,
+                backgroundColor: isDark ? 'rgba(255,107,107,0.15)' : 'rgba(255,107,107,0.1)',
+                borderWidth: 1.5,
+                borderColor: isDark ? 'rgba(255,107,107,0.2)' : 'rgba(255,107,107,0.15)',
+                padding: 18,
+                marginTop: 8,
+              },
+              shadow('0 4px 16px rgba(255,107,107,0.15)', {
+                shadowColor: '#FF6B6B',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 6,
+              }),
+            ]}
+          >
+            <LogOut stroke="#FF6B6B" size={20} />
+            <Text style={{ color: '#FF6B6B', fontWeight: '800', fontSize: 15, letterSpacing: 0.5, marginLeft: 10 }}>
+              Sign Out
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
 
       </ScrollView>
     </SafeAreaView>

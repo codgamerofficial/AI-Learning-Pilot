@@ -8,7 +8,7 @@ type BrandLogoProps = {
 export default function BrandLogo({ style }: BrandLogoProps) {
   return (
     <Image
-      source={require('../../assets/icon.png')}
+      source={require('../../assets/brand-wordmark.png')}
       resizeMode="contain"
       style={style}
     />
