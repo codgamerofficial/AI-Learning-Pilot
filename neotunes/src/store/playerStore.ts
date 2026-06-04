@@ -75,6 +75,10 @@ interface PlayerState {
   gaplessEnabled: boolean;
   setCrossfadeSeconds: (sec: number) => void;
   setGaplessEnabled: (enabled: boolean) => void;
+
+  // Errors / Notifications
+  playbackError: string | null;
+  setPlaybackError: (err: string | null) => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -88,6 +92,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   _seekFn: null,
   crossfadeSeconds: 3,
   gaplessEnabled: true,
+  playbackError: null,
 
   setCurrentTrack: async (track) => {
     const nextTrack = { ...track };
@@ -246,4 +251,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   // Preferences
   setCrossfadeSeconds: (crossfadeSeconds) => set({ crossfadeSeconds }),
   setGaplessEnabled: (gaplessEnabled) => set({ gaplessEnabled }),
+
+  setPlaybackError: (playbackError) => {
+    set({ playbackError });
+    if (playbackError) {
+      setTimeout(() => {
+        if (get().playbackError === playbackError) {
+          set({ playbackError: null });
+        }
+      }, 4000);
+    }
+  },
 }));

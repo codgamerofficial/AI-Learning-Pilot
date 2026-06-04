@@ -1,6 +1,6 @@
 import './global.css';
 import React from 'react';
-import { Text, ActivityIndicator, View, LogBox, Platform, Alert } from 'react-native';
+import { Text, ActivityIndicator, View, LogBox, Platform, Alert, TouchableOpacity } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -99,11 +99,8 @@ function GlobalAudioEngine() {
 
     if (state === 'error') {
       pause();
-      if (Platform.OS === 'web') {
-        alert('Could not resolve or play this track. Skipping to the next track...');
-      } else {
-        Alert.alert('Playback Error', 'Could not load or resolve audio for this track. Skipping...');
-      }
+      const trackTitle = usePlayerStore.getState().currentTrack?.title || 'this track';
+      usePlayerStore.getState().setPlaybackError(`Unable to play "${trackTitle}". Skipping...`);
       nextTrack();
       return;
     }
@@ -346,6 +343,70 @@ function MainTabs() {
   );
 }
 
+function PlaybackErrorToast() {
+  const playbackError = usePlayerStore((state) => state.playbackError);
+  const setPlaybackError = usePlayerStore((state) => state.setPlaybackError);
+  const themeMode = usePreferencesStore((state) => state.themeMode);
+  const isDark = themeMode === 'dark';
+
+  if (!playbackError) return null;
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={() => setPlaybackError(null)}
+      style={{
+        position: 'absolute',
+        top: Platform.OS === 'web' ? 24 : 54,
+        left: 20,
+        right: 20,
+        backgroundColor: isDark ? 'rgba(255, 107, 107, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+        borderColor: isDark ? '#FF6B6B' : '#EF4444',
+        borderWidth: 1.5,
+        borderRadius: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        zIndex: 99999,
+        shadowColor: '#FF6B6B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: isDark ? 0.3 : 0.1,
+        shadowRadius: 10,
+        // @ts-ignore
+        backdropFilter: 'blur(20px)',
+        // @ts-ignore
+        boxShadow: isDark ? '0 4px 20px rgba(255, 107, 107, 0.25)' : '0 4px 16px rgba(239, 68, 68, 0.15)',
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 12 }}>
+        <Text style={{ fontSize: 16, marginRight: 10 }}>⚠️</Text>
+        <Text style={{
+          color: isDark ? '#FFF' : '#1F2937',
+          fontWeight: '600',
+          fontSize: 13,
+          fontFamily: Platform.select({
+            ios: 'Helvetica Neue',
+            android: 'sans-serif-medium',
+            web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+          }),
+          flexShrink: 1
+        }}>
+          {playbackError}
+        </Text>
+      </View>
+      <Text style={{
+        color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)',
+        fontSize: 11,
+        fontWeight: 'bold'
+      }}>
+        DISMISS
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export default function App() {
   const { user, loading, initialize } = useAuthStore();
   const themeMode = usePreferencesStore((state) => state.themeMode);
@@ -387,6 +448,9 @@ export default function App() {
 
   return (
     <View style={{ flex: 1, backgroundColor: shellBackground }}>
+      {/* Non-blocking Toast Banner */}
+      <PlaybackErrorToast />
+
       {/* Global audio engine — always mounted when a track is selected.
           Placing it outside NavigationContainer means it NEVER unmounts
           when screens change, so audio plays from any screen. */}
