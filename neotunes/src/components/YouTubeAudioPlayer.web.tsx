@@ -64,6 +64,101 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
   const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fallbackTimeRef = useRef(0);
 
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const oscsRef = useRef<OscillatorNode[]>([]);
+  const synthGainRef = useRef<GainNode | null>(null);
+
+  const startSynthesizer = () => {
+    try {
+      if (typeof window === 'undefined') return;
+
+      if (!audioCtxRef.current) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        audioCtxRef.current = new AudioContextClass();
+      }
+
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
+
+      // Master gain node
+      const masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0, ctx.currentTime);
+      masterGain.connect(ctx.destination);
+      synthGainRef.current = masterGain;
+
+      // Smooth volume fade-in
+      masterGain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 1.2);
+
+      // Tuned E-Major triad ambient chord (E3, G#3, B3, E4)
+      const freqs = [164.81, 207.65, 246.94, 329.63];
+      const oscillators: OscillatorNode[] = [];
+
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const oscGain = ctx.createGain();
+
+        // Mix triangle and sine wave types
+        osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+        // Detune voices for thick analog chorus feel
+        osc.detune.setValueAtTime((Math.random() - 0.5) * 8, ctx.currentTime);
+
+        // Individual volume
+        const voiceVol = idx === 0 ? 0.35 : idx === 1 ? 0.3 : idx === 2 ? 0.25 : 0.15;
+        oscGain.gain.setValueAtTime(voiceVol, ctx.currentTime);
+
+        // Soft lowpass filter to make it mellow and warm
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.Q.setValueAtTime(1.2, ctx.currentTime);
+        filter.frequency.setValueAtTime(500, ctx.currentTime);
+
+        osc.connect(filter);
+        filter.connect(oscGain);
+        oscGain.connect(masterGain);
+
+        osc.start();
+        oscillators.push(osc);
+      });
+
+      oscsRef.current = oscillators;
+    } catch (err) {
+      console.warn('[WebAudioPlayer] Synthesizer failed to start:', err);
+    }
+  };
+
+  const stopSynthesizer = () => {
+    const masterGain = synthGainRef.current;
+    const ctx = audioCtxRef.current;
+
+    if (masterGain && ctx) {
+      try {
+        masterGain.gain.cancelScheduledValues(ctx.currentTime);
+        masterGain.gain.setValueAtTime(masterGain.gain.value, ctx.currentTime);
+        masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+      } catch {}
+    }
+
+    const currentOscs = oscsRef.current;
+    oscsRef.current = [];
+    synthGainRef.current = null;
+
+    setTimeout(() => {
+      currentOscs.forEach(osc => {
+        try { osc.stop(); } catch {}
+      });
+      try {
+        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+          void audioCtxRef.current.close();
+          audioCtxRef.current = null;
+        }
+      } catch {}
+    }, 350);
+  };
+
   const fadeIn = (audio: HTMLAudioElement) => {
     if (fadeIntervalRef.current) {
       clearInterval(fadeIntervalRef.current);
@@ -220,6 +315,7 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
         console.warn('[WebAudioPlayer] Autoplay blocked or failed:', err);
       });
       if (isFallback) {
+        startSynthesizer();
         startFallbackTimer();
       }
     }
@@ -230,6 +326,9 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
         fadeIntervalRef.current = null;
       }
       stopFallbackTimer();
+      if (isFallback) {
+        stopSynthesizer();
+      }
       audio.pause();
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
@@ -258,6 +357,7 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
         console.warn('[WebAudioPlayer] play() execution blocked or failed:', err);
       });
       if (isFallback) {
+        startSynthesizer();
         if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
         fallbackIntervalRef.current = setInterval(() => {
           fallbackTimeRef.current += 1;
@@ -272,9 +372,12 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
       }
     } else {
       fadeOutAndPause(audio);
-      if (isFallback && fallbackIntervalRef.current) {
-        clearInterval(fallbackIntervalRef.current);
-        fallbackIntervalRef.current = null;
+      if (isFallback) {
+        stopSynthesizer();
+        if (fallbackIntervalRef.current) {
+          clearInterval(fallbackIntervalRef.current);
+          fallbackIntervalRef.current = null;
+        }
       }
     }
   }, [play]);
