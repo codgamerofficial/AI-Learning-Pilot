@@ -1,6 +1,6 @@
 import './global.css';
 import React from 'react';
-import { Text, ActivityIndicator, View, LogBox, Platform } from 'react-native';
+import { Text, ActivityIndicator, View, LogBox, Platform, Alert } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -93,6 +93,17 @@ function GlobalAudioEngine() {
 
   const handleStateChange = React.useCallback((state: string) => {
     if (state === 'ended') {
+      nextTrack();
+      return;
+    }
+
+    if (state === 'error') {
+      pause();
+      if (Platform.OS === 'web') {
+        alert('Could not resolve or play this track. Skipping to the next track...');
+      } else {
+        Alert.alert('Playback Error', 'Could not load or resolve audio for this track. Skipping...');
+      }
       nextTrack();
       return;
     }

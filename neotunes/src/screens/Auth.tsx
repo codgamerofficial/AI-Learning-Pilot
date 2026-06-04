@@ -133,18 +133,29 @@ export default function AuthScreen() {
 
           {/* Google Sign In Button */}
           {loading ? (
-            <View style={{ height: 80, alignItems: 'center', justifyContent: 'center' }}>
-              <ActivityIndicator size="large" color="#00FF85" />
-              <Text style={{
-                color: 'rgba(255,255,255,0.6)',
-                fontWeight: '700',
-                textTransform: 'uppercase',
-                fontSize: 11,
-                letterSpacing: 1.2,
-                marginTop: 12,
+            <View style={{ paddingVertical: 10, alignItems: 'stretch' }}>
+              <ActivityIndicator size="large" color="#00FF85" style={{ marginBottom: 16 }} />
+              <View style={{
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                borderRadius: 12,
+                padding: 14,
+                borderWidth: 1.2,
+                borderColor: 'rgba(0,255,133,0.3)',
+                alignSelf: 'stretch',
               }}>
-                Connecting to Google...
-              </Text>
+                <Text style={{ color: '#00FF85', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 4 }}>
+                  $ neotunes --init --agent-mode
+                </Text>
+                <Text style={{ color: '#00D4FF', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 4 }}>
+                  &gt; CONNECTING SECURE NEURAL HANDSHAKE... OK
+                </Text>
+                <Text style={{ color: '#7B61FF', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 4 }}>
+                  &gt; SYNCHRONIZING SUPABASE PLAYLIST DATABASES... OK
+                </Text>
+                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5 }}>
+                  &gt; REDIRECTING USER INTEGRATION PORTAL...
+                </Text>
+              </View>
             </View>
           ) : (
             <TouchableOpacity

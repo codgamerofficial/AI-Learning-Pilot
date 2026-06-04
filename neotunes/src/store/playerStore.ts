@@ -69,6 +69,12 @@ interface PlayerState {
   setDuration: (d: number) => void;
   seekTo: (seconds: number) => void;
   registerSeekFn: (fn: (seconds: number) => void) => void;
+
+  // Preferences
+  crossfadeSeconds: number;
+  gaplessEnabled: boolean;
+  setCrossfadeSeconds: (sec: number) => void;
+  setGaplessEnabled: (enabled: boolean) => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -80,6 +86,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentTime: 0,
   duration: 0,
   _seekFn: null,
+  crossfadeSeconds: 3,
+  gaplessEnabled: true,
 
   setCurrentTrack: async (track) => {
     const nextTrack = { ...track };
@@ -234,4 +242,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ currentTime: seconds });
   },
   registerSeekFn: (fn) => set({ _seekFn: fn }),
+
+  // Preferences
+  setCrossfadeSeconds: (crossfadeSeconds) => set({ crossfadeSeconds }),
+  setGaplessEnabled: (gaplessEnabled) => set({ gaplessEnabled }),
 }));

@@ -271,16 +271,19 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
           <View style={[
             {
               flexDirection: 'row', alignItems: 'center',
-              backgroundColor: isDark ? 'rgba(28,28,30,0.6)' : 'rgba(0,0,0,0.04)',
-              borderWidth: 1.5,
-              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+              backgroundColor: isDark ? 'rgba(12, 12, 14, 0.7)' : 'rgba(255, 255, 255, 0.75)',
+              borderWidth: 1.2,
+              borderColor: isDark ? 'rgba(0, 255, 133, 0.35)' : 'rgba(10, 132, 255, 0.35)',
               borderRadius: 16,
-              paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20,
+              paddingHorizontal: 16, paddingVertical: 10, marginBottom: 20,
               // @ts-ignore
-              backdropFilter: 'blur(20px)',
+              backdropFilter: 'blur(24px)',
             },
-            shadow('0 2px 12px rgba(0,0,0,0.06)', {
-              shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
+            shadow('0px 4px 18px rgba(0, 255, 133, 0.08)', {
+              shadowColor: isDark ? '#00FF85' : '#0A84FF',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
               elevation: 4,
             })
           ]}>
@@ -517,19 +520,23 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
                       activeOpacity={0.85}
                       style={[
                         {
-                          backgroundColor: genre.gradient[0],
+                          backgroundColor: isDark ? 'rgba(12, 12, 14, 0.7)' : 'rgba(255, 255, 255, 0.75)',
+                          borderWidth: 1.2,
+                          borderColor: isDark ? `${genre.gradient[0]}50` : `${genre.gradient[0]}35`,
                           borderRadius: 20,
                           padding: 18,
                           height: 110,
                           justifyContent: 'space-between',
                           overflow: 'hidden',
+                          // @ts-ignore
+                          backdropFilter: 'blur(20px)',
                         },
-                        shadow(`0 4px 16px ${genre.gradient[0]}40`, {
+                        shadow(`0 4px 16px ${genre.gradient[0]}25`, {
                           shadowColor: genre.gradient[0],
                           shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.3,
-                          shadowRadius: 12,
-                          elevation: 6,
+                          shadowOpacity: 0.18,
+                          shadowRadius: 10,
+                          elevation: 3,
                         })
                       ]}
                     >
@@ -537,12 +544,12 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
                       <View style={{
                         position: 'absolute', top: -20, right: -20,
                         width: 80, height: 80, borderRadius: 40,
-                        backgroundColor: genre.gradient[1],
-                        opacity: 0.4,
+                        backgroundColor: genre.gradient[0],
+                        opacity: 0.12,
                       }} />
                       <Text style={{ fontSize: 28, marginBottom: 4 }}>{genre.icon}</Text>
                       <View>
-                        <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 16, letterSpacing: 0.3 }}>
+                        <Text style={{ color: genre.gradient[0], fontWeight: '900', fontSize: 16, letterSpacing: 0.5, textTransform: 'uppercase' }}>
                           {genre.label}
                         </Text>
                       </View>

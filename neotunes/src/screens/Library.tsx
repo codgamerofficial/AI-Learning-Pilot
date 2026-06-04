@@ -332,11 +332,11 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
         {/* Dynamic iOS-like Segment Switcher */}
         <View style={{
           flexDirection: 'row',
-          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(0,0,0,0.04)',
+          backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 14, 0.45)' : 'rgba(0,0,0,0.04)',
           borderRadius: 24,
           padding: 4,
           marginBottom: 24,
-          borderWidth: 1.5,
+          borderWidth: 1.2,
           borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
           // @ts-ignore
           backdropFilter: 'blur(20px)',
@@ -351,19 +351,32 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
               <TouchableOpacity
                 key={seg.key}
                 onPress={() => setActiveSegment(seg.key as any)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 style={{
                   flex: 1,
                   paddingVertical: 10,
                   borderRadius: 20,
-                  backgroundColor: isActive ? palette.accent : 'transparent',
+                  backgroundColor: isActive
+                    ? (themeMode === 'dark' ? 'rgba(0, 255, 133, 0.12)' : 'rgba(10, 132, 255, 0.08)')
+                    : 'transparent',
+                  borderWidth: 1.2,
+                  borderColor: isActive
+                    ? (themeMode === 'dark' ? 'rgba(0, 255, 133, 0.45)' : 'rgba(10, 132, 255, 0.45)')
+                    : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  shadowColor: isActive ? (themeMode === 'dark' ? '#00FF85' : '#0A84FF') : 'transparent',
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: isActive ? 0.35 : 0,
+                  shadowRadius: 6,
+                  elevation: isActive ? 1 : 0,
                 }}
               >
                 <Text style={{
-                  color: isActive ? '#0A0A0A' : palette.text,
-                  fontWeight: '900',
+                  color: isActive
+                    ? (themeMode === 'dark' ? '#00FF85' : '#0A84FF')
+                    : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
+                  fontWeight: '800',
                   fontSize: 11,
                   textTransform: 'uppercase',
                   letterSpacing: 1,
@@ -486,7 +499,10 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
                   },
                   shadow('0px 4px 12px rgba(0,0,0,0.06)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 })
                 ]}>
-                  <Text style={{ color: palette.text, fontSize: 17, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>{pl.title}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
+                    <Text style={{ color: palette.text, fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>{pl.title}</Text>
+                  </View>
                 </View>
               ))}
               {playlists.length === 0 && (

@@ -38,6 +38,14 @@ async function ensureAudioMode() {
 
 function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   const soundRef = React.useRef<Audio.Sound | null>(null);
+  const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
+
+  React.useEffect(() => {
+    if (!audioUrl && !isValidYTId) {
+      console.warn('[NativeAudioPlayer] Invalid videoId detected for playback:', videoId);
+      onStateChange?.('error');
+    }
+  }, [audioUrl, isValidYTId, videoId, onStateChange]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -124,6 +132,10 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     return null;
   }
 
+  if (!isValidYTId) {
+    return null;
+  }
+
   return (
     <View pointerEvents="none" style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }}>
       <YoutubePlayer
@@ -131,6 +143,10 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
         play={play}
         videoId={videoId}
         onChangeState={onStateChange}
+        onError={(e: any) => {
+          console.error('[NativeYoutubePlayer] Error:', e);
+          onStateChange?.('error');
+        }}
         initialPlayerParams={{ controls: false, modestbranding: true, rel: false }}
       />
     </View>

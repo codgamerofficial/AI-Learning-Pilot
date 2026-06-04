@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, SafeAreaView, TouchableOpacity,
-  Image, ActivityIndicator, Alert
+  Image, ActivityIndicator, Alert, TextInput
 } from 'react-native';
 import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
 
-import { Play, Globe, MapPin } from 'lucide-react-native';
+import { Play, Globe, MapPin, Sparkles } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
 import { useRecentStore } from '../store/recentStore';
@@ -38,9 +38,10 @@ interface Track {
   artist: string;
   artwork: string;
   color: string;
-  source?: 'youtube' | 'jamendo';
+  source?: 'youtube' | 'jamendo' | string;
   url?: string;
   searchQuery?: string;
+  playbackId?: string;
 }
 
 const CURATED_PODCASTS: Track[] = [
@@ -51,6 +52,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop',
     color: '#FF9933',
     searchQuery: 'Figuring Out Raj Shammani podcast hindi latest episode',
+    playbackId: 'sGpc8-f2e8U',
   },
   {
     id: 'pod-ranveer',
@@ -59,6 +61,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=300&auto=format&fit=crop',
     color: '#7B61FF',
     searchQuery: 'The Ranveer Show BeerBiceps podcast hindi english latest',
+    playbackId: 'jAcQ1-LqN1s',
   },
   {
     id: 'pod-suspense',
@@ -67,6 +70,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=300&auto=format&fit=crop',
     color: '#FF6B6B',
     searchQuery: 'Sunday Suspense Bengali audio story horror mystery',
+    playbackId: 'FAFcKc64Asg',
   },
   {
     id: 'pod-rogan',
@@ -75,6 +79,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop',
     color: '#00FF85',
     searchQuery: 'Joe Rogan Experience podcast latest full',
+    playbackId: 'GZCmYrgOZU0',
   },
   {
     id: 'pod-somak',
@@ -83,6 +88,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=300&auto=format&fit=crop',
     color: '#FF4ECD',
     searchQuery: 'Golpo Solpo Somak Bengali stories audio drama',
+    playbackId: '1J8-O9HOR1o',
   },
   {
     id: 'pod-mahabharat',
@@ -91,6 +97,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=300&auto=format&fit=crop',
     color: '#FFD700',
     searchQuery: 'Mahabharat podcast hindi audio stories myth',
+    playbackId: 'vsax8o_X660',
   },
   {
     id: 'pod-fridman',
@@ -99,6 +106,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?q=80&w=300&auto=format&fit=crop',
     color: '#00D4FF',
     searchQuery: 'Lex Fridman Sam Altman artificial intelligence tech podcast',
+    playbackId: 'EV7WhVT270Q',
   },
   {
     id: 'pod-adda',
@@ -107,6 +115,7 @@ const CURATED_PODCASTS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=300&auto=format&fit=crop',
     color: '#FFFFFF',
     searchQuery: 'Bengali podcast show discussion adda lifestyle',
+    playbackId: 'QY3IM62qpqw',
   }
 ];
 
@@ -118,6 +127,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=300&auto=format&fit=crop',
     color: '#FF9933',
     searchQuery: 'Bhagavad Gita Hindi audio book full version chapters',
+    playbackId: '28sptQICKCk',
   },
   {
     id: 'ab-pather',
@@ -126,6 +136,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1476275466078-4007374efbbe?q=80&w=300&auto=format&fit=crop',
     color: '#FFD700',
     searchQuery: 'Pather Panchali Bengali audio book classic novel stories',
+    playbackId: 'ROKqa4xd1V4',
   },
   {
     id: 'ab-habits',
@@ -134,6 +145,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=300&auto=format&fit=crop',
     color: '#00FF85',
     searchQuery: 'Atomic Habits James Clear audiobook full version',
+    playbackId: 'D8Q1D8Y7_lA',
   },
   {
     id: 'ab-chanakya',
@@ -142,6 +154,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=300&auto=format&fit=crop',
     color: '#7B61FF',
     searchQuery: 'Chanakya Neeti Hindi audiobook full stories',
+    playbackId: '_lq-HF05C0g',
   },
   {
     id: 'ab-sherlock',
@@ -150,6 +163,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=300&auto=format&fit=crop',
     color: '#FF6B6B',
     searchQuery: 'Sherlock Holmes Bengali audio book story suspense',
+    playbackId: 'qk3mrQX8WEM',
   },
   {
     id: 'ab-tagore',
@@ -158,6 +172,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=300&auto=format&fit=crop',
     color: '#FF4ECD',
     searchQuery: 'Rabindranath Tagore audio stories Kabuliwala bengali book',
+    playbackId: 'Uba2msanoBY',
   },
   {
     id: 'ab-1984',
@@ -166,6 +181,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=300&auto=format&fit=crop',
     color: '#FF6B6B',
     searchQuery: '1984 George Orwell audiobook chapters full novel',
+    playbackId: '2PArP8h1qSw',
   },
   {
     id: 'ab-alchemist',
@@ -174,6 +190,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=300&auto=format&fit=crop',
     color: '#00D4FF',
     searchQuery: 'The Alchemist audiobook full novel english or hindi',
+    playbackId: 'fKXr0wyw1gA',
   }
 ];
 
@@ -185,6 +202,7 @@ const TOP_CHARTS_TRACKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=300&auto=format&fit=crop',
     color: '#FF1A1A',
     searchQuery: 'The Weeknd Starboy official audio',
+    playbackId: 'Rif-RTvmmss',
   },
   {
     id: 'top-2',
@@ -193,6 +211,7 @@ const TOP_CHARTS_TRACKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300&auto=format&fit=crop',
     color: '#FFB300',
     searchQuery: 'The Weeknd Blinding Lights official audio',
+    playbackId: 'fHI8X4OXluQ',
   },
   {
     id: 'top-3',
@@ -201,6 +220,7 @@ const TOP_CHARTS_TRACKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300&auto=format&fit=crop',
     color: '#00D4FF',
     searchQuery: 'Ed Sheeran Shape of You official audio',
+    playbackId: '_dK2tDK9grQ',
   },
   {
     id: 'top-4',
@@ -209,6 +229,7 @@ const TOP_CHARTS_TRACKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
     color: '#7B61FF',
     searchQuery: 'Ed Sheeran Bad Habits official audio',
+    playbackId: 'HeOpRzcqKrE',
   },
   {
     id: 'top-5',
@@ -217,6 +238,7 @@ const TOP_CHARTS_TRACKS: Track[] = [
     artwork: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=300&auto=format&fit=crop',
     color: '#FF4ECD',
     searchQuery: 'Dua Lipa Levitating official audio',
+    playbackId: 'WHuBW3qKm9g',
   },
 ];
 
@@ -229,6 +251,7 @@ const NEW_RELEASES_TRACKS = [
     color: '#00FF85',
     date: 'NEW • JUN 2',
     searchQuery: 'Harry Styles As It Was official audio',
+    playbackId: 'V1Z586zoeeE',
   },
   {
     id: 'new-2',
@@ -238,6 +261,7 @@ const NEW_RELEASES_TRACKS = [
     color: '#FFD700',
     date: 'NEW • MAY 28',
     searchQuery: 'Miley Cyrus Flowers official audio',
+    playbackId: 'SWpAYbgHmTo',
   },
   {
     id: 'new-3',
@@ -247,6 +271,7 @@ const NEW_RELEASES_TRACKS = [
     color: '#FF6B6B',
     date: 'NEW • MAY 24',
     searchQuery: 'Taylor Swift Cruel Summer official audio',
+    playbackId: 'ic8j13piAhQ',
   },
   {
     id: 'new-4',
@@ -256,6 +281,7 @@ const NEW_RELEASES_TRACKS = [
     color: '#7B61FF',
     date: 'NEW • MAY 18',
     searchQuery: 'The Kid LAROI Justin Bieber Stay official audio',
+    playbackId: 'rkYlZnIbe2E',
   },
 ];
 
@@ -273,6 +299,7 @@ const MADE_FOR_YOU_MIXES = [
         artwork: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=300&auto=format&fit=crop',
         color: '#00D4FF',
         searchQuery: 'chillout lounge ambient acoustic ocean breeze',
+        playbackId: '7uo3Pi-A1hk',
       },
       {
         id: 'chill-2',
@@ -281,6 +308,7 @@ const MADE_FOR_YOU_MIXES = [
         artwork: 'https://images.unsplash.com/photo-1518173946687-a4c8a383392f?q=80&w=300&auto=format&fit=crop',
         color: '#7B61FF',
         searchQuery: 'lofi sunset boulevard chill beats',
+        playbackId: 'P6eLilGU4kU',
       },
     ]
   },
@@ -297,6 +325,7 @@ const MADE_FOR_YOU_MIXES = [
         artwork: 'https://images.unsplash.com/photo-1515462277126-270d878326e5?q=80&w=300&auto=format&fit=crop',
         color: '#FF6B6B',
         searchQuery: 'synthwave drive electric highway retro electro',
+        playbackId: 'YCnLBX_35-Q',
       },
       {
         id: 'energy-2',
@@ -305,6 +334,7 @@ const MADE_FOR_YOU_MIXES = [
         artwork: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300&auto=format&fit=crop',
         color: '#FFD700',
         searchQuery: 'edm pulse techno fever club dance',
+        playbackId: 'FSV04FIKTnc',
       },
     ]
   },
@@ -321,6 +351,7 @@ const MADE_FOR_YOU_MIXES = [
         artwork: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=300&auto=format&fit=crop',
         color: '#00FF85',
         searchQuery: 'piano dreams instrumental focus study ambient',
+        playbackId: 'sAcj8me7wGI',
       },
       {
         id: 'focus-2',
@@ -329,6 +360,7 @@ const MADE_FOR_YOU_MIXES = [
         artwork: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=300&auto=format&fit=crop',
         color: '#00D4FF',
         searchQuery: 'zen garden meditation soundscape nature yoga',
+        playbackId: 'l_YSyUpf8Ec',
       },
     ]
   }
@@ -517,6 +549,28 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const greeting = getGreeting(user?.email ?? '');
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'NT';
+
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiSynthesizing, setAiSynthesizing] = useState(false);
+
+  const handleAiSynthesize = async (promptText: string) => {
+    if (!promptText.trim()) return;
+    setAiSynthesizing(true);
+    try {
+      const tracks = await fetchSearch(promptText, 'youtube');
+      if (tracks && tracks.length > 0) {
+        setQueue(tracks);
+        await setCurrentTrack(tracks[0]);
+        setAiPrompt('');
+      } else {
+        Alert.alert('AI Agent Core', 'Synthesizer search returned no logs. Try modifying prompt waves.');
+      }
+    } catch (e) {
+      Alert.alert('AI Agent Error', 'Synthesizer prompt core sync failure.');
+    } finally {
+      setAiSynthesizing(false);
+    }
+  };
 
   const refreshTelemetry = () => {
     getMarketTelemetryMetrics().then(setTelemetry).catch(() => {});
@@ -868,6 +922,115 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         {activeFeed === 'music' && (
           <>
+            {/* ── AI CO-PILOT STAGE ── */}
+            <View style={[
+              {
+                backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 14, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+                borderRadius: 20,
+                padding: 20,
+                marginBottom: 28,
+                borderWidth: 1.2,
+                borderColor: themeMode === 'dark' ? 'rgba(0, 255, 133, 0.15)' : 'rgba(10, 132, 255, 0.15)',
+                // @ts-ignore
+                backdropFilter: 'blur(24px)',
+              },
+              shadow(themeMode === 'dark' ? '0px 8px 30px rgba(0, 255, 133, 0.08)' : '0px 8px 30px rgba(10, 132, 255, 0.08)', {
+                shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.1,
+                shadowRadius: 16,
+                elevation: 4,
+              })
+            ]}>
+              {/* Telemetry Header */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowOpacity: 0.8, shadowRadius: 4, elevation: 1 }} />
+                  <Text style={{ color: themeMode === 'dark' ? '#00FF85' : '#0A84FF', fontWeight: '900', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' }}>
+                    Agent Synapse v4.0
+                  </Text>
+                </View>
+                <Text style={{ color: palette.textSubtle, fontSize: 9, fontFamily: 'monospace', opacity: 0.6 }}>
+                  LATENCY: 9.8MS
+                </Text>
+              </View>
+
+              {/* Status Log Box */}
+              <View style={{ backgroundColor: themeMode === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.03)', borderRadius: 10, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
+                <Text style={{ color: '#00D4FF', fontSize: 9, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 2 }}>
+                  SYSTEM MODE: ACTIVE CO-PILOT
+                </Text>
+                <Text style={{ color: palette.textSubtle, fontSize: 9, fontFamily: 'monospace', letterSpacing: 0.5 }}>
+                  {aiSynthesizing ? 'STATUS: SYNTHESIZING NEURAL AUDIO STREAM...' : 'STATUS: WAITING FOR AUDIO VIBE SELECTION'}
+                </Text>
+              </View>
+
+              {/* Terminal-like Input */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: themeMode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.02)', borderRadius: 12, borderWidth: 1, borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', paddingHorizontal: 12, height: 46, marginBottom: 16 }}>
+                <Text style={{ color: themeMode === 'dark' ? '#00FF85' : '#0A84FF', fontWeight: '700', fontSize: 13, marginRight: 6, fontFamily: 'monospace' }}>
+                  $
+                </Text>
+                <TextInput
+                  placeholder="Ask Neural DJ to synthesize a vibe..."
+                  placeholderTextColor={themeMode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'}
+                  value={aiPrompt}
+                  onChangeText={setAiPrompt}
+                  onSubmitEditing={() => handleAiSynthesize(aiPrompt)}
+                  style={{ flex: 1, color: palette.text, fontSize: 13, fontWeight: '600', height: '100%', padding: 0 }}
+                />
+                {aiSynthesizing ? (
+                  <ActivityIndicator size="small" color={themeMode === 'dark' ? '#00FF85' : '#0A84FF'} />
+                ) : (
+                  <TouchableOpacity onPress={() => handleAiSynthesize(aiPrompt)} disabled={!aiPrompt.trim()} style={{ opacity: aiPrompt.trim() ? 1 : 0.4 }}>
+                    <Sparkles stroke={themeMode === 'dark' ? '#00FF85' : '#0A84FF'} size={18} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Modulators Title */}
+              <Text style={{ color: palette.textSubtle, fontSize: 9, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
+                Synaptic Modulators
+              </Text>
+
+              {/* Grid of modulators */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {[
+                  { name: 'Focus', query: 'lofi study coding instrumental beats', color: '#00FF85', bg: 'rgba(0, 255, 133, 0.08)', desc: 'Study Instrumental' },
+                  { name: 'Overdrive', query: 'cyberpunk synthwave electronic workout music', color: '#FF6B6B', bg: 'rgba(255, 107, 107, 0.08)', desc: 'High-Tempo Synth' },
+                  { name: 'Synthesize', query: 'futuristic pop electronic dance hits 2024', color: '#00D4FF', bg: 'rgba(0, 212, 255, 0.08)', desc: 'Cyber-Pop Stream' },
+                  { name: 'Ethereal', query: 'ambient space cinematic dream pads relaxing', color: '#FF4ECD', bg: 'rgba(255, 78, 205, 0.08)', desc: 'Cinematic Pads' }
+                ].map((mod) => (
+                  <TouchableOpacity
+                    key={mod.name}
+                    onPress={() => handleAiSynthesize(mod.query)}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      minWidth: '45%',
+                      backgroundColor: mod.bg,
+                      borderRadius: 12,
+                      padding: 10,
+                      borderWidth: 1,
+                      borderColor: `${mod.color}35`,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8
+                    }}
+                  >
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: mod.color }} />
+                    <View>
+                      <Text style={{ color: mod.color, fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {mod.name}
+                      </Text>
+                      <Text style={{ color: palette.textSubtle, fontSize: 8, fontWeight: '600', marginTop: 1 }}>
+                        {mod.desc}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
             {/* ── RECENTLY PLAYED ── */}
             {recentTracks.length > 0 && (
           <>
@@ -1317,17 +1480,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <View
           style={[
             {
-              borderWidth: 4,
-              borderColor: palette.border,
-              backgroundColor: palette.surfaceAlt,
-              padding: 16,
+              borderRadius: 20,
+              borderWidth: 1.2,
+              borderColor: themeMode === 'dark' ? 'rgba(0, 212, 255, 0.2)' : 'rgba(10, 132, 255, 0.2)',
+              backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 16, 0.55)' : 'rgba(255, 255, 255, 0.65)',
+              padding: 18,
               marginBottom: 24,
+              // @ts-ignore
+              backdropFilter: 'blur(20px)',
             },
-            shadow('4px 4px 0px rgba(0,212,255,1)', {
+            shadow('0px 8px 24px rgba(0, 212, 255, 0.1)', {
               shadowColor: '#00D4FF',
-              shadowOffset: { width: 4, height: 4 },
-              shadowOpacity: 1,
-              shadowRadius: 0,
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.12,
+              shadowRadius: 16,
               elevation: 4,
             }),
           ]}

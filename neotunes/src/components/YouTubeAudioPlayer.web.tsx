@@ -209,9 +209,44 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
   const pendingPlay = useRef(play);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const shouldResumeOnVisible = useRef(false);
+  const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fadingOutRef = useRef(false);
 
   // Keep pendingPlay in sync for the onReady callback
   pendingPlay.current = play;
+
+  const fadeVolume = (targetVolume: number, durationMs: number, onComplete?: () => void) => {
+    const p = playerRef.current;
+    if (!p || typeof p.getVolume !== 'function') {
+      onComplete?.();
+      return;
+    }
+
+    if (fadeIntervalRef.current) {
+      clearInterval(fadeIntervalRef.current);
+      fadeIntervalRef.current = null;
+    }
+
+    const startVolume = p.getVolume();
+    const steps = 10;
+    const stepTime = durationMs / steps;
+    const volumeDelta = (targetVolume - startVolume) / steps;
+    let currentStep = 0;
+
+    fadeIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const nextVolume = Math.max(0, Math.min(100, startVolume + volumeDelta * currentStep));
+      p.setVolume?.(nextVolume);
+
+      if (currentStep >= steps) {
+        if (fadeIntervalRef.current) {
+          clearInterval(fadeIntervalRef.current);
+          fadeIntervalRef.current = null;
+        }
+        onComplete?.();
+      }
+    }, stepTime);
+  };
 
   // Initialize player once on mount
   useEffect(() => {
@@ -262,7 +297,9 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
 
             // Play immediately if the user already pressed play
             if (pendingPlay.current) {
+              e.target.setVolume?.(0);
               e.target.playVideo();
+              fadeVolume(100, 400);
             }
 
             // Start polling currentTime every 500ms
@@ -272,13 +309,25 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
               try {
                 const t = p.getCurrentTime?.() ?? 0;
                 const d = p.getDuration?.() ?? 0;
-                usePlayerStore.getState().setCurrentTime(t);
-                if (d > 0) usePlayerStore.getState().setDuration(d);
+                const store = usePlayerStore.getState();
+                store.setCurrentTime(t);
+                if (d > 0) store.setDuration(d);
+
+                // Auto crossfade fade-out detection
+                const crossfadeSec = store.crossfadeSeconds;
+                if (d > 0 && d - t <= crossfadeSec && store.isPlaying && !fadingOutRef.current) {
+                  fadingOutRef.current = true;
+                  fadeVolume(0, crossfadeSec * 1000);
+                }
               } catch { /* player may be destroyed */ }
             }, 500);
           },
           onStateChange: (e: any) => {
             onStateChange?.(STATE_MAP[e.data] ?? 'unknown');
+          },
+          onError: (e: any) => {
+            console.error('[WebYoutubePlayer] Error code:', e.data);
+            onStateChange?.('error');
           },
         },
       });
@@ -286,6 +335,7 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
 
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
+      if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
       playerRef.current?.destroy?.();
       playerRef.current = null;
       div.remove();
@@ -295,11 +345,15 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
   // Play / Pause
   useEffect(() => {
     const p = playerRef.current;
-    if (!p) return;
+    if (!p || typeof p.playVideo !== 'function') return;
     if (play) {
-      p.playVideo?.();
+      p.setVolume?.(0);
+      p.playVideo();
+      fadeVolume(100, 400);
     } else {
-      p.pauseVideo?.();
+      fadeVolume(0, 250, () => {
+        p.pauseVideo();
+      });
     }
   }, [play]);
 
@@ -314,7 +368,9 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
       }
 
       if (shouldResumeOnVisible.current) {
+        playerRef.current?.setVolume?.(0);
         playerRef.current?.playVideo?.();
+        fadeVolume(100, 400);
       }
     };
 
@@ -325,11 +381,17 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
   // Video change — reset time then load
   useEffect(() => {
     const p = playerRef.current;
-    if (!p) return;
+    if (!p || typeof p.loadVideoById !== 'function') return;
     usePlayerStore.getState().setCurrentTime(0);
     usePlayerStore.getState().setDuration(0);
+    fadingOutRef.current = false;
+
     if (play) {
-      p.loadVideoById?.(videoId);
+      fadeVolume(0, 300, () => {
+        p.loadVideoById?.(videoId);
+        p.setVolume?.(0);
+        fadeVolume(100, 500);
+      });
     } else {
       p.cueVideoById?.(videoId);
     }
@@ -339,8 +401,22 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
 }
 
 export default function YouTubeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
+  const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
+
+  useEffect(() => {
+    if (!audioUrl && !isValidYTId) {
+      console.warn('[YouTubeAudioPlayer] Invalid videoId detected for playback:', videoId);
+      onStateChange?.('error');
+    }
+  }, [audioUrl, isValidYTId, videoId, onStateChange]);
+
   if (audioUrl) {
     return <WebAudioPlayer audioUrl={audioUrl} play={play} onStateChange={onStateChange} />;
   }
+
+  if (!isValidYTId) {
+    return null;
+  }
+
   return <WebYoutubePlayer videoId={videoId} play={play} onStateChange={onStateChange} />;
 }

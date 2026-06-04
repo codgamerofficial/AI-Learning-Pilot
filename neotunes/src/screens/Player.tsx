@@ -31,6 +31,7 @@ import {
   Timer,
   Gauge,
   Music2,
+  Settings,
 } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
@@ -44,6 +45,7 @@ import { getThemePalette } from '../lib/themePalette';
 import { useJamStore } from '../store/jamStore';
 import EqualizerBars from '../components/EqualizerBars';
 import SafeImage from '../components/SafeImage';
+import Svg, { Circle, Line, G } from 'react-native-svg';
 
 type PlayerScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Player'>;
@@ -170,6 +172,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const { user } = useAuthStore();
   const [isSaved, setIsSaved] = useState(false);
   const [jamModalVisible, setJamModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [jamBusy, setJamBusy] = useState(false);
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState(0);
@@ -181,6 +184,10 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
   const currentTime = usePlayerStore((state) => state.currentTime);
   const seekTo = usePlayerStore((state) => state.seekTo);
+  const crossfadeSeconds = usePlayerStore((state) => state.crossfadeSeconds);
+  const setCrossfadeSeconds = usePlayerStore((state) => state.setCrossfadeSeconds);
+  const gaplessEnabled = usePlayerStore((state) => state.gaplessEnabled);
+  const setGaplessEnabled = usePlayerStore((state) => state.setGaplessEnabled);
 
   const lyricsScrollViewRef = useRef<ScrollView>(null);
 
@@ -189,6 +196,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
   const aura1Anim = useRef(new Animated.Value(0)).current;
   const aura2Anim = useRef(new Animated.Value(0)).current;
+  const aura3Anim = useRef(new Animated.Value(0)).current;
 
   // Ambient Aura Loop Animation
   useEffect(() => {
@@ -226,14 +234,33 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
       ])
     );
 
+    const anim3 = Animated.loop(
+      Animated.sequence([
+        Animated.timing(aura3Anim, {
+          toValue: 1,
+          duration: 18000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.timing(aura3Anim, {
+          toValue: 0,
+          duration: 18000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        })
+      ])
+    );
+
     anim1.start();
     anim2.start();
+    anim3.start();
 
     return () => {
       anim1.stop();
       anim2.stop();
+      anim3.stop();
     };
-  }, [aura1Anim, aura2Anim]);
+  }, [aura1Anim, aura2Anim, aura3Anim]);
 
   const aura1X = aura1Anim.interpolate({
     inputRange: [0, 1],
@@ -251,6 +278,15 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const aura2Y = aura2Anim.interpolate({
     inputRange: [0, 1],
     outputRange: [SCREEN_H * 0.35, SCREEN_H * 0.15],
+  });
+
+  const aura3X = aura3Anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCREEN_W / 2 - 150, SCREEN_W / 2 + 100],
+  });
+  const aura3Y = aura3Anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCREEN_H * 0.25, SCREEN_H * 0.45],
   });
 
   // Sleep timer effect
@@ -463,6 +499,22 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         }),
         pointerEvents: 'none',
       }} />
+      <Animated.View style={{
+        position: 'absolute',
+        top: aura3Y,
+        left: aura3X,
+        width: 320,
+        height: 320,
+        borderRadius: 160,
+        backgroundColor: '#7B61FF',
+        opacity: isDark ? 0.08 : 0.04,
+        // @ts-ignore
+        ...Platform.select({
+          web: { filter: 'blur(100px)' },
+          default: {}
+        }),
+        pointerEvents: 'none',
+      }} />
 
       {/* Header */}
       <View style={{
@@ -562,7 +614,74 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
               backgroundColor: palette.background,
               borderWidth: 2,
               borderColor: `${currentTrack.color}60`,
+              zIndex: 10,
             }} />
+
+            {/* Glowing Svg Holographic Radar deck grid */}
+            <View style={{ position: 'absolute', width: ART_SIZE + 40, height: ART_SIZE + 40, pointerEvents: 'none', alignItems: 'center', justifyContent: 'center' }}>
+              <Svg width={ART_SIZE + 40} height={ART_SIZE + 40}>
+                {/* Outer ticks */}
+                <Circle
+                  cx={(ART_SIZE + 40) / 2}
+                  cy={(ART_SIZE + 40) / 2}
+                  r={(ART_SIZE + 32) / 2}
+                  stroke={currentTrack.color || '#00FF85'}
+                  strokeWidth={1}
+                  strokeDasharray="2, 6"
+                  opacity={0.35}
+                />
+                {/* Grid guidelines */}
+                <Circle
+                  cx={(ART_SIZE + 40) / 2}
+                  cy={(ART_SIZE + 40) / 2}
+                  r={(ART_SIZE + 12) / 2}
+                  stroke={currentTrack.color || '#00FF85'}
+                  strokeWidth={1.2}
+                  strokeDasharray="1, 8"
+                  opacity={0.45}
+                />
+                <Circle
+                  cx={(ART_SIZE + 40) / 2}
+                  cy={(ART_SIZE + 40) / 2}
+                  r={(ART_SIZE + 36) / 2}
+                  stroke={currentTrack.color || '#00FF85'}
+                  strokeWidth={0.8}
+                  opacity={0.2}
+                />
+              </Svg>
+            </View>
+
+            {/* Rotating Scanning Laser Line */}
+            <Animated.View style={{
+              position: 'absolute',
+              width: ART_SIZE + 20,
+              height: ART_SIZE + 20,
+              borderRadius: (ART_SIZE + 20) / 2,
+              transform: [{ rotate: spin }],
+              pointerEvents: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 5,
+            }}>
+              <Svg width={ART_SIZE + 20} height={ART_SIZE + 20}>
+                <Line
+                  x1={(ART_SIZE + 20) / 2}
+                  y1={(ART_SIZE + 20) / 2}
+                  x2={(ART_SIZE + 20) / 2}
+                  y2={0}
+                  stroke={currentTrack.color || '#00FF85'}
+                  strokeWidth={1.5}
+                  opacity={0.7}
+                />
+                <Circle
+                  cx={(ART_SIZE + 20) / 2}
+                  cy={3}
+                  r={3.5}
+                  fill={currentTrack.color || '#00FF85'}
+                  opacity={0.9}
+                />
+              </Svg>
+            </Animated.View>
           </View>
         </View>
 
@@ -733,6 +852,17 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
             <Text style={[styles.utilBtnText, { color: playbackSpeed !== 1 ? '#00D4FF' : palette.textSubtle }]}>
               {playbackSpeed}x
             </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setSettingsModalVisible(true)}
+            style={[styles.utilBtn, {
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
+            }]}
+          >
+            <Settings stroke={palette.textSubtle} size={16} />
+            <Text style={[styles.utilBtnText, { color: palette.textSubtle }]}>AUDIO</Text>
           </TouchableOpacity>
         </View>
 
@@ -1034,6 +1164,116 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
             >
               <Text style={[styles.modalBtnText, { color: palette.text }]}>Close</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Audio Settings Drawer Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={settingsModalVisible}
+        onRequestClose={() => setSettingsModalVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'flex-end',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
+          <View style={{
+            backgroundColor: isDark ? 'rgba(20,20,22,0.95)' : 'rgba(255,255,255,0.95)',
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            padding: 24,
+            paddingBottom: 40,
+            borderWidth: 1.5,
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+            // @ts-ignore
+            backdropFilter: 'blur(30px)',
+          }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Text style={{ color: palette.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.2 }}>
+                Audio Preferences
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSettingsModalVisible(false)}
+                style={{
+                  paddingHorizontal: 12, paddingVertical: 6,
+                  borderRadius: 12,
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                }}
+              >
+                <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 12 }}>DONE</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ marginBottom: 24 }}>
+              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12 }}>
+                Crossfade Duration
+              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+                {[0, 3, 6, 9, 12].map((seconds) => (
+                  <TouchableOpacity
+                    key={seconds}
+                    onPress={() => setCrossfadeSeconds(seconds)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      backgroundColor: crossfadeSeconds === seconds
+                        ? currentTrack.color
+                        : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                      borderWidth: 1,
+                      borderColor: crossfadeSeconds === seconds ? currentTrack.color : 'transparent',
+                    }}
+                  >
+                    <Text style={{
+                      color: crossfadeSeconds === seconds ? '#FFF' : palette.textSubtle,
+                      fontWeight: '800',
+                      fontSize: 12,
+                    }}>
+                      {seconds === 0 ? 'Off' : `${seconds}s`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '500', marginTop: 8 }}>
+                Blends transitions smoothly between ending and starting tracks. Capped to 250ms on manual play/pause.
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flex: 1, paddingRight: 16 }}>
+                  <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>
+                    Gapless Playback
+                  </Text>
+                  <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '500' }}>
+                    Prefetches next songs to eliminate gaps between consecutive tracks.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setGaplessEnabled(!gaplessEnabled)}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 16,
+                    backgroundColor: gaplessEnabled ? `${currentTrack.color}20` : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                    borderWidth: 1,
+                    borderColor: gaplessEnabled ? currentTrack.color : 'transparent',
+                  }}
+                >
+                  <Text style={{
+                    color: gaplessEnabled ? currentTrack.color : palette.textSubtle,
+                    fontWeight: '800',
+                    fontSize: 12,
+                  }}>
+                    {gaplessEnabled ? 'ACTIVE' : 'DISABLED'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
