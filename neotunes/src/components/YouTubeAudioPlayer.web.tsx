@@ -72,12 +72,25 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
     try {
       if (typeof window === 'undefined') return;
 
+      // Clean up any existing oscillators/gains to prevent overlaps and memory leaks
+      oscsRef.current.forEach(osc => {
+        try { osc.stop(); osc.disconnect(); } catch {}
+      });
+      oscsRef.current = [];
+
+      if (synthGainRef.current) {
+        try { synthGainRef.current.disconnect(); } catch {}
+        synthGainRef.current = null;
+      }
+
       if (!audioCtxRef.current) {
         const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        audioCtxRef.current = new AudioContextClass();
+        audioCtxRef.current = (window as any).__activeAudioContext || new AudioContextClass();
+        (window as any).__activeAudioContext = audioCtxRef.current;
       }
 
       const ctx = audioCtxRef.current;
+      if (!ctx) return;
       if (ctx.state === 'suspended') {
         void ctx.resume();
       }
@@ -148,14 +161,11 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
 
     setTimeout(() => {
       currentOscs.forEach(osc => {
-        try { osc.stop(); } catch {}
+        try { osc.stop(); osc.disconnect(); } catch {}
       });
-      try {
-        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-          void audioCtxRef.current.close();
-          audioCtxRef.current = null;
-        }
-      } catch {}
+      if (masterGain) {
+        try { masterGain.disconnect(); } catch {}
+      }
     }, 350);
   };
 
@@ -437,6 +447,16 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    let isDestroyed = false;
+    let isReady = false;
+
+    const safetyTimeout = setTimeout(() => {
+      if (!isDestroyed && !isReady) {
+        console.warn('[WebYoutubePlayer] YouTube API player load timed out (offline?). Triggering error state.');
+        onStateChange?.('error');
+      }
+    }, 4000);
+
     // Create the mount div and add it to body
     const div = document.createElement('div');
     // Bottom-right corner, 1x1 visible container, overflow:hidden clips the 320x180 iframe.
@@ -456,6 +476,7 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
     mountRef.current = div;
 
     loadYouTubeAPI(() => {
+      if (isDestroyed) return;
       playerRef.current = new (window as any).YT.Player(div, {
         width: 320,
         height: 180,
@@ -471,6 +492,9 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
         },
         events: {
           onReady: (e: any) => {
+            isReady = true;
+            clearTimeout(safetyTimeout);
+
             // Register seekTo with the global store
             usePlayerStore.getState().registerSeekFn((seconds: number) => {
               playerRef.current?.seekTo?.(seconds, true);
@@ -512,6 +536,7 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
           },
           onError: (e: any) => {
             console.error('[WebYoutubePlayer] Error code:', e.data);
+            clearTimeout(safetyTimeout);
             onStateChange?.('error');
           },
         },
@@ -519,6 +544,8 @@ function WebYoutubePlayer({ videoId, play, onStateChange }: { videoId: string; p
     });
 
     return () => {
+      isDestroyed = true;
+      clearTimeout(safetyTimeout);
       if (pollRef.current) clearInterval(pollRef.current);
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);
       playerRef.current?.destroy?.();

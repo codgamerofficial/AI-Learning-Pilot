@@ -83,6 +83,22 @@ interface PlayerState {
   setPlaybackError: (err: string | null) => void;
 }
 
+function ensureAudioContext() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    let ctx = (window as any).__activeAudioContext;
+    if (!ctx) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        ctx = new AudioContextClass();
+        (window as any).__activeAudioContext = ctx;
+      }
+    }
+    if (ctx && ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+  }
+}
+
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentTrack: null,
   isPlaying: false,
@@ -97,6 +113,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   playbackError: null,
 
   setCurrentTrack: async (track) => {
+    ensureAudioContext();
     const nextTrack = { ...track };
     set({ currentTrack: nextTrack, isPlaying: true, currentTime: 0, duration: 0 });
     useRecentStore.getState().addRecentTrack(nextTrack);
@@ -149,9 +166,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
 
   setIsPlaying: (isPlaying) => set({ isPlaying }),
-  play: () => set({ isPlaying: true }),
+  play: () => {
+    ensureAudioContext();
+    set({ isPlaying: true });
+  },
   pause: () => set({ isPlaying: false }),
-  togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
+  togglePlay: () => {
+    ensureAudioContext();
+    set((state) => ({ isPlaying: !state.isPlaying }));
+  },
   setQueue: (tracks) => set((state) => {
     const deduped = dedupeTracks(tracks);
     if (state.currentTrack && !deduped.some((track) => track.id === state.currentTrack?.id)) {

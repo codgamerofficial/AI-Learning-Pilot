@@ -40,6 +40,32 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   const soundRef = React.useRef<Audio.Sound | null>(null);
   const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
 
+  const [hasStartedOrReady, setHasStartedOrReady] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasStartedOrReady(false);
+  }, [videoId]);
+
+  const handleStateChange = React.useCallback((state: string) => {
+    if (state === 'playing' || state === 'paused' || state === 'buffering') {
+      setHasStartedOrReady(true);
+    }
+    onStateChange?.(state);
+  }, [onStateChange]);
+
+  React.useEffect(() => {
+    if (audioUrl || !play || hasStartedOrReady) return;
+
+    const timer = setTimeout(() => {
+      if (!hasStartedOrReady) {
+        console.warn('[NativeAudioPlayer] YouTube load timeout. Triggering error state.');
+        onStateChange?.('error');
+      }
+    }, 4500);
+
+    return () => clearTimeout(timer);
+  }, [audioUrl, play, hasStartedOrReady, onStateChange]);
+
   React.useEffect(() => {
     if (!audioUrl && !isValidYTId) {
       console.warn('[NativeAudioPlayer] Invalid videoId detected for playback:', videoId);
@@ -215,7 +241,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
         height={0}
         play={play}
         videoId={videoId}
-        onChangeState={onStateChange}
+        onChangeState={handleStateChange}
         onError={(e: any) => {
           console.error('[NativeYoutubePlayer] Error:', e);
           onStateChange?.('error');
