@@ -20,7 +20,7 @@ import MiniPlayer from './src/components/MiniPlayer';
 import YouTubeAudioPlayer from './src/components/YouTubeAudioPlayer';
 
 import { useAuthStore } from './src/store/authStore';
-import { usePlayerStore } from './src/store/playerStore';
+import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from './src/store/playerStore';
 import { usePreferencesStore } from './src/store/preferencesStore';
 import { useJamStore } from './src/store/jamStore';
 
@@ -99,8 +99,27 @@ function GlobalAudioEngine() {
 
     if (state === 'error') {
       pause();
-      const trackTitle = usePlayerStore.getState().currentTrack?.title || 'this track';
-      usePlayerStore.getState().setPlaybackError(`Unable to play "${trackTitle}". Skipping...`);
+      const track = usePlayerStore.getState().currentTrack;
+      if (track) {
+        if (track.url === OFFLINE_FALLBACK_AUDIO) {
+          usePlayerStore.getState().setPlaybackError(`Unable to play "${track.title}". Skipping...`);
+          nextTrack();
+          return;
+        }
+
+        usePlayerStore.getState().setPlaybackError(`Unable to stream "${track.title}". Playing offline.`);
+        usePlayerStore.setState({
+          currentTrack: {
+            ...track,
+            url: OFFLINE_FALLBACK_AUDIO,
+          }
+        });
+
+        setTimeout(() => {
+          usePlayerStore.getState().play();
+        }, 100);
+        return;
+      }
       nextTrack();
       return;
     }

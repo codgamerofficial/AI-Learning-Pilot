@@ -4,7 +4,7 @@
  * Branches between HTML5 Audio (for direct mp3 URLs) and YouTube IFrame Player API.
  */
 import { useEffect, useRef } from 'react';
-import { usePlayerStore } from '../store/playerStore';
+import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from '../store/playerStore';
 
 interface Props {
   videoId: string;
@@ -61,6 +61,8 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
   onStateChangeRef.current = onStateChange;
 
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackTimeRef = useRef(0);
 
   const fadeIn = (audio: HTMLAudioElement) => {
     if (fadeIntervalRef.current) {
@@ -105,30 +107,87 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Create audio element
+    const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    // 2. Clear store time states
+    if (isFallback) {
+      audio.loop = true;
+    }
+
+    // Clear store time states
     usePlayerStore.getState().setCurrentTime(0);
-    usePlayerStore.getState().setDuration(0);
+    usePlayerStore.getState().setDuration(isFallback ? 180 : 0);
+    fallbackTimeRef.current = 0;
 
-    // 3. Register seek function with store
-    usePlayerStore.getState().registerSeekFn((seconds: number) => {
-      if (audioRef.current) {
-        audioRef.current.currentTime = seconds;
+    // Register seek function with store
+    if (isFallback) {
+      usePlayerStore.getState().registerSeekFn((seconds: number) => {
+        fallbackTimeRef.current = seconds;
+        usePlayerStore.getState().setCurrentTime(seconds);
+      });
+    } else {
+      usePlayerStore.getState().registerSeekFn((seconds: number) => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = seconds;
+        }
+      });
+    }
+
+    const startFallbackTimer = () => {
+      if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+      fallbackIntervalRef.current = setInterval(() => {
+        fallbackTimeRef.current += 1;
+        if (fallbackTimeRef.current >= 180) {
+          fallbackTimeRef.current = 0;
+          if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+          onStateChangeRef.current?.('ended');
+        } else {
+          usePlayerStore.getState().setCurrentTime(fallbackTimeRef.current);
+        }
+      }, 1000);
+    };
+
+    const stopFallbackTimer = () => {
+      if (fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
       }
-    });
+    };
 
-    // 4. Set up event listeners
-    const handlePlay = () => onStateChangeRef.current?.('playing');
-    const handlePause = () => onStateChangeRef.current?.('paused');
-    const handleEnded = () => onStateChangeRef.current?.('ended');
+    // Set up event listeners
+    const handlePlay = () => {
+      onStateChangeRef.current?.('playing');
+      if (isFallback) {
+        startFallbackTimer();
+      }
+    };
+
+    const handlePause = () => {
+      onStateChangeRef.current?.('paused');
+      if (isFallback) {
+        stopFallbackTimer();
+      }
+    };
+
+    const handleEnded = () => {
+      onStateChangeRef.current?.('ended');
+      if (isFallback) {
+        stopFallbackTimer();
+      }
+    };
+
     const handleWaiting = () => onStateChangeRef.current?.('buffering');
-    const handlePlaying = () => onStateChangeRef.current?.('playing');
+    const handlePlaying = () => {
+      onStateChangeRef.current?.('playing');
+      if (isFallback) {
+        startFallbackTimer();
+      }
+    };
     const handleError = () => onStateChangeRef.current?.('error');
 
     const handleTimeUpdate = () => {
+      if (isFallback) return;
       if (audio) {
         usePlayerStore.getState().setCurrentTime(audio.currentTime);
         const d = audio.duration;
@@ -139,6 +198,7 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
     };
 
     const handleLoadedMetadata = () => {
+      if (isFallback) return;
       if (audio) {
         usePlayerStore.getState().setDuration(audio.duration);
       }
@@ -153,20 +213,23 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
-    // 5. Play immediately if requested
+    // Play immediately if requested
     if (playRef.current) {
       fadeIn(audio);
       audio.play().catch(err => {
         console.warn('[WebAudioPlayer] Autoplay blocked or failed:', err);
       });
+      if (isFallback) {
+        startFallbackTimer();
+      }
     }
 
     return () => {
-      // 6. Cleanup
       if (fadeIntervalRef.current) {
         clearInterval(fadeIntervalRef.current);
         fadeIntervalRef.current = null;
       }
+      stopFallbackTimer();
       audio.pause();
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
@@ -187,13 +250,32 @@ function WebAudioPlayer({ audioUrl, play, onStateChange }: { audioUrl: string; p
     const audio = audioRef.current;
     if (!audio) return;
 
+    const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
+
     if (play) {
       fadeIn(audio);
       audio.play().catch(err => {
         console.warn('[WebAudioPlayer] play() execution blocked or failed:', err);
       });
+      if (isFallback) {
+        if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = setInterval(() => {
+          fallbackTimeRef.current += 1;
+          if (fallbackTimeRef.current >= 180) {
+            fallbackTimeRef.current = 0;
+            if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+            onStateChangeRef.current?.('ended');
+          } else {
+            usePlayerStore.getState().setCurrentTime(fallbackTimeRef.current);
+          }
+        }, 1000);
+      }
     } else {
       fadeOutAndPause(audio);
+      if (isFallback && fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
+      }
     }
   }, [play]);
 
@@ -406,16 +488,13 @@ export default function YouTubeAudioPlayer({ videoId, audioUrl, play, onStateCha
   useEffect(() => {
     if (!audioUrl && !isValidYTId) {
       console.warn('[YouTubeAudioPlayer] Invalid videoId detected for playback:', videoId);
-      onStateChange?.('error');
     }
-  }, [audioUrl, isValidYTId, videoId, onStateChange]);
+  }, [audioUrl, isValidYTId, videoId]);
 
-  if (audioUrl) {
-    return <WebAudioPlayer audioUrl={audioUrl} play={play} onStateChange={onStateChange} />;
-  }
+  const finalAudioUrl = audioUrl || (!isValidYTId ? OFFLINE_FALLBACK_AUDIO : undefined);
 
-  if (!isValidYTId) {
-    return null;
+  if (finalAudioUrl) {
+    return <WebAudioPlayer audioUrl={finalAudioUrl} play={play} onStateChange={onStateChange} />;
   }
 
   return <WebYoutubePlayer videoId={videoId} play={play} onStateChange={onStateChange} />;

@@ -2,6 +2,8 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { useRecentStore } from './recentStore';
 
+export const OFFLINE_FALLBACK_AUDIO = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
+
 export interface Track {
   id: string;
   title: string;
