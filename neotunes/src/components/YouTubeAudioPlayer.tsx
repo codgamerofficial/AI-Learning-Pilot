@@ -7,7 +7,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import YoutubePlayer from 'react-native-youtube-iframe';
-import { usePlayerStore } from '../store/playerStore';
+import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from '../store/playerStore';
 
 interface Props {
   videoId: string;
@@ -47,12 +47,60 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     }
   }, [audioUrl, isValidYTId, videoId, onStateChange]);
 
+  const fallbackIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackTimeRef = React.useRef(0);
+
   React.useEffect(() => {
     let cancelled = false;
 
     if (!audioUrl) {
       return () => {
         cancelled = true;
+      };
+    }
+
+    const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
+
+    if (isFallback) {
+      usePlayerStore.getState().setCurrentTime(0);
+      usePlayerStore.getState().setDuration(180);
+      fallbackTimeRef.current = 0;
+
+      usePlayerStore.getState().registerSeekFn((seconds: number) => {
+        fallbackTimeRef.current = seconds;
+        usePlayerStore.getState().setCurrentTime(seconds);
+      });
+
+      const startFallbackTimer = () => {
+        if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = setInterval(() => {
+          fallbackTimeRef.current += 1;
+          if (fallbackTimeRef.current >= 180) {
+            fallbackTimeRef.current = 0;
+            if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+            onStateChange?.('ended');
+          } else {
+            usePlayerStore.getState().setCurrentTime(fallbackTimeRef.current);
+          }
+        }, 1000);
+      };
+
+      const stopFallbackTimer = () => {
+        if (fallbackIntervalRef.current) {
+          clearInterval(fallbackIntervalRef.current);
+          fallbackIntervalRef.current = null;
+        }
+      };
+
+      onStateChange?.(play ? 'playing' : 'paused');
+      if (play) {
+        startFallbackTimer();
+      }
+
+      return () => {
+        cancelled = true;
+        stopFallbackTimer();
+        usePlayerStore.getState().registerSeekFn(() => {});
       };
     }
 
@@ -115,6 +163,31 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   }, [audioUrl]);
 
   React.useEffect(() => {
+    const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
+    if (isFallback) {
+      if (play) {
+        onStateChange?.('playing');
+        if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = setInterval(() => {
+          fallbackTimeRef.current += 1;
+          if (fallbackTimeRef.current >= 180) {
+            fallbackTimeRef.current = 0;
+            if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
+            onStateChange?.('ended');
+          } else {
+            usePlayerStore.getState().setCurrentTime(fallbackTimeRef.current);
+          }
+        }, 1000);
+      } else {
+        onStateChange?.('paused');
+        if (fallbackIntervalRef.current) {
+          clearInterval(fallbackIntervalRef.current);
+          fallbackIntervalRef.current = null;
+        }
+      }
+      return;
+    }
+
     const sound = soundRef.current;
     if (!sound) {
       return;
@@ -154,5 +227,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
 }
 
 export default function YouTubeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
-  return <NativeAudioPlayer videoId={videoId} audioUrl={audioUrl} play={play} onStateChange={onStateChange} />;
+  const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
+  const finalAudioUrl = audioUrl || (!isValidYTId ? OFFLINE_FALLBACK_AUDIO : undefined);
+  return <NativeAudioPlayer videoId={videoId} audioUrl={finalAudioUrl} play={play} onStateChange={onStateChange} />;
 }
