@@ -38,12 +38,17 @@ async function ensureAudioMode() {
 
 function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   const soundRef = React.useRef<Audio.Sound | null>(null);
+  const playerRef = React.useRef<any>(null);
   const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
 
   const [hasStartedOrReady, setHasStartedOrReady] = React.useState(false);
 
   React.useEffect(() => {
     setHasStartedOrReady(false);
+    if (!audioUrl) {
+      usePlayerStore.getState().setCurrentTime(0);
+      usePlayerStore.getState().setDuration(0);
+    }
   }, [videoId]);
 
   const handleStateChange = React.useCallback((state: string) => {
@@ -65,6 +70,40 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
 
     return () => clearTimeout(timer);
   }, [audioUrl, play, hasStartedOrReady, onStateChange]);
+
+  React.useEffect(() => {
+    if (!audioUrl && isValidYTId) {
+      usePlayerStore.getState().registerSeekFn((seconds: number) => {
+        playerRef.current?.seekTo(seconds, true);
+      });
+    }
+    return () => {
+      if (!audioUrl) {
+        usePlayerStore.getState().registerSeekFn(() => {});
+      }
+    };
+  }, [audioUrl, isValidYTId]);
+
+  React.useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (play && !audioUrl && isValidYTId) {
+      interval = setInterval(async () => {
+        if (playerRef.current) {
+          try {
+            const time = await playerRef.current.getCurrentTime();
+            const dur = await playerRef.current.getDuration();
+            usePlayerStore.getState().setCurrentTime(time);
+            usePlayerStore.getState().setDuration(dur);
+          } catch (e) {
+            // ignore
+          }
+        }
+      }, 500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [play, audioUrl, isValidYTId]);
 
   React.useEffect(() => {
     if (!audioUrl && !isValidYTId) {
@@ -238,6 +277,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   return (
     <View pointerEvents="none" style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }}>
       <YoutubePlayer
+        ref={playerRef}
         height={0}
         play={play}
         videoId={videoId}
@@ -246,7 +286,22 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
           console.error('[NativeYoutubePlayer] Error:', e);
           onStateChange?.('error');
         }}
-        initialPlayerParams={{ controls: false, modestbranding: true, rel: false }}
+        initialPlayerParams={{
+          controls: false,
+          modestbranding: true,
+          rel: false,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          showClosedCaptions: false,
+        }}
+        webViewProps={{
+          androidLayerType: 'hardware',
+          allowsInlineMediaPlayback: true,
+          mediaPlaybackRequiresUserAction: false,
+          scalesPageToFit: true,
+          domStorageEnabled: true,
+          javaScriptEnabled: true,
+        }}
       />
     </View>
   );
