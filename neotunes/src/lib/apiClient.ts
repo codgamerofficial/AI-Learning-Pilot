@@ -11,7 +11,11 @@ const getBaseUrl = (): string => {
 
   // 2. If running on web, we can check location
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
-    return `http://${window.location.hostname}:4000`;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return `http://${window.location.hostname}:4000`;
+    }
+    // In production, the backend is serverless-routed via /api on the same origin
+    return `${window.location.origin}/api`;
   }
 
   // 3. For React Native mobile, extract host from bundle URL
