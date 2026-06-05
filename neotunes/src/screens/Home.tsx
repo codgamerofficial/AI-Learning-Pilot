@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeInRight, Layout } from 'react-native-reanimated';
 
-import { Play, Globe, MapPin, Sparkles } from 'lucide-react-native';
+import { Play, Globe, MapPin, Sparkles, Brain, Zap, Compass, Search } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
 import { useRecentStore } from '../store/recentStore';
@@ -846,25 +846,30 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <View style={{ flex: 1, paddingVertical: 4 }}>
               <BrandLogo style={{ width: 180, height: 52, alignSelf: 'flex-start' }} />
             </View>
-            <View style={{
-              width: 40, height: 40, borderRadius: 20,
-              backgroundColor: themeMode === 'dark' ? 'rgba(0, 255, 133, 0.12)' : 'rgba(10, 132, 255, 0.1)',
-              borderWidth: 1.5,
-              borderColor: themeMode === 'dark' ? 'rgba(0, 255, 133, 0.45)' : 'rgba(10, 132, 255, 0.45)',
-              alignItems: 'center', justifyContent: 'center',
-              shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF',
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.25,
-              shadowRadius: 6,
-              elevation: 2,
-            }}>
+            <View style={[
+              {
+                width: 38, height: 38, borderRadius: 19,
+                backgroundColor: '#FF2F3F',
+                borderWidth: 1.5,
+                borderColor: 'rgba(255,255,255,0.8)',
+                alignItems: 'center', justifyContent: 'center',
+              },
+              shadow('0px 4px 10px rgba(255, 47, 63, 0.35)', {
+                shadowColor: '#FF2F3F',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.35,
+                shadowRadius: 8,
+                elevation: 4,
+              })
+            ]}>
               <Text style={{
-                color: themeMode === 'dark' ? '#00FF85' : '#0A84FF',
+                color: '#FFFFFF',
                 fontWeight: '900',
-                fontSize: 13,
+                fontSize: 12.5,
                 letterSpacing: 0.5
               }}>{initials}</Text>
             </View>
+
           </View>
 
           {/* Sub Row: Greeting */}
@@ -902,25 +907,26 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                     paddingVertical: 9,
                     borderRadius: 11,
                     backgroundColor: isActive
-                      ? (themeMode === 'dark' ? 'rgba(0, 255, 133, 0.12)' : 'rgba(10, 132, 255, 0.08)')
+                      ? 'rgba(255, 47, 63, 0.12)'
                       : 'transparent',
                     borderWidth: 1.2,
                     borderColor: isActive
-                      ? (themeMode === 'dark' ? 'rgba(0, 255, 133, 0.45)' : 'rgba(10, 132, 255, 0.45)')
+                      ? 'rgba(255, 47, 63, 0.4)'
                       : 'transparent',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: isActive ? (themeMode === 'dark' ? '#00FF85' : '#0A84FF') : 'transparent',
+                    shadowColor: isActive ? '#FF2F3F' : 'transparent',
                     shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: isActive ? 0.3 : 0,
+                    shadowOpacity: isActive ? 0.25 : 0,
                     shadowRadius: 6,
                     elevation: isActive ? 1 : 0,
                   }}
                 >
                   <Text style={{
                     color: isActive
-                      ? (themeMode === 'dark' ? '#00FF85' : '#0A84FF')
+                      ? '#FF2F3F'
                       : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
+
                     fontWeight: '800',
                     fontSize: 12,
                     letterSpacing: 0.5,
@@ -936,111 +942,150 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             {/* ── AI CO-PILOT STAGE ── */}
             <View style={[
               {
-                backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 14, 0.65)' : 'rgba(255, 255, 255, 0.75)',
-                borderRadius: 20,
-                padding: 20,
+                backgroundColor: themeMode === 'dark' ? 'rgba(20, 20, 24, 0.75)' : 'rgba(255, 255, 255, 0.85)',
+                borderRadius: 24,
+                padding: 22,
                 marginBottom: 28,
-                borderWidth: 1.2,
-                borderColor: themeMode === 'dark' ? 'rgba(0, 255, 133, 0.15)' : 'rgba(10, 132, 255, 0.15)',
+                borderWidth: 1.5,
+                borderColor: themeMode === 'dark' ? 'rgba(255, 47, 63, 0.12)' : 'rgba(255, 47, 63, 0.08)',
                 // @ts-ignore
-                backdropFilter: 'blur(24px)',
+                backdropFilter: 'blur(30px)',
               },
-              shadow(themeMode === 'dark' ? '0px 8px 30px rgba(0, 255, 133, 0.08)' : '0px 8px 30px rgba(10, 132, 255, 0.08)', {
-                shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.1,
-                shadowRadius: 16,
+              shadow('0px 12px 32px rgba(255, 47, 63, 0.06)', {
+                shadowColor: '#FF2F3F',
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.08,
+                shadowRadius: 20,
                 elevation: 4,
               })
             ]}>
-              {/* Telemetry Header */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              {/* Magic Header */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowOpacity: 0.8, shadowRadius: 4, elevation: 1 }} />
-                  <Text style={{ color: themeMode === 'dark' ? '#00FF85' : '#0A84FF', fontWeight: '900', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase' }}>
-                    Agent Synapse v4.0
+                  <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#00FF85', shadowColor: '#00FF85', shadowOpacity: 0.8, shadowRadius: 4, elevation: 2 }} />
+                  <Text style={{ color: palette.text, fontWeight: '900', fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                    AI VIBE CO-PILOT
                   </Text>
                 </View>
-                <Text style={{ color: palette.textSubtle, fontSize: 9, fontFamily: 'monospace', opacity: 0.6 }}>
-                  LATENCY: 9.8MS
-                </Text>
+                <View style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: 8,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                }}>
+                  <Text style={{ color: palette.textSubtle, fontSize: 8.5, fontWeight: '800', letterSpacing: 0.5 }}>ONLINE</Text>
+                </View>
               </View>
 
-              {/* Status Log Box */}
-              <View style={{ backgroundColor: themeMode === 'dark' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(0, 0, 0, 0.03)', borderRadius: 10, padding: 10, marginBottom: 14, borderWidth: 1, borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
-                <Text style={{ color: '#00D4FF', fontSize: 9, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 2 }}>
-                  SYSTEM MODE: ACTIVE CO-PILOT
-                </Text>
-                <Text style={{ color: palette.textSubtle, fontSize: 9, fontFamily: 'monospace', letterSpacing: 0.5 }}>
-                  {aiSynthesizing ? 'STATUS: SYNTHESIZING NEURAL AUDIO STREAM...' : 'STATUS: WAITING FOR AUDIO VIBE SELECTION'}
-                </Text>
-              </View>
+              <Text style={{ color: palette.textMuted, fontSize: 12, fontWeight: '600', lineHeight: 18, marginBottom: 16 }}>
+                Type a mood, activity, or genre, and let our generative AI model dynamically curate your stream.
+              </Text>
 
-              {/* Terminal-like Input */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: themeMode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.02)', borderRadius: 12, borderWidth: 1, borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', paddingHorizontal: 12, height: 46, marginBottom: 16 }}>
-                <Text style={{ color: themeMode === 'dark' ? '#00FF85' : '#0A84FF', fontWeight: '700', fontSize: 13, marginRight: 6, fontFamily: 'monospace' }}>
-                  $
-                </Text>
+              {/* Startup Search Input */}
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: themeMode === 'dark' ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.03)',
+                borderRadius: 16,
+                borderWidth: 1.5,
+                borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                paddingHorizontal: 14,
+                height: 48,
+                marginBottom: 20,
+                shadowColor: '#FF2F3F',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: aiPrompt.trim() ? 0.05 : 0,
+                shadowRadius: 10,
+              }}>
+                <Search stroke={palette.textSubtle} size={18} style={{ marginRight: 10 }} />
                 <TextInput
-                  placeholder="Ask Neural DJ to synthesize a vibe..."
+                  placeholder="Ask Magic DJ to synthesize a vibe..."
                   placeholderTextColor={themeMode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'}
                   value={aiPrompt}
                   onChangeText={setAiPrompt}
                   onSubmitEditing={() => handleAiSynthesize(aiPrompt)}
-                  style={{ flex: 1, color: palette.text, fontSize: 13, fontWeight: '600', height: '100%', padding: 0 }}
+                  style={{ flex: 1, color: palette.text, fontSize: 13.5, fontWeight: '600', height: '100%', padding: 0 }}
                 />
                 {aiSynthesizing ? (
-                  <ActivityIndicator size="small" color={themeMode === 'dark' ? '#00FF85' : '#0A84FF'} />
+                  <ActivityIndicator size="small" color="#FF2F3F" />
                 ) : (
-                  <TouchableOpacity onPress={() => handleAiSynthesize(aiPrompt)} disabled={!aiPrompt.trim()} style={{ opacity: aiPrompt.trim() ? 1 : 0.4 }}>
-                    <Sparkles stroke={themeMode === 'dark' ? '#00FF85' : '#0A84FF'} size={18} />
+                  <TouchableOpacity 
+                    onPress={() => handleAiSynthesize(aiPrompt)} 
+                    disabled={!aiPrompt.trim()} 
+                    style={{ 
+                      opacity: aiPrompt.trim() ? 1 : 0.35,
+                      backgroundColor: aiPrompt.trim() ? '#FF2F3F' : 'transparent',
+                      width: 28, height: 28, borderRadius: 14,
+                      alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    <Sparkles stroke={aiPrompt.trim() ? '#FFF' : palette.textSubtle} size={14} />
                   </TouchableOpacity>
                 )}
               </View>
 
               {/* Modulators Title */}
-              <Text style={{ color: palette.textSubtle, fontSize: 9, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
-                Synaptic Modulators
+              <Text style={{ color: palette.textSubtle, fontSize: 9.5, fontWeight: '900', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 12 }}>
+                Tune Your Space
               </Text>
 
               {/* Grid of modulators */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                 {[
-                  { name: 'Focus', query: 'lofi study coding instrumental beats', color: '#00FF85', bg: 'rgba(0, 255, 133, 0.08)', desc: 'Study Instrumental' },
-                  { name: 'Overdrive', query: 'cyberpunk synthwave electronic workout music', color: '#FF6B6B', bg: 'rgba(255, 107, 107, 0.08)', desc: 'High-Tempo Synth' },
-                  { name: 'Synthesize', query: 'futuristic pop electronic dance hits 2024', color: '#00D4FF', bg: 'rgba(0, 212, 255, 0.08)', desc: 'Cyber-Pop Stream' },
-                  { name: 'Ethereal', query: 'ambient space cinematic dream pads relaxing', color: '#FF4ECD', bg: 'rgba(255, 78, 205, 0.08)', desc: 'Cinematic Pads' }
-                ].map((mod) => (
-                  <TouchableOpacity
-                    key={mod.name}
-                    onPress={() => handleAiSynthesize(mod.query)}
-                    activeOpacity={0.8}
-                    style={{
-                      flex: 1,
-                      minWidth: '45%',
-                      backgroundColor: mod.bg,
-                      borderRadius: 12,
-                      padding: 10,
-                      borderWidth: 1,
-                      borderColor: `${mod.color}35`,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8
-                    }}
-                  >
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: mod.color }} />
-                    <View>
-                      <Text style={{ color: mod.color, fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        {mod.name}
-                      </Text>
-                      <Text style={{ color: palette.textSubtle, fontSize: 8, fontWeight: '600', marginTop: 1 }}>
-                        {mod.desc}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                  { name: 'Focus', query: 'lofi study coding instrumental beats', color: '#00FF85', bg: 'rgba(0, 255, 133, 0.06)', border: 'rgba(0, 255, 133, 0.2)', desc: 'Study Instrumental', icon: Brain },
+                  { name: 'Overdrive', query: 'cyberpunk synthwave electronic workout music', color: '#FF2F3F', bg: 'rgba(255, 47, 63, 0.06)', border: 'rgba(255, 47, 63, 0.2)', desc: 'High-Tempo Synth', icon: Zap },
+                  { name: 'Synthesize', query: 'futuristic pop electronic dance hits 2024', color: '#00D4FF', bg: 'rgba(0, 212, 255, 0.06)', border: 'rgba(0, 212, 255, 0.2)', desc: 'Cyber-Pop Stream', icon: Sparkles },
+                  { name: 'Ethereal', query: 'ambient space cinematic dream pads relaxing', color: '#FF4ECD', bg: 'rgba(255, 78, 205, 0.06)', border: 'rgba(255, 78, 205, 0.2)', desc: 'Cinematic Pads', icon: Compass }
+                ].map((mod) => {
+                  const IconComponent = mod.icon;
+                  return (
+                    <TouchableOpacity
+                      key={mod.name}
+                      onPress={() => handleAiSynthesize(mod.query)}
+                      activeOpacity={0.85}
+                      style={[
+                        {
+                          flex: 1,
+                          minWidth: '45%',
+                          backgroundColor: mod.bg,
+                          borderRadius: 16,
+                          padding: 12,
+                          borderWidth: 1.2,
+                          borderColor: mod.border,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 10,
+                        },
+                        shadow(`0px 4px 12px ${mod.color}10`, {
+                          shadowColor: mod.color,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.08,
+                          shadowRadius: 8,
+                          elevation: 2,
+                        })
+                      ]}
+                    >
+                      <View style={{
+                        width: 30, height: 30, borderRadius: 10,
+                        backgroundColor: `${mod.color}15`,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <IconComponent stroke={mod.color} size={15} strokeWidth={2.5} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: mod.color, fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          {mod.name}
+                        </Text>
+                        <Text style={{ color: palette.textSubtle, fontSize: 8.5, fontWeight: '600', marginTop: 2 }} numberOfLines={1}>
+                          {mod.desc}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
+
 
             {/* ── RECENTLY PLAYED ── */}
             {recentTracks.length > 0 && (
