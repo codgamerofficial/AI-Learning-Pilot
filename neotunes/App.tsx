@@ -131,14 +131,8 @@ function GlobalAudioEngine() {
     }
 
     if (state === 'paused' && currentlyPlaying) {
-      if (Platform.OS === 'web') {
-        // On web, ignore paused state sync from the player component to prevent autoplay lockups
-        return;
-      }
-      if (typeof document !== 'undefined' && document.hidden) {
-        return;
-      }
-      pause();
+      // Ignore paused state sync from the player component to prevent state conflicts & loading lockups
+      return;
     }
   }, [nextTrack, play, pause]);
 
