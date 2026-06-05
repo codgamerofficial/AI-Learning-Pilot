@@ -27,6 +27,15 @@ import { getThemePalette } from '../lib/themePalette';
 import { useJamStore } from '../store/jamStore';
 import BrandLogo from '../components/BrandLogo';
 import SafeImage from '../components/SafeImage';
+import EqualizerBars from '../components/EqualizerBars';
+
+const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
 
 type HomeScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Main'>;
@@ -520,6 +529,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const jamConnected = useJamStore((state) => state.isConnected);
   const jamRole = useJamStore((state) => state.role);
 
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
   const setCurrentTrack = usePlayerStore((state) => state.setCurrentTrack);
   const setQueue = usePlayerStore((state) => state.setQueue);
   const { user } = useAuthStore();
@@ -1066,8 +1077,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         {/* ── EVERYDAY RECOMMENDATIONS ── */}
         <View style={{ marginTop: 6, marginBottom: 22 }}>
-          <Text style={{ color: '#FFD700', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>
-            Everyday Recommendations
+          <Text style={{ color: '#FF2F3F', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>
+            Quick Picks
           </Text>
 
           {dailyError && (
@@ -1112,54 +1123,95 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           )}
 
           {loadingDailyRecommendations ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {[1, 2, 3].map((item) => (
-                <TrackCardSkeleton key={item} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
+              {[1, 2].map((col) => (
+                <View key={col} style={{ width: 310, marginRight: 18 }}>
+                  {[1, 2, 3, 4].map((row) => (
+                    <TrackRowSkeleton key={row} />
+                  ))}
+                </View>
               ))}
             </ScrollView>
           ) : dailyRecommendations.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {dailyRecommendations.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => playSong(item, dailyRecommendations, 'neutral')}
-                  activeOpacity={0.88}
-                  style={[
-                    {
-                      marginRight: 16,
-                      width: 160,
-                      borderRadius: 16,
-                      borderWidth: 2.5,
-                      borderColor: palette.border,
-                      backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
-                      padding: 12,
-                      // @ts-ignore - Glassmorphism support
-                      backdropFilter: 'blur(20px)',
-                    },
-                    shadow(`4px 4px 0px ${item.color}`, {
-                      shadowColor: item.color,
-                      shadowOffset: { width: 4, height: 4 },
-                      shadowOpacity: 0.8,
-                      shadowRadius: 0,
-                      elevation: 6,
-                    })
-                  ]}
-                >
-                  <SafeImage
-                    uri={item.artwork}
-                    style={{ width: '100%', height: 120, borderRadius: 12, borderWidth: 2, borderColor: palette.border }}
-                    resizeMode="cover"
-                  />
-                  <Text
-                    style={{ color: palette.text, fontWeight: '900', fontSize: 13, marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}
-                    numberOfLines={1}
-                  >
-                    {item.title}
-                  </Text>
-                  <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.8 }} numberOfLines={1}>
-                    {item.artist}
-                  </Text>
-                </TouchableOpacity>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
+              {chunkArray(dailyRecommendations, 4).map((chunk, colIndex) => (
+                <View key={colIndex} style={{ width: 310, marginRight: 18 }}>
+                  {chunk.map((item) => {
+                    const isCurrent = currentTrack?.id === item.id;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        onPress={() => playSong(item, dailyRecommendations, 'neutral')}
+                        activeOpacity={0.88}
+                        style={[
+                          {
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: 8,
+                            borderRadius: 14,
+                            marginBottom: 8,
+                            backgroundColor: isCurrent 
+                              ? 'rgba(255, 47, 63, 0.08)' 
+                              : (themeMode === 'dark' ? 'rgba(28,28,30,0.3)' : 'rgba(255,255,255,0.5)'),
+                            borderWidth: 1.5,
+                            borderColor: isCurrent 
+                              ? 'rgba(255, 47, 63, 0.35)' 
+                              : (themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                          },
+                          shadow(isCurrent ? '0px 4px 12px rgba(255,47,63,0.15)' : '0px 2px 8px rgba(0,0,0,0.05)', {
+                            shadowColor: isCurrent ? '#FF2F3F' : '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 4,
+                            elevation: 2,
+                          })
+                        ]}
+                      >
+                        <SafeImage
+                          uri={item.artwork}
+                          style={{ width: 52, height: 52, borderRadius: 10, borderWidth: 1, borderColor: palette.border }}
+                          resizeMode="cover"
+                        />
+                        <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                          <Text
+                            style={{ 
+                              color: isCurrent ? '#FF2F3F' : palette.text, 
+                              fontWeight: '800', 
+                              fontSize: 13, 
+                              textTransform: 'uppercase', 
+                              letterSpacing: 0.3 
+                            }}
+                            numberOfLines={1}
+                          >
+                            {item.title}
+                          </Text>
+                          <Text 
+                            style={{ 
+                              color: palette.textSubtle, 
+                              fontWeight: '600', 
+                              fontSize: 10.5, 
+                              marginTop: 3, 
+                              textTransform: 'uppercase', 
+                              letterSpacing: 0.5 
+                            }} 
+                            numberOfLines={1}
+                          >
+                            {item.artist}
+                          </Text>
+                        </View>
+                        <View style={{ marginRight: 4 }}>
+                          {isCurrent && isPlaying ? (
+                            <View style={{ height: 24, justifyContent: 'center' }}>
+                              <EqualizerBars color="#FF2F3F" barCount={4} height={16} active={isPlaying} />
+                            </View>
+                          ) : (
+                            <Play stroke={isCurrent ? '#FF2F3F' : palette.textSubtle} fill={isCurrent ? '#FF2F3F' : 'none'} size={16} />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               ))}
             </ScrollView>
           ) : (

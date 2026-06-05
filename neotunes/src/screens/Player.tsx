@@ -172,12 +172,10 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const { user } = useAuthStore();
   const [isSaved, setIsSaved] = useState(false);
   const [jamModalVisible, setJamModalVisible] = useState(false);
-  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [jamBusy, setJamBusy] = useState(false);
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [showSpeedPicker, setShowSpeedPicker] = useState(false);
 
   const controlsLocked = jamConnected && jamRole === 'guest';
   const jamIdentity = displayName !== '' ? displayName : (user?.email?.split('@')[0] ?? 'Listener');
@@ -191,8 +189,8 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
   const lyricsScrollViewRef = useRef<ScrollView>(null);
 
-  const spinValue = useRef(new Animated.Value(0)).current;
-  const spinRef = useRef<Animated.CompositeAnimation | null>(null);
+  const [activeTab, setActiveTab] = useState<'upnext' | 'lyrics' | 'audio'>('upnext');
+  const glowPulseAnim = useRef(new Animated.Value(1)).current;
 
   const aura1Anim = useRef(new Animated.Value(0)).current;
   const aura2Anim = useRef(new Animated.Value(0)).current;
@@ -301,25 +299,36 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   }, [sleepTimerMinutes]);
 
   useEffect(() => {
+    let pulse: Animated.CompositeAnimation | null = null;
     if (isPlaying) {
-      spinRef.current = Animated.loop(
-        Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 10000,
-          easing: Easing.linear,
-          useNativeDriver: false,
-        })
+      pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowPulseAnim, {
+            toValue: 1.10,
+            duration: 2500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowPulseAnim, {
+            toValue: 0.95,
+            duration: 2500,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
       );
-      spinRef.current.start();
+      pulse.start();
     } else {
-      spinRef.current?.stop();
+      Animated.timing(glowPulseAnim, {
+        toValue: 1.0,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [isPlaying, spinValue]);
-
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+    return () => {
+      pulse?.stop();
+    };
+  }, [isPlaying, glowPulseAnim]);
 
   if (!currentTrack) {
     navigation.goBack();
@@ -570,117 +579,48 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Vinyl Disc */}
-        <View style={{ alignItems: 'center', marginTop: 8, marginBottom: 28 }}>
-          <View style={[
-            {
-              width: ART_SIZE + 20,
-              height: ART_SIZE + 20,
-              borderRadius: (ART_SIZE + 20) / 2,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-              borderWidth: 2,
-              borderColor: `${currentTrack.color}30`,
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-            shadow(`0 12px 40px ${currentTrack.color}35`, {
-              shadowColor: currentTrack.color,
-              shadowOffset: { width: 0, height: 12 },
-              shadowOpacity: 0.35,
-              shadowRadius: 28,
-              elevation: 20,
-            }),
-          ]}>
-            <Animated.View
-              style={{
-                width: ART_SIZE,
-                height: ART_SIZE,
-                borderRadius: ART_SIZE / 2,
-                overflow: 'hidden',
-                borderWidth: 4,
-                borderColor: palette.background,
-                transform: [{ rotate: spin }],
-              }}
-            >
-              <SafeImage uri={currentTrack.artwork} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-            </Animated.View>
-
-            {/* Center hole */}
-            <View style={{
-              position: 'absolute',
-              width: 16,
-              height: 16,
-              borderRadius: 8,
-              backgroundColor: palette.background,
-              borderWidth: 2,
-              borderColor: `${currentTrack.color}60`,
-              zIndex: 10,
-            }} />
-
-            {/* Glowing Svg Holographic Radar deck grid */}
-            <View style={{ position: 'absolute', width: ART_SIZE + 40, height: ART_SIZE + 40, pointerEvents: 'none', alignItems: 'center', justifyContent: 'center' }}>
-              <Svg width={ART_SIZE + 40} height={ART_SIZE + 40}>
-                {/* Outer ticks */}
-                <Circle
-                  cx={(ART_SIZE + 40) / 2}
-                  cy={(ART_SIZE + 40) / 2}
-                  r={(ART_SIZE + 32) / 2}
-                  stroke={currentTrack.color || '#00FF85'}
-                  strokeWidth={1}
-                  strokeDasharray="2, 6"
-                  opacity={0.35}
-                />
-                {/* Grid guidelines */}
-                <Circle
-                  cx={(ART_SIZE + 40) / 2}
-                  cy={(ART_SIZE + 40) / 2}
-                  r={(ART_SIZE + 12) / 2}
-                  stroke={currentTrack.color || '#00FF85'}
-                  strokeWidth={1.2}
-                  strokeDasharray="1, 8"
-                  opacity={0.45}
-                />
-                <Circle
-                  cx={(ART_SIZE + 40) / 2}
-                  cy={(ART_SIZE + 40) / 2}
-                  r={(ART_SIZE + 36) / 2}
-                  stroke={currentTrack.color || '#00FF85'}
-                  strokeWidth={0.8}
-                  opacity={0.2}
-                />
-              </Svg>
-            </View>
-
-            {/* Rotating Scanning Laser Line */}
+        {/* Cover Art Deck */}
+        <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 28 }}>
+          <View style={{ width: ART_SIZE, height: ART_SIZE, justifyContent: 'center', alignItems: 'center' }}>
+            {/* Ambient Pulsing Glow Halo */}
             <Animated.View style={{
               position: 'absolute',
-              width: ART_SIZE + 20,
-              height: ART_SIZE + 20,
-              borderRadius: (ART_SIZE + 20) / 2,
-              transform: [{ rotate: spin }],
+              width: ART_SIZE - 20,
+              height: ART_SIZE - 20,
+              borderRadius: 24,
+              backgroundColor: currentTrack.color || '#FF2F3F',
+              transform: [{ scale: glowPulseAnim }],
+              opacity: isDark ? 0.45 : 0.25,
+              // @ts-ignore
+              ...Platform.select({
+                web: { filter: 'blur(40px)' },
+                default: {}
+              }),
               pointerEvents: 'none',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 5,
-            }}>
-              <Svg width={ART_SIZE + 20} height={ART_SIZE + 20}>
-                <Line
-                  x1={(ART_SIZE + 20) / 2}
-                  y1={(ART_SIZE + 20) / 2}
-                  x2={(ART_SIZE + 20) / 2}
-                  y2={0}
-                  stroke={currentTrack.color || '#00FF85'}
-                  strokeWidth={1.5}
-                  opacity={0.7}
-                />
-                <Circle
-                  cx={(ART_SIZE + 20) / 2}
-                  cy={3}
-                  r={3.5}
-                  fill={currentTrack.color || '#00FF85'}
-                  opacity={0.9}
-                />
-              </Svg>
+            }} />
+
+            {/* Artwork Card */}
+            <Animated.View
+              style={[
+                {
+                  width: ART_SIZE,
+                  height: ART_SIZE,
+                  borderRadius: 24,
+                  overflow: 'hidden',
+                  borderWidth: 2,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  backgroundColor: palette.surface,
+                },
+                shadow(`0 12px 36px ${(currentTrack.color || '#FF2F3F')}45`, {
+                  shadowColor: currentTrack.color || '#FF2F3F',
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 24,
+                  elevation: 12,
+                }),
+              ]}
+            >
+              <SafeImage uri={currentTrack.artwork} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
             </Animated.View>
           </View>
         </View>
@@ -803,263 +743,366 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Utility Row: Jam, Share, Sleep Timer, Speed */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+        {/* Utility Row: Jam, Share */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 18 }}>
           <TouchableOpacity
             onPress={handleStartJam}
-            style={[styles.utilBtn, { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}
+            style={[styles.utilBtn, { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)', flex: 1, justifyContent: 'center' }]}
           >
             <UsersRound stroke={accentColor} size={16} />
-            <Text style={[styles.utilBtnText, { color: accentColor }]}>{jamConnected ? 'JAM' : 'START JAM'}</Text>
+            <Text style={[styles.utilBtnText, { color: accentColor }]}>{jamConnected ? 'JAM LIVE' : 'START JAM'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={handleShareTrack}
-            style={[styles.utilBtn, { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}
+            style={[styles.utilBtn, { borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)', flex: 1, justifyContent: 'center' }]}
           >
             <Share2 stroke={palette.textSubtle} size={16} />
-            <Text style={[styles.utilBtnText, { color: palette.textSubtle }]}>SHARE</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => {
-              const nextIdx = SLEEP_TIMER_OPTIONS.findIndex((o) => o.minutes === sleepTimerMinutes);
-              const next = SLEEP_TIMER_OPTIONS[(nextIdx + 1) % SLEEP_TIMER_OPTIONS.length];
-              setSleepTimerMinutes(next.minutes);
-              if (next.minutes > 0) {
-                Alert.alert('Sleep Timer', `Playback will pause in ${next.label}.`);
-              }
-            }}
-            style={[styles.utilBtn, {
-              borderColor: sleepTimerMinutes > 0 ? 'rgba(255,215,0,0.3)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
-              backgroundColor: sleepTimerMinutes > 0 ? 'rgba(255,215,0,0.1)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)'),
-            }]}
-          >
-            <Timer stroke={sleepTimerMinutes > 0 ? '#FFD700' : palette.textSubtle} size={16} />
-            <Text style={[styles.utilBtnText, { color: sleepTimerMinutes > 0 ? '#FFD700' : palette.textSubtle }]}>
-              {sleepTimerMinutes > 0 ? `${sleepTimerMinutes}m` : 'SLEEP'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setShowSpeedPicker(!showSpeedPicker)}
-            style={[styles.utilBtn, {
-              borderColor: playbackSpeed !== 1 ? 'rgba(0,212,255,0.3)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
-              backgroundColor: playbackSpeed !== 1 ? 'rgba(0,212,255,0.1)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)'),
-            }]}
-          >
-            <Gauge stroke={playbackSpeed !== 1 ? '#00D4FF' : palette.textSubtle} size={16} />
-            <Text style={[styles.utilBtnText, { color: playbackSpeed !== 1 ? '#00D4FF' : palette.textSubtle }]}>
-              {playbackSpeed}x
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setSettingsModalVisible(true)}
-            style={[styles.utilBtn, {
-              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)',
-            }]}
-          >
-            <Settings stroke={palette.textSubtle} size={16} />
-            <Text style={[styles.utilBtnText, { color: palette.textSubtle }]}>AUDIO</Text>
+            <Text style={[styles.utilBtnText, { color: palette.textSubtle }]}>SHARE TRACK</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Speed Picker */}
-        {showSpeedPicker && (
-          <GlassPanel style={{ marginTop: 12, flexDirection: 'row', justifyContent: 'space-around' }}>
-            {SPEED_OPTIONS.map((speed) => (
-              <TouchableOpacity
-                key={speed}
-                onPress={() => { setPlaybackSpeed(speed); setShowSpeedPicker(false); }}
-                style={{
-                  paddingHorizontal: 12, paddingVertical: 8,
-                  borderRadius: 12,
-                  backgroundColor: playbackSpeed === speed ? `${accentColor}20` : 'transparent',
-                }}
-              >
-                <Text style={{
-                  color: playbackSpeed === speed ? accentColor : palette.textSubtle,
-                  fontWeight: '800', fontSize: 13,
-                }}>{speed}x</Text>
-              </TouchableOpacity>
-            ))}
+        {/* Jam Status */}
+        {jamConnected && (
+          <GlassPanel style={{ marginTop: 14 }}>
+            <Text style={{
+              color: accentColor,
+              fontWeight: '700', fontSize: 11, letterSpacing: 0.5,
+            }}>
+              Jam Live: {jamSessionCode}
+            </Text>
+            <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10, marginTop: 4 }}>
+              {jamRole?.toUpperCase()} • {jamParticipantCount} participant{jamParticipantCount === 1 ? '' : 's'} • Last sync {jamSyncLabel}
+            </Text>
           </GlassPanel>
         )}
 
-        {/* Jam Status */}
-        <GlassPanel style={{ marginTop: 16 }}>
-          <Text style={{
-            color: jamConnected ? accentColor : palette.textSubtle,
-            fontWeight: '700', fontSize: 11, letterSpacing: 0.5,
-          }}>
-            {jamConnected ? `Jam Live: ${jamSessionCode}` : 'Jam Session Offline'}
-          </Text>
-          <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10, marginTop: 4 }}>
-            {jamConnected
-              ? `${jamRole?.toUpperCase()} • ${jamParticipantCount} participant${jamParticipantCount === 1 ? '' : 's'} • Last sync ${jamSyncLabel}`
-              : 'Create or join a room to sync with friends.'}
-          </Text>
-        </GlassPanel>
-
-        {/* Up Next Preview */}
-        {upNextTracks.length > 0 && (
-          <View style={{ marginTop: 18 }}>
-            <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 10 }}>
-              Up Next
-            </Text>
-            {upNextTracks.map((track, i) => (
+        {/* Segmented Bottom Tab Controller */}
+        <View style={{
+          flexDirection: 'row',
+          backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+          borderRadius: 16,
+          padding: 4,
+          marginTop: 22,
+          marginBottom: 16,
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+        }}>
+          {['UP NEXT', 'LYRICS', 'AUDIO PREFS'].map((label, index) => {
+            const tabKeys = ['upnext', 'lyrics', 'audio'] as const;
+            const tabKey = tabKeys[index];
+            const isActive = activeTab === tabKey;
+            return (
               <TouchableOpacity
-                key={track.id + i}
-                onPress={() => {
-                  if (controlsLocked) { lockMessage(); return; }
-                  void setCurrentTrack(track);
-                }}
+                key={tabKey}
+                onPress={() => setActiveTab(tabKey)}
+                activeOpacity={0.8}
                 style={{
-                  flexDirection: 'row', alignItems: 'center',
-                  borderRadius: 14,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
-                  borderWidth: 1,
-                  borderColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-                  padding: 10,
-                  marginBottom: 8,
+                  flex: 1,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: isActive ? (currentTrack.color || '#FF2F3F') : 'transparent',
                 }}
               >
-                <SafeImage uri={track.artwork} style={{ width: 40, height: 40, borderRadius: 8 }} resizeMode="cover" />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text numberOfLines={1} style={{ color: palette.text, fontWeight: '700', fontSize: 13 }}>{track.title}</Text>
-                  <Text numberOfLines={1} style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10, marginTop: 2 }}>{track.artist}</Text>
-                </View>
-                <Text style={{ color: palette.textMuted, fontWeight: '700', fontSize: 10 }}>#{i + 1}</Text>
+                <Text style={{
+                  color: isActive ? '#FFF' : palette.textSubtle,
+                  fontWeight: '800',
+                  fontSize: 11.5,
+                  letterSpacing: 0.8,
+                }}>
+                  {label}
+                </Text>
               </TouchableOpacity>
-            ))}
+            );
+          })}
+        </View>
+
+        {/* Tab Panels */}
+        {activeTab === 'upnext' && (
+          <View style={{ marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ color: palette.textSubtle, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                Queue List ({queue.length} Tracks)
+              </Text>
+              {jamConnected && (
+                <Text style={{ color: accentColor, fontWeight: '700', fontSize: 10 }}>
+                  JAM ACTIVE ⚡
+                </Text>
+              )}
+            </View>
+            {queue.length === 0 ? (
+              <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 12 }}>No tracks queued.</Text>
+            ) : (
+              queue.map((track, index) => {
+                const isCurrent = track.id === currentTrack.id;
+                return (
+                  <TouchableOpacity
+                    key={track.id + '-' + index}
+                    onPress={() => {
+                      if (controlsLocked) { lockMessage(); return; }
+                      if (!isCurrent) { void setCurrentTrack(track); }
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      borderRadius: 14,
+                      backgroundColor: isCurrent 
+                        ? `${(currentTrack.color || '#FF2F3F')}15` 
+                        : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
+                      borderWidth: 1,
+                      borderColor: isCurrent 
+                        ? `${(currentTrack.color || '#FF2F3F')}35` 
+                        : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                      padding: 10,
+                      marginBottom: 8,
+                      opacity: controlsLocked ? 0.65 : 1,
+                    }}
+                  >
+                    <SafeImage uri={track.artwork} style={{ width: 42, height: 42, borderRadius: 8 }} resizeMode="cover" />
+                    <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                      <Text numberOfLines={1} style={{ color: isCurrent ? (currentTrack.color || '#FF2F3F') : palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                        {track.title}
+                      </Text>
+                      <Text numberOfLines={1} style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10.5, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {track.artist}
+                      </Text>
+                    </View>
+                    <View>
+                      {isCurrent && isPlaying ? (
+                        <View style={{ height: 18, justifyContent: 'center' }}>
+                          <EqualizerBars color={currentTrack.color || '#FF2F3F'} barCount={4} height={14} active={isPlaying} />
+                        </View>
+                      ) : (
+                        <Text style={{ color: isCurrent ? (currentTrack.color || '#FF2F3F') : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                          {isCurrent ? 'NOW' : `#${index + 1}`}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
         )}
 
-        {/* Synced Lyrics Panel */}
-        <GlassPanel style={{ marginTop: 18, padding: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Music2 stroke={currentTrack.color} size={16} />
-              <Text style={{ color: palette.textSubtle, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, marginLeft: 8, textTransform: 'uppercase' }}>
-                Synced Lyrics
-              </Text>
+        {activeTab === 'lyrics' && (
+          <View style={{ marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Music2 stroke={currentTrack.color || '#FF2F3F'} size={16} />
+                <Text style={{ color: palette.textSubtle, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, marginLeft: 8, textTransform: 'uppercase' }}>
+                  Synced Lyrics
+                </Text>
+              </View>
+              <View style={{
+                backgroundColor: `${(currentTrack.color || '#FF2F3F')}20`,
+                borderRadius: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderWidth: 1,
+                borderColor: `${(currentTrack.color || '#FF2F3F')}40`,
+              }}>
+                <Text style={{ color: currentTrack.color || '#FF2F3F', fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>BEAT-SYNC ⚡</Text>
+              </View>
             </View>
-            <View style={{
-              backgroundColor: `${currentTrack.color}20`,
-              borderRadius: 8,
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderWidth: 1,
-              borderColor: `${currentTrack.color}40`,
-            }}>
-              <Text style={{ color: currentTrack.color, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>BEAT-SYNC ⚡</Text>
-            </View>
-          </View>
 
-          <View style={{ height: 200 }}>
-            <ScrollView
-              ref={lyricsScrollViewRef}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingVertical: 20 }}
-            >
-              {lyrics.map((line, i) => {
-                const isActive = i === activeIndex;
-                return (
-                  <TouchableOpacity
-                    key={line.time + '-' + i}
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      if (controlsLocked) {
-                        lockMessage();
-                      } else {
-                        seekTo(line.time);
-                      }
-                    }}
-                    style={{
-                      height: 44,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      width: '100%',
-                    }}
-                  >
-                    <Text
+            <View style={{ height: 260 }}>
+              <ScrollView
+                ref={lyricsScrollViewRef}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 10 }}
+              >
+                {lyrics.map((line, i) => {
+                  const isActive = i === activeIndex;
+                  return (
+                    <TouchableOpacity
+                      key={line.time + '-' + i}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        if (controlsLocked) {
+                          lockMessage();
+                        } else {
+                          seekTo(line.time);
+                        }
+                      }}
                       style={{
-                        color: isActive ? currentTrack.color : palette.text,
-                        fontWeight: isActive ? '800' : '600',
-                        fontSize: isActive ? 16 : 13.5,
-                        textAlign: 'center',
-                        opacity: isActive ? 1 : 0.35,
-                        textTransform: 'uppercase',
-                        letterSpacing: isActive ? 0.3 : 0,
-                        ...(isActive ? {
-                          textShadowColor: `${currentTrack.color}60`,
-                          textShadowOffset: { width: 0, height: 0 },
-                          textShadowRadius: 10,
-                        } : {})
+                        height: 46,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
                       }}
                     >
-                      {line.text}
+                      <Text
+                        style={{
+                          color: isActive ? (currentTrack.color || '#FF2F3F') : palette.text,
+                          fontWeight: isActive ? '900' : '600',
+                          fontSize: isActive ? 16.5 : 13.5,
+                          textAlign: 'center',
+                          opacity: isActive ? 1 : 0.35,
+                          textTransform: 'uppercase',
+                          letterSpacing: isActive ? 0.3 : 0,
+                          ...(isActive ? {
+                            textShadowColor: `${(currentTrack.color || '#FF2F3F')}60`,
+                            textShadowOffset: { width: 0, height: 0 },
+                            textShadowRadius: 10,
+                          } : {})
+                        }}
+                      >
+                        {line.text}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        )}
+
+        {activeTab === 'audio' && (
+          <View style={{ marginTop: 4 }}>
+            <Text style={{ color: palette.textSubtle, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 14 }}>
+              Audio Settings
+            </Text>
+
+            {/* Crossfade Card */}
+            <View style={{
+              backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+              borderRadius: 16,
+              borderWidth: 1.2,
+              borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              padding: 14,
+              marginBottom: 14,
+            }}>
+              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 0.5, marginBottom: 10 }}>
+                CROSSFADE DURATION
+              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 6 }}>
+                {[0, 3, 6, 9, 12].map((seconds) => (
+                  <TouchableOpacity
+                    key={seconds}
+                    onPress={() => setCrossfadeSeconds(seconds)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                      backgroundColor: crossfadeSeconds === seconds
+                        ? (currentTrack.color || '#FF2F3F')
+                        : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                      borderWidth: 1,
+                      borderColor: crossfadeSeconds === seconds ? (currentTrack.color || '#FF2F3F') : 'transparent',
+                    }}
+                  >
+                    <Text style={{
+                      color: crossfadeSeconds === seconds ? '#FFF' : palette.textSubtle,
+                      fontWeight: '800',
+                      fontSize: 11,
+                    }}>
+                      {seconds === 0 ? 'Off' : `${seconds}s`}
                     </Text>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </GlassPanel>
+                ))}
+              </View>
+            </View>
 
-        {/* Queue */}
-        <View style={{ marginTop: 22 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-            <ListMusic stroke={palette.textSubtle} size={16} />
-            <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 1.5, marginLeft: 8, textTransform: 'uppercase' }}>
-              Queue ({queue.length})
-            </Text>
-          </View>
+            {/* Gapless Playback Toggle */}
+            <View style={{
+              backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+              borderRadius: 16,
+              borderWidth: 1.2,
+              borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              padding: 14,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 14,
+            }}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 0.5 }}>
+                  GAPLESS PLAYBACK
+                </Text>
+                <Text style={{ color: palette.textMuted, fontSize: 9.5, fontWeight: '500', marginTop: 4 }}>
+                  Prefetches next tracks to eliminate silence gaps.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setGaplessEnabled(!gaplessEnabled)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  backgroundColor: gaplessEnabled ? `${(currentTrack.color || '#FF2F3F')}20` : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                  borderWidth: 1,
+                  borderColor: gaplessEnabled ? (currentTrack.color || '#FF2F3F') : 'transparent',
+                }}
+              >
+                <Text style={{
+                  color: gaplessEnabled ? (currentTrack.color || '#FF2F3F') : palette.textSubtle,
+                  fontWeight: '800',
+                  fontSize: 10.5,
+                }}>
+                  {gaplessEnabled ? 'ACTIVE' : 'DISABLED'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          {queue.length === 0 ? (
-            <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 12 }}>No tracks queued yet.</Text>
-          ) : (
-            queue.slice(0, 10).map((track, index) => {
-              const isCurrent = track.id === currentTrack.id;
-              return (
-                <TouchableOpacity
-                  key={track.id + index}
-                  onPress={() => {
-                    if (controlsLocked) { lockMessage(); return; }
-                    if (!isCurrent) { void setCurrentTrack(track); }
-                  }}
-                  style={{
-                    backgroundColor: isCurrent ? `${currentTrack.color}12` : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
-                    borderWidth: 1,
-                    borderColor: isCurrent ? `${currentTrack.color}30` : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    marginBottom: 6,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    opacity: controlsLocked ? 0.65 : 1,
-                  }}
-                >
-                  <View style={{ flex: 1, paddingRight: 8 }}>
-                    <Text numberOfLines={1} style={{ color: palette.text, fontWeight: '700', fontSize: 12 }}>
-                      {track.title}
-                    </Text>
-                    <Text numberOfLines={1} style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10, marginTop: 2 }}>
-                      {track.artist}
-                    </Text>
-                  </View>
-                  <Text style={{ color: isCurrent ? currentTrack.color : palette.textMuted, fontWeight: '800', fontSize: 10 }}>
-                    {isCurrent ? '▶ NOW' : `#${index + 1}`}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </View>
+            {/* Sleep Timer & Playback Speed Row */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              {/* Sleep Timer */}
+              <TouchableOpacity
+                onPress={() => {
+                  const nextIdx = SLEEP_TIMER_OPTIONS.findIndex((o) => o.minutes === sleepTimerMinutes);
+                  const next = SLEEP_TIMER_OPTIONS[(nextIdx + 1) % SLEEP_TIMER_OPTIONS.length];
+                  setSleepTimerMinutes(next.minutes);
+                  if (next.minutes > 0) {
+                    Alert.alert('Sleep Timer', `Playback will pause in ${next.label}.`);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: sleepTimerMinutes > 0 ? 'rgba(255,215,0,0.1)' : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'),
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: sleepTimerMinutes > 0 ? 'rgba(255,215,0,0.3)' : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                  padding: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Timer stroke={sleepTimerMinutes > 0 ? '#FFD700' : palette.textSubtle} size={18} />
+                <Text style={{ color: sleepTimerMinutes > 0 ? '#FFD700' : palette.textSubtle, fontWeight: '800', fontSize: 10, marginTop: 6 }}>
+                  SLEEP: {sleepTimerMinutes > 0 ? `${sleepTimerMinutes}m` : 'OFF'}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Speed Control */}
+              <TouchableOpacity
+                onPress={() => {
+                  const currentIdx = SPEED_OPTIONS.indexOf(playbackSpeed);
+                  const nextSpeed = SPEED_OPTIONS[(currentIdx + 1) % SPEED_OPTIONS.length];
+                  setPlaybackSpeed(nextSpeed);
+                }}
+                style={{
+                  flex: 1,
+                  backgroundColor: playbackSpeed !== 1 ? 'rgba(0,212,255,0.1)' : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'),
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: playbackSpeed !== 1 ? 'rgba(0,212,255,0.3)' : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                  padding: 14,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Gauge stroke={playbackSpeed !== 1 ? '#00D4FF' : palette.textSubtle} size={18} />
+                <Text style={{ color: playbackSpeed !== 1 ? '#00D4FF' : palette.textSubtle, fontWeight: '800', fontSize: 10, marginTop: 6 }}>
+                  SPEED: {playbackSpeed}x
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -1164,116 +1207,6 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
             >
               <Text style={[styles.modalBtnText, { color: palette.text }]}>Close</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Audio Settings Drawer Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={settingsModalVisible}
-        onRequestClose={() => setSettingsModalVisible(false)}
-      >
-        <View style={{
-          flex: 1,
-          justifyContent: 'flex-end',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-        }}>
-          <View style={{
-            backgroundColor: isDark ? 'rgba(20,20,22,0.95)' : 'rgba(255,255,255,0.95)',
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            padding: 24,
-            paddingBottom: 40,
-            borderWidth: 1.5,
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-            // @ts-ignore
-            backdropFilter: 'blur(30px)',
-          }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <Text style={{ color: palette.text, fontSize: 18, fontWeight: '800', letterSpacing: -0.2 }}>
-                Audio Preferences
-              </Text>
-              <TouchableOpacity
-                onPress={() => setSettingsModalVisible(false)}
-                style={{
-                  paddingHorizontal: 12, paddingVertical: 6,
-                  borderRadius: 12,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
-                }}
-              >
-                <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 12 }}>DONE</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ marginBottom: 24 }}>
-              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 12 }}>
-                Crossfade Duration
-              </Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-                {[0, 3, 6, 9, 12].map((seconds) => (
-                  <TouchableOpacity
-                    key={seconds}
-                    onPress={() => setCrossfadeSeconds(seconds)}
-                    style={{
-                      flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      backgroundColor: crossfadeSeconds === seconds
-                        ? currentTrack.color
-                        : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
-                      borderWidth: 1,
-                      borderColor: crossfadeSeconds === seconds ? currentTrack.color : 'transparent',
-                    }}
-                  >
-                    <Text style={{
-                      color: crossfadeSeconds === seconds ? '#FFF' : palette.textSubtle,
-                      fontWeight: '800',
-                      fontSize: 12,
-                    }}>
-                      {seconds === 0 ? 'Off' : `${seconds}s`}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '500', marginTop: 8 }}>
-                Blends transitions smoothly between ending and starting tracks. Capped to 250ms on manual play/pause.
-              </Text>
-            </View>
-
-            <View style={{ marginBottom: 16 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View style={{ flex: 1, paddingRight: 16 }}>
-                  <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 }}>
-                    Gapless Playback
-                  </Text>
-                  <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '500' }}>
-                    Prefetches next songs to eliminate gaps between consecutive tracks.
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setGaplessEnabled(!gaplessEnabled)}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 10,
-                    borderRadius: 16,
-                    backgroundColor: gaplessEnabled ? `${currentTrack.color}20` : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
-                    borderWidth: 1,
-                    borderColor: gaplessEnabled ? currentTrack.color : 'transparent',
-                  }}
-                >
-                  <Text style={{
-                    color: gaplessEnabled ? currentTrack.color : palette.textSubtle,
-                    fontWeight: '800',
-                    fontSize: 12,
-                  }}>
-                    {gaplessEnabled ? 'ACTIVE' : 'DISABLED'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           </View>
         </View>
       </Modal>

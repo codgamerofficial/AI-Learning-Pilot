@@ -14,16 +14,16 @@ export interface ThemePalette {
 }
 
 const DARK_PALETTE: ThemePalette = {
-  background: '#0A0A0A',
-  surface: '#1C1C1E',
-  surfaceAlt: '#121212',
+  background: '#030303',
+  surface: '#151515',
+  surfaceAlt: '#0E0E0E',
   text: '#FFFFFF',
-  textMuted: 'rgba(255,255,255,0.7)',
+  textMuted: 'rgba(255,255,255,0.75)',
   textSubtle: 'rgba(255,255,255,0.5)',
-  border: 'rgba(255,255,255,0.12)',
-  accent: '#00D4FF',
-  accentStrong: '#00FF85',
-  dangerSurface: '#2A1010',
+  border: 'rgba(255,255,255,0.1)',
+  accent: '#FF2F3F',
+  accentStrong: '#FF6B7B',
+  dangerSurface: '#3A1010',
 };
 
 const LIGHT_PALETTE: ThemePalette = {
