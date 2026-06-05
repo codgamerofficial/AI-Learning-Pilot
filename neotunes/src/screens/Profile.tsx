@@ -40,7 +40,7 @@ export default function ProfileScreen() {
 
   const palette = getThemePalette(themeMode);
   const isDark = themeMode === 'dark';
-  const accentColor = isDark ? '#00FF85' : '#0A84FF';
+  const accentColor = isDark ? '#FF2F3F' : '#E52535';
 
   // Avatar ring animation
   const ringAnim = useSharedValue(0);
@@ -56,7 +56,7 @@ export default function ProfileScreen() {
   }, []);
 
   const animatedRingStyle = useAnimatedStyle(() => ({
-    borderColor: `rgba(${isDark ? '0,255,133' : '10,132,255'}, ${0.3 + ringAnim.value * 0.5})`,
+    borderColor: `rgba(${isDark ? '255,47,63' : '229,37,53'}, ${0.3 + ringAnim.value * 0.5})`,
     transform: [{ scale: 1 + ringAnim.value * 0.03 }],
   }));
 

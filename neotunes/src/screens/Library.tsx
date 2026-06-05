@@ -357,15 +357,15 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
                   paddingVertical: 10,
                   borderRadius: 20,
                   backgroundColor: isActive
-                    ? (themeMode === 'dark' ? 'rgba(0, 255, 133, 0.12)' : 'rgba(10, 132, 255, 0.08)')
+                    ? (themeMode === 'dark' ? 'rgba(255, 47, 63, 0.12)' : 'rgba(229, 37, 53, 0.08)')
                     : 'transparent',
                   borderWidth: 1.2,
                   borderColor: isActive
-                    ? (themeMode === 'dark' ? 'rgba(0, 255, 133, 0.45)' : 'rgba(10, 132, 255, 0.45)')
+                    ? (themeMode === 'dark' ? 'rgba(255, 47, 63, 0.45)' : 'rgba(229, 37, 53, 0.45)')
                     : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  shadowColor: isActive ? (themeMode === 'dark' ? '#00FF85' : '#0A84FF') : 'transparent',
+                  shadowColor: isActive ? (themeMode === 'dark' ? '#FF2F3F' : '#E52535') : 'transparent',
                   shadowOffset: { width: 0, height: 0 },
                   shadowOpacity: isActive ? 0.35 : 0,
                   shadowRadius: 6,
@@ -374,7 +374,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
               >
                 <Text style={{
                   color: isActive
-                    ? (themeMode === 'dark' ? '#00FF85' : '#0A84FF')
+                    ? (themeMode === 'dark' ? '#FF2F3F' : '#E52535')
                     : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
                   fontWeight: '800',
                   fontSize: 11,
@@ -500,7 +500,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
                   shadow('0px 4px 12px rgba(0,0,0,0.06)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 })
                 ]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowColor: themeMode === 'dark' ? '#00FF85' : '#0A84FF', shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: themeMode === 'dark' ? '#FF2F3F' : '#E52535', shadowColor: themeMode === 'dark' ? '#FF2F3F' : '#E52535', shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
                     <Text style={{ color: palette.text, fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>{pl.title}</Text>
                   </View>
                 </View>

@@ -279,7 +279,7 @@ function MainTabs() {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const isDark = themeMode === 'dark';
   const shellBackground = isDark ? '#0A0A0A' : '#F3F4F6';
-  const accentColor = isDark ? '#00FF85' : '#0A84FF';
+  const accentColor = isDark ? '#FF2F3F' : '#E52535';
 
   return (
     <View style={{ flex: 1, backgroundColor: shellBackground }}>
@@ -317,7 +317,7 @@ function MainTabs() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 ...(focused ? {
-                  backgroundColor: isDark ? 'rgba(0,255,133,0.12)' : 'rgba(10,132,255,0.1)',
+                  backgroundColor: isDark ? 'rgba(255,47,63,0.12)' : 'rgba(229,37,53,0.1)',
                   borderRadius: 16,
                   paddingHorizontal: 14,
                   paddingVertical: 6,
@@ -454,7 +454,7 @@ export default function App() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: shellBackground, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={isDark ? '#00FF85' : '#0A84FF'} />
+        <ActivityIndicator size="large" color="#FF2F3F" />
       </View>
     );
   }

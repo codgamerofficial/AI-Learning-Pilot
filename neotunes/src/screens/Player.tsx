@@ -456,7 +456,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
     ? new Date(jamLastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : 'not synced yet';
 
-  const accentColor = isDark ? '#00FF85' : '#0A84FF';
+  const accentColor = isDark ? '#FF2F3F' : '#E52535';
 
   // Glass card helper
   const GlassPanel = ({ children, style }: { children: React.ReactNode; style?: any }) => (
@@ -499,7 +499,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         width: 300,
         height: 300,
         borderRadius: 150,
-        backgroundColor: isDark ? '#00FF85' : '#0A84FF',
+        backgroundColor: isDark ? '#FF2F3F' : '#E52535',
         opacity: isDark ? 0.12 : 0.06,
         // @ts-ignore
         ...Platform.select({

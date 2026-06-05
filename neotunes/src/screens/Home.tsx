@@ -1825,12 +1825,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                     borderWidth: 1.5,
                     borderRadius: 16,
                     backgroundColor: moodColors[i],
-                    borderColor: isActive ? '#00FF85' : 'rgba(255,255,255,0.08)',
+                    borderColor: isActive ? '#FFFFFF' : 'rgba(255,255,255,0.08)',
                   },
                   shadow(
-                    isActive ? '0px 8px 24px rgba(0,255,133,0.3)' : '0px 4px 12px rgba(0,0,0,0.15)',
+                    isActive ? `0px 8px 24px ${moodColors[i]}40` : '0px 4px 12px rgba(0,0,0,0.15)',
                     {
-                      shadowColor: isActive ? '#00FF85' : '#000',
+                      shadowColor: isActive ? moodColors[i] : '#000',
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: isActive ? 0.35 : 0.15,
                       shadowRadius: 8,
@@ -1937,12 +1937,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                         borderWidth: 1.5,
                         borderRadius: 16,
                         backgroundColor: moodItem.color,
-                        borderColor: isActive ? '#00FF85' : 'rgba(255,255,255,0.08)',
+                        borderColor: isActive ? '#FFFFFF' : 'rgba(255,255,255,0.08)',
                       },
                       shadow(
-                        isActive ? '0px 8px 24px rgba(0,255,133,0.3)' : '0px 4px 12px rgba(0,0,0,0.15)',
+                        isActive ? `0px 8px 24px ${moodItem.color}40` : '0px 4px 12px rgba(0,0,0,0.15)',
                         {
-                          shadowColor: isActive ? '#00FF85' : '#000',
+                          shadowColor: isActive ? moodItem.color : '#000',
                           shadowOffset: { width: 0, height: 4 },
                           shadowOpacity: isActive ? 0.35 : 0.15,
                           shadowRadius: 8,
@@ -2042,12 +2042,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                         borderWidth: 1.5,
                         borderRadius: 16,
                         backgroundColor: moodItem.color,
-                        borderColor: isActive ? '#00FF85' : palette.border,
+                        borderColor: isActive ? (themeMode === 'dark' ? '#FFFFFF' : '#000000') : palette.border,
                       },
                       shadow(
-                        isActive ? '0px 8px 24px rgba(0,255,133,0.3)' : '0px 4px 12px rgba(0,0,0,0.15)',
+                        isActive ? `0px 8px 24px ${moodItem.color}40` : '0px 4px 12px rgba(0,0,0,0.15)',
                         {
-                          shadowColor: isActive ? '#00FF85' : '#000',
+                          shadowColor: isActive ? moodItem.color : '#000',
                           shadowOffset: { width: 0, height: 4 },
                           shadowOpacity: isActive ? 0.35 : 0.15,
                           shadowRadius: 8,

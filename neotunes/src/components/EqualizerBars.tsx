@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function EqualizerBars({
-  color = '#00FF85',
+  color = '#FF2F3F',
   barCount = 4,
   height = 24,
   active = true,

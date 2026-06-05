@@ -56,7 +56,7 @@ export default function AuthScreen() {
       }} />
       <View style={{
         position: 'absolute', bottom: -50, left: -100, width: 250, height: 250, borderRadius: 125,
-        backgroundColor: '#00FF85', opacity: 0.12,
+        backgroundColor: '#FF2F3F', opacity: 0.1,
         // @ts-ignore
         filter: 'blur(70px)'
       }} />
@@ -133,29 +133,22 @@ export default function AuthScreen() {
 
           {/* Google Sign In Button */}
           {loading ? (
-            <View style={{ paddingVertical: 10, alignItems: 'stretch' }}>
-              <ActivityIndicator size="large" color="#00FF85" style={{ marginBottom: 16 }} />
-              <View style={{
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                borderRadius: 12,
-                padding: 14,
-                borderWidth: 1.2,
-                borderColor: 'rgba(0,255,133,0.3)',
-                alignSelf: 'stretch',
+            <View style={{ paddingVertical: 18, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator size="large" color="#FF2F3F" style={{ marginBottom: 18 }} />
+              <Text style={{
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 13,
+                fontWeight: '600',
+                letterSpacing: 0.3,
+                textAlign: 'center',
+                fontFamily: Platform.select({
+                  ios: 'Helvetica Neue',
+                  android: 'sans-serif-medium',
+                  default: 'system-ui',
+                }),
               }}>
-                <Text style={{ color: '#00FF85', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 4 }}>
-                  $ neotunes --init --agent-mode
-                </Text>
-                <Text style={{ color: '#00D4FF', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 4 }}>
-                  &gt; CONNECTING SECURE NEURAL HANDSHAKE... OK
-                </Text>
-                <Text style={{ color: '#7B61FF', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5, marginBottom: 4 }}>
-                  &gt; SYNCHRONIZING SUPABASE PLAYLIST DATABASES... OK
-                </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10, fontFamily: 'monospace', letterSpacing: 0.5 }}>
-                  &gt; REDIRECTING USER INTEGRATION PORTAL...
-                </Text>
-              </View>
+                Preparing your soundstage...
+              </Text>
             </View>
           ) : (
             <TouchableOpacity

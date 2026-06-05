@@ -142,7 +142,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const jamConnected = useJamStore((state) => state.isConnected);
   const jamRole = useJamStore((state) => state.role);
   const isDark = themeMode === 'dark';
-  const accentColor = isDark ? '#00FF85' : '#0A84FF';
+  const accentColor = isDark ? '#FF2F3F' : '#E52535';
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Track[]>([]);
@@ -273,14 +273,14 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
               flexDirection: 'row', alignItems: 'center',
               backgroundColor: isDark ? 'rgba(12, 12, 14, 0.7)' : 'rgba(255, 255, 255, 0.75)',
               borderWidth: 1.2,
-              borderColor: isDark ? 'rgba(0, 255, 133, 0.35)' : 'rgba(10, 132, 255, 0.35)',
+              borderColor: isDark ? 'rgba(255, 47, 63, 0.35)' : 'rgba(229, 37, 53, 0.35)',
               borderRadius: 16,
               paddingHorizontal: 16, paddingVertical: 10, marginBottom: 20,
               // @ts-ignore
               backdropFilter: 'blur(24px)',
             },
-            shadow('0px 4px 18px rgba(0, 255, 133, 0.08)', {
-              shadowColor: isDark ? '#00FF85' : '#0A84FF',
+            shadow('0px 4px 18px rgba(255, 47, 63, 0.08)', {
+              shadowColor: isDark ? '#FF2F3F' : '#E52535',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 12,

@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, Platform } from 'react-native';
-import { Sparkles } from 'lucide-react-native';
+import { View, Text, Image, Platform } from 'react-native';
 
 export default function BrandLogo({ style }: { style?: any }) {
   return (
@@ -9,17 +8,19 @@ export default function BrandLogo({ style }: { style?: any }) {
         width: 32,
         height: 32,
         borderRadius: 10,
-        backgroundColor: '#FF2F3F',
-        alignItems: 'center',
-        justifyContent: 'center',
         marginRight: 10,
         shadowColor: '#FF2F3F',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.35,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 5,
+        backgroundColor: '#FF2F3F',
       }}>
-        <Sparkles stroke="#FFF" size={18} strokeWidth={2.5} />
+        <Image
+          source={require('../../assets/icon.png')}
+          style={{ width: 32, height: 32, borderRadius: 10 }}
+          resizeMode="contain"
+        />
       </View>
       <Text style={{
         color: '#FFFFFF',
