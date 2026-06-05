@@ -1,10 +1,37 @@
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 
-// React Native Android emulator maps localhost to 10.0.2.2.
-// Web and iOS simulator can use standard localhost.
-const BASE_URL = Platform.OS === 'android'
-  ? process.env.EXPO_PUBLIC_API_URL_ANDROID ?? 'http://10.0.2.2:4000'
-  : process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000';
+const getBaseUrl = (): string => {
+  // 1. If explicit env variable is set, use it
+  if (Platform.OS === 'android' && process.env.EXPO_PUBLIC_API_URL_ANDROID) {
+    return process.env.EXPO_PUBLIC_API_URL_ANDROID;
+  }
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // 2. If running on web, we can check location
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.location) {
+    return `http://${window.location.hostname}:4000`;
+  }
+
+  // 3. For React Native mobile, extract host from bundle URL
+  if (NativeModules.SourceCode?.scriptURL) {
+    const scriptURL = NativeModules.SourceCode.scriptURL;
+    const match = scriptURL.match(/^(?:https?|exp):\/\/([^:/]+)/);
+    if (match && match[1]) {
+      const host = match[1];
+      // Ignore if it resolves to a local file asset path in release build
+      if (host !== 'localhost' && !host.startsWith('file') && !host.includes('/')) {
+        return `http://${host}:4000`;
+      }
+    }
+  }
+
+  // 4. Default fallbacks
+  return Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
+};
+
+const BASE_URL = getBaseUrl();
 
 export type ApiProviderError = {
   provider: string;
