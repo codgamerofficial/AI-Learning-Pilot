@@ -41,6 +41,47 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   const playerRef = React.useRef<any>(null);
   const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
 
+  // Preloading & Crossfading Refs
+  const preloadedSoundRef = React.useRef<Audio.Sound | null>(null);
+  const preloadedUrlRef = React.useRef<string | null>(null);
+  const fadeSoundRef = React.useRef<Audio.Sound | null>(null);
+  const fadeOutIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const fadeInIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const preloadNextAudio = React.useCallback(async () => {
+    if (preloadedSoundRef.current || preloadedUrlRef.current) {
+      return;
+    }
+
+    const { currentTrack, queue } = usePlayerStore.getState();
+    if (!currentTrack || queue.length === 0) return;
+
+    const index = queue.findIndex((t) => t.id === currentTrack.id);
+    if (index < 0 || index >= queue.length - 1) return;
+
+    const nextTrack = queue[index + 1];
+    if (!nextTrack.url || nextTrack.url === OFFLINE_FALLBACK_AUDIO) return;
+
+    preloadedUrlRef.current = nextTrack.url;
+    console.log('[NativeAudioPlayer] Preloading audio for next track:', nextTrack.title);
+
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: nextTrack.url },
+        {
+          shouldPlay: false,
+          progressUpdateIntervalMillis: 500,
+        }
+      );
+      preloadedSoundRef.current = sound;
+      console.log('[NativeAudioPlayer] Preloaded audio ready:', nextTrack.title);
+    } catch (e) {
+      console.warn('[NativeAudioPlayer] Audio preloading failed:', e);
+      preloadedUrlRef.current = null;
+      preloadedSoundRef.current = null;
+    }
+  }, []);
+
   const [hasStartedOrReady, setHasStartedOrReady] = React.useState(false);
 
   React.useEffect(() => {
@@ -172,31 +213,76 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     const setupSound = async () => {
       await ensureAudioMode();
 
-      const { sound, status } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        {
-          shouldPlay: play,
-          progressUpdateIntervalMillis: 500,
-        },
-        (playbackStatus) => {
-          if (!playbackStatus.isLoaded) {
-            if ('error' in playbackStatus && playbackStatus.error) {
-              onStateChange?.('error');
+      // Clear active fade-out and fade-in intervals
+      if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+      if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+
+      const crossfadeSeconds = usePlayerStore.getState().crossfadeSeconds;
+      const oldSound = soundRef.current;
+
+      // Handle the previous sound (crossfade out)
+      if (oldSound) {
+        if (crossfadeSeconds > 0) {
+          fadeSoundRef.current = oldSound;
+          soundRef.current = null;
+
+          let volume = 1.0;
+          const intervalMs = (crossfadeSeconds * 1000) / 10;
+          fadeOutIntervalRef.current = setInterval(async () => {
+            volume -= 0.1;
+            if (volume <= 0.05) {
+              if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+              try {
+                await oldSound.unloadAsync();
+              } catch {}
+              if (fadeSoundRef.current === oldSound) {
+                fadeSoundRef.current = null;
+              }
+            } else {
+              try {
+                await oldSound.setVolumeAsync(volume);
+              } catch {
+                if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+              }
             }
-            return;
-          }
-
-          usePlayerStore.getState().setCurrentTime((playbackStatus.positionMillis ?? 0) / 1000);
-          usePlayerStore.getState().setDuration((playbackStatus.durationMillis ?? 0) / 1000);
-
-          if (playbackStatus.didJustFinish) {
-            onStateChange?.('ended');
-            return;
-          }
-
-          onStateChange?.(playbackStatus.isPlaying ? 'playing' : 'paused');
+          }, intervalMs);
+        } else {
+          // No crossfade, unload immediately
+          void oldSound.unloadAsync();
+          soundRef.current = null;
         }
-      );
+      }
+
+      // Load/Retrieve new sound
+      let sound: Audio.Sound;
+      let isPreloaded = false;
+
+      if (preloadedSoundRef.current && preloadedUrlRef.current === audioUrl) {
+        console.log('[NativeAudioPlayer] Using preloaded sound for:', audioUrl);
+        sound = preloadedSoundRef.current;
+        isPreloaded = true;
+        
+        preloadedSoundRef.current = null;
+        preloadedUrlRef.current = null;
+      } else {
+        // Discard old preloaded sound if it doesn't match
+        if (preloadedSoundRef.current) {
+          void preloadedSoundRef.current.unloadAsync();
+          preloadedSoundRef.current = null;
+          preloadedUrlRef.current = null;
+        }
+
+        console.log('[NativeAudioPlayer] Loading sound fresh:', audioUrl);
+        const loadResult = await Audio.Sound.createAsync(
+          { uri: audioUrl },
+          {
+            shouldPlay: false,
+            volume: crossfadeSeconds > 0 ? 0.0 : 1.0,
+            progressUpdateIntervalMillis: 500,
+          }
+        );
+        sound = loadResult.sound;
+      }
 
       if (cancelled) {
         await sound.unloadAsync();
@@ -204,16 +290,75 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
       }
 
       soundRef.current = sound;
+
+      // Register the seek function for the new sound
       usePlayerStore.getState().registerSeekFn((seconds: number) => {
         void soundRef.current?.setPositionAsync(seconds * 1000);
       });
 
-      if (!status.isLoaded) {
-        return;
-      }
+      // Update callback for active playback
+      sound.setOnPlaybackStatusUpdate((playbackStatus) => {
+        if (!playbackStatus.isLoaded) {
+          if ('error' in playbackStatus && playbackStatus.error) {
+            onStateChange?.('error');
+          }
+          return;
+        }
 
-      if (play && !status.isPlaying) {
-        await sound.playAsync();
+        const pos = (playbackStatus.positionMillis ?? 0) / 1000;
+        const dur = (playbackStatus.durationMillis ?? 0) / 1000;
+
+        usePlayerStore.getState().setCurrentTime(pos);
+        usePlayerStore.getState().setDuration(dur);
+
+        // Preload next audio when within 15 seconds of the end
+        if (playbackStatus.isPlaying && dur > 0 && dur - pos < 15) {
+          void preloadNextAudio();
+        }
+
+        if (playbackStatus.didJustFinish) {
+          onStateChange?.('ended');
+          return;
+        }
+
+        onStateChange?.(playbackStatus.isPlaying ? 'playing' : 'paused');
+      });
+
+      // Start playback and crossfade in
+      if (play) {
+        try {
+          if (crossfadeSeconds > 0) {
+            await sound.setVolumeAsync(0.0);
+            await sound.playAsync();
+
+            let inVolume = 0.0;
+            const intervalMs = (crossfadeSeconds * 1000) / 10;
+            fadeInIntervalRef.current = setInterval(async () => {
+              inVolume += 0.1;
+              if (inVolume >= 1.0) {
+                if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+                try {
+                  await sound.setVolumeAsync(1.0);
+                } catch {}
+              } else {
+                try {
+                  await sound.setVolumeAsync(inVolume);
+                } catch {
+                  if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+                }
+              }
+            }, intervalMs);
+          } else {
+            await sound.setVolumeAsync(1.0);
+            await sound.playAsync();
+          }
+        } catch (e) {
+          console.warn('[NativeAudioPlayer] Error starting play:', e);
+        }
+      } else {
+        try {
+          await sound.setVolumeAsync(1.0);
+        } catch {}
       }
     };
 
@@ -222,8 +367,23 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     return () => {
       cancelled = true;
       usePlayerStore.getState().registerSeekFn(() => {});
-      void soundRef.current?.unloadAsync();
-      soundRef.current = null;
+
+      if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+      if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+
+      if (soundRef.current) {
+        void soundRef.current.unloadAsync();
+        soundRef.current = null;
+      }
+      if (fadeSoundRef.current) {
+        void fadeSoundRef.current.unloadAsync();
+        fadeSoundRef.current = null;
+      }
+      if (preloadedSoundRef.current) {
+        void preloadedSoundRef.current.unloadAsync();
+        preloadedSoundRef.current = null;
+        preloadedUrlRef.current = null;
+      }
     };
   }, [audioUrl]);
 

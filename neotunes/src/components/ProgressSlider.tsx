@@ -34,7 +34,7 @@ interface Props {
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
-export default function ProgressSlider({ accentColor = '#FF2F3F' }: Props) {
+export default function ProgressSlider({ accentColor = '#FFD300' }: Props) {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const isDark = themeMode === 'dark';
 

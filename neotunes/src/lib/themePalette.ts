@@ -14,28 +14,28 @@ export interface ThemePalette {
 }
 
 const DARK_PALETTE: ThemePalette = {
-  background: '#030303',
-  surface: '#151515',
-  surfaceAlt: '#0E0E0E',
+  background: '#050505',
+  surface: '#121212',
+  surfaceAlt: '#1A1A1A',
   text: '#FFFFFF',
   textMuted: 'rgba(255,255,255,0.75)',
   textSubtle: 'rgba(255,255,255,0.5)',
-  border: 'rgba(255,255,255,0.1)',
-  accent: '#FF2F3F',
-  accentStrong: '#FF6B7B',
+  border: 'rgba(255,255,255,0.08)',
+  accent: '#FFD300', // CSK Canary Gold/Yellow
+  accentStrong: '#005CA9', // CSK Royal Blue
   dangerSurface: '#3A1010',
 };
 
 const LIGHT_PALETTE: ThemePalette = {
-  background: '#F3F4F6',
+  background: '#F9F9FB',
   surface: '#FFFFFF',
-  surfaceAlt: '#E5E7EB',
+  surfaceAlt: '#F0F0F2',
   text: '#0A0A0A',
   textMuted: '#374151',
   textSubtle: '#6B7280',
-  border: 'rgba(0,0,0,0.12)',
-  accent: '#0A84FF',
-  accentStrong: '#059669',
+  border: 'rgba(0,0,0,0.08)',
+  accent: '#F9D00F', // CSK Canary Yellow
+  accentStrong: '#004B87', // CSK Royal Blue
   dangerSurface: '#FEE2E2',
 };
 

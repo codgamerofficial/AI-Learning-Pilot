@@ -45,17 +45,17 @@ interface Track {
   url?: string;
 }
 
-const BLOCK_COLORS = ['#7B61FF', '#00FF85', '#00D4FF', '#FF6B6B', '#FFD700', '#FF4ECD', '#7B61FF', '#00FF85'];
+const BLOCK_COLORS = ['#005CA9', '#00FF85', '#00D4FF', '#FF6B6B', '#FFD700', '#FF4ECD', '#005CA9', '#00FF85'];
 
 const GENRES = [
-  { label: 'Hip Hop', query: 'hip hop hits 2024', gradient: ['#7B61FF', '#9B84FF'], icon: '🎤' },
+  { label: 'Hip Hop', query: 'hip hop hits 2024', gradient: ['#005CA9', '#3B82F6'], icon: '🎤' },
   { label: 'Electronic', query: 'electronic dance music 2024', gradient: ['#00D4FF', '#4DDDFF'], icon: '⚡' },
   { label: 'Rock', query: 'rock music hits 2024', gradient: ['#FF6B6B', '#FF9B9B'], icon: '🎸' },
   { label: 'Jazz', query: 'jazz music playlist', gradient: ['#FFD700', '#FFE44D'], icon: '🎷' },
   { label: 'Bollywood', query: 'bollywood hits 2024', gradient: ['#FF9933', '#FFB366'], icon: '🎬' },
   { label: 'Pop', query: 'pop music 2024', gradient: ['#FF4ECD', '#FF7DDD'], icon: '🎵' },
   { label: 'Classical', query: 'classical music relaxing', gradient: ['#00FF85', '#4DFFA8'], icon: '🎻' },
-  { label: 'Lo-Fi', query: 'lofi hip hop chill beats', gradient: ['#7B61FF', '#A18AFF'], icon: '🌙' },
+  { label: 'Lo-Fi', query: 'lofi hip hop chill beats', gradient: ['#005CA9', '#FFD300'], icon: '🌙' },
 ];
 
 const TRENDING_SEARCHES = [
@@ -142,7 +142,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const jamConnected = useJamStore((state) => state.isConnected);
   const jamRole = useJamStore((state) => state.role);
   const isDark = themeMode === 'dark';
-  const accentColor = isDark ? '#FF2F3F' : '#E52535';
+  const accentColor = palette.accent;
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Track[]>([]);
@@ -273,14 +273,14 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
               flexDirection: 'row', alignItems: 'center',
               backgroundColor: isDark ? 'rgba(12, 12, 14, 0.7)' : 'rgba(255, 255, 255, 0.75)',
               borderWidth: 1.2,
-              borderColor: isDark ? 'rgba(255, 47, 63, 0.35)' : 'rgba(229, 37, 53, 0.35)',
+              borderColor: isDark ? 'rgba(255, 211, 0, 0.35)' : 'rgba(249, 208, 15, 0.35)',
               borderRadius: 16,
               paddingHorizontal: 16, paddingVertical: 10, marginBottom: 20,
               // @ts-ignore
               backdropFilter: 'blur(24px)',
             },
-            shadow('0px 4px 18px rgba(255, 47, 63, 0.08)', {
-              shadowColor: isDark ? '#FF2F3F' : '#E52535',
+            shadow(`0px 4px 18px ${palette.accent}15`, {
+              shadowColor: palette.accent,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.15,
               shadowRadius: 12,

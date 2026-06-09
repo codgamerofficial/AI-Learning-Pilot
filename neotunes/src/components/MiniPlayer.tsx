@@ -84,7 +84,7 @@ export default function MiniPlayer() {
     const borderColor = interpolateColor(
       glowAnim.value,
       [0, 1],
-      [isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(10, 10, 10, 0.08)', currentTrack?.color ?? '#FF2F3F']
+      [isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(10, 10, 10, 0.08)', currentTrack?.color ?? palette.accent]
     );
     return { borderColor };
   });

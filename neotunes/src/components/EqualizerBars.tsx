@@ -17,42 +17,55 @@ interface Props {
   active?: boolean;
 }
 
+interface BarProps {
+  color: string;
+  height: number;
+  active: boolean;
+  index: number;
+}
+
+function EqualizerBar({ color, height, active, index }: BarProps) {
+  const h = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (!active) {
+      h.value = withTiming(0.2, { duration: 200 });
+      return;
+    }
+    const delay = index * 120;
+    const dur = 350 + index * 80;
+    h.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: dur, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.15, { duration: dur, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, [active, index]);
+
+  const style = useAnimatedStyle(() => ({
+    height: h.value * height,
+    opacity: active ? 0.9 + h.value * 0.1 : 0.3,
+  }));
+
+  return (
+    <Animated.View
+      style={[style, {
+        width: 4,
+        backgroundColor: color,
+        borderRadius: 2,
+      }]}
+    />
+  );
+}
+
 export default function EqualizerBars({
-  color = '#FF2F3F',
+  color = '#FFD300',
   barCount = 4,
   height = 24,
   active = true,
 }: Props) {
-  const bars = Array.from({ length: barCount }, (_, i) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const h = useSharedValue(0.3);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (!active) {
-        h.value = withTiming(0.2, { duration: 200 });
-        return;
-      }
-      const delay = i * 120;
-      const dur = 350 + i * 80;
-      h.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: dur, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0.15, { duration: dur, easing: Easing.inOut(Easing.ease) })
-        ),
-        -1,
-        false
-      );
-    }, [active]);
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const style = useAnimatedStyle(() => ({
-      height: h.value * height,
-      opacity: active ? 0.9 + h.value * 0.1 : 0.3,
-    }));
-
-    return { style };
-  });
-
   return (
     <View style={{
       flexDirection: 'row',
@@ -60,14 +73,13 @@ export default function EqualizerBars({
       gap: 3,
       height,
     }}>
-      {bars.map(({ style }, i) => (
-        <Animated.View
+      {Array.from({ length: barCount }).map((_, i) => (
+        <EqualizerBar
           key={i}
-          style={[style, {
-            width: 4,
-            backgroundColor: color,
-            borderRadius: 2,
-          }]}
+          color={color}
+          height={height}
+          active={active}
+          index={i}
         />
       ))}
     </View>

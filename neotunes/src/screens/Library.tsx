@@ -40,7 +40,7 @@ const PLAYLISTS_BACKEND_DISABLED_KEY = 'neotunes_playlists_backend_disabled_v1';
 
 const AVAILABLE_ARTISTS = [
   { name: 'Arijit Singh', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300&auto=format&fit=crop', color: '#FF9933' },
-  { name: 'Taylor Swift', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=300&auto=format&fit=crop', color: '#7B61FF' },
+  { name: 'Taylor Swift', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=300&auto=format&fit=crop', color: '#005CA9' },
   { name: 'Billie Eilish', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=300&auto=format&fit=crop', color: '#00FF85' },
   { name: 'The Weeknd', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&auto=format&fit=crop', color: '#FF6B6B' },
   { name: 'Diljit Dosanjh', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&auto=format&fit=crop', color: '#FFD700' },
@@ -298,7 +298,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
           if (track) {
             blended.push({
               ...track,
-              color: AVAILABLE_ARTISTS.find(a => a.name === selectedArtists[j])?.color ?? '#7B61FF'
+              color: AVAILABLE_ARTISTS.find(a => a.name === selectedArtists[j])?.color ?? palette.accentStrong
             });
           }
         }
@@ -357,15 +357,15 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
                   paddingVertical: 10,
                   borderRadius: 20,
                   backgroundColor: isActive
-                    ? (themeMode === 'dark' ? 'rgba(255, 47, 63, 0.12)' : 'rgba(229, 37, 53, 0.08)')
+                    ? `${palette.accent}20`
                     : 'transparent',
                   borderWidth: 1.2,
                   borderColor: isActive
-                    ? (themeMode === 'dark' ? 'rgba(255, 47, 63, 0.45)' : 'rgba(229, 37, 53, 0.45)')
+                    ? palette.accent
                     : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  shadowColor: isActive ? (themeMode === 'dark' ? '#FF2F3F' : '#E52535') : 'transparent',
+                  shadowColor: isActive ? palette.accent : 'transparent',
                   shadowOffset: { width: 0, height: 0 },
                   shadowOpacity: isActive ? 0.35 : 0,
                   shadowRadius: 6,
@@ -374,7 +374,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
               >
                 <Text style={{
                   color: isActive
-                    ? (themeMode === 'dark' ? '#FF2F3F' : '#E52535')
+                    ? palette.accent
                     : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
                   fontWeight: '800',
                   fontSize: 11,
@@ -390,7 +390,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
           {/* ── PLAYLISTS SEGMENT ── */}
           {activeSegment === 'playlists' && (
             <View>
-              <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Playlists</Text>
+              <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Playlists</Text>
 
               {playlistSource === 'local' && (
                 <View style={{
@@ -500,7 +500,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
                   shadow('0px 4px 12px rgba(0,0,0,0.06)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 })
                 ]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: themeMode === 'dark' ? '#FF2F3F' : '#E52535', shadowColor: themeMode === 'dark' ? '#FF2F3F' : '#E52535', shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: palette.accent, shadowColor: palette.accent, shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
                     <Text style={{ color: palette.text, fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>{pl.title}</Text>
                   </View>
                 </View>
@@ -516,7 +516,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
           {/* ── SAVED TRACKS SEGMENT ── */}
           {activeSegment === 'tracks' && (
             <View>
-              <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Saved Tracks</Text>
+              <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Saved Tracks</Text>
               
               {loading ? (
                 <ActivityIndicator size="large" color={palette.accentStrong} style={{ marginTop: 24 }} />
@@ -594,7 +594,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
           {/* ── PREFERRED ARTISTS SEGMENT ── */}
           {activeSegment === 'artists' && (
             <View>
-              <Text style={{ color: '#7B61FF', fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
+              <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
                 Favorite Artists Combo
               </Text>
               <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 20 }}>

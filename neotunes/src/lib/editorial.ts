@@ -12,7 +12,7 @@ const DIASPORA_PATTERN = /\b(diaspora|south asian|indo[- ]?canadian|indo[- ]?uk|
 export const EDITORIAL_TAG_THEME: Record<EditorialTag, { background: string; border: string; text: string }> = {
   India: { background: '#FF9933', border: '#0A0A0A', text: '#0A0A0A' },
   Global: { background: '#00D4FF', border: '#0A0A0A', text: '#0A0A0A' },
-  Diaspora: { background: '#7B61FF', border: '#FFFFFF', text: '#FFFFFF' },
+  Diaspora: { background: '#005CA9', border: '#FFFFFF', text: '#FFFFFF' },
 };
 
 export function getEditorialTags(track: TrackLike, hint: EditorialHint = 'neutral'): EditorialTag[] {

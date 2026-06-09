@@ -81,6 +81,8 @@ interface PlayerState {
   // Errors / Notifications
   playbackError: string | null;
   setPlaybackError: (err: string | null) => void;
+
+  preloadNextTrack: () => Promise<void>;
 }
 
 function ensureAudioContext() {
@@ -122,6 +124,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const shouldResolve = (!track.url && !track.playbackId) || track.source === 'spotify_proxy';
 
     if (!shouldResolve || !resolveQuery) {
+      void get().preloadNextTrack();
       return;
     }
 
@@ -130,6 +133,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const resolved = await fetchResolve(resolveQuery);
 
       if (!resolved) {
+        void get().preloadNextTrack();
         return;
       }
 
@@ -160,8 +164,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
         return state;
       });
+      void get().preloadNextTrack();
     } catch {
       // Keep the original track if resolution fails.
+      void get().preloadNextTrack();
     }
   },
 
@@ -276,6 +282,42 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   // Preferences
   setCrossfadeSeconds: (crossfadeSeconds) => set({ crossfadeSeconds }),
   setGaplessEnabled: (gaplessEnabled) => set({ gaplessEnabled }),
+
+  preloadNextTrack: async () => {
+    const { currentTrack, queue } = get();
+    if (!currentTrack || queue.length === 0) return;
+    const index = queue.findIndex((track) => track.id === currentTrack.id);
+    if (index < 0 || index >= queue.length - 1) return;
+
+    const nextTrack = queue[index + 1];
+    const shouldResolve = (!nextTrack.url && !nextTrack.playbackId) || nextTrack.source === 'spotify_proxy';
+    if (!shouldResolve) return;
+
+    const resolveQuery = nextTrack.searchQuery?.trim() || `${nextTrack.title} ${nextTrack.artist}`.trim();
+    if (!resolveQuery) return;
+
+    try {
+      const { fetchResolve } = require('../lib/apiClient');
+      const resolved = await fetchResolve(resolveQuery);
+      if (!resolved) return;
+
+      set((state) => {
+        const idx = state.queue.findIndex((t) => t.id === nextTrack.id);
+        if (idx < 0) return state;
+
+        const updatedQueue = [...state.queue];
+        updatedQueue[idx] = {
+          ...nextTrack,
+          url: resolved.url || nextTrack.url,
+          playbackId: resolved.id || nextTrack.playbackId,
+          source: resolved.resolvedSource ?? nextTrack.source,
+        };
+        return { queue: updatedQueue };
+      });
+    } catch (e) {
+      console.warn('[PlayerStore] preloadNextTrack failed:', e);
+    }
+  },
 
   setPlaybackError: (playbackError) => {
     set({ playbackError });

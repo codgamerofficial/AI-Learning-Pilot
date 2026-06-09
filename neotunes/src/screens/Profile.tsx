@@ -16,16 +16,18 @@ import { resetMarketTelemetry } from '../lib/marketTelemetry';
 import { shadow } from '../lib/shadow';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { getThemePalette } from '../lib/themePalette';
+import { usePlayerStore } from '../store/playerStore';
 
 export default function ProfileScreen() {
   const { user } = useAuthStore();
-  const { recentTracks, clearRecent } = useRecentStore();
+  const { recentTracks, clearRecent, loadFromStorage } = useRecentStore();
   const { displayName, themeMode, setDisplayName, toggleTheme, loadPreferences } = usePreferencesStore();
   const [draftDisplayName, setDraftDisplayName] = useState('');
 
   useEffect(() => {
     loadPreferences();
-  }, [loadPreferences]);
+    loadFromStorage();
+  }, [loadPreferences, loadFromStorage]);
 
   useEffect(() => {
     setDraftDisplayName(displayName);
@@ -40,7 +42,7 @@ export default function ProfileScreen() {
 
   const palette = getThemePalette(themeMode);
   const isDark = themeMode === 'dark';
-  const accentColor = isDark ? '#FF2F3F' : '#E52535';
+  const accentColor = palette.accent;
 
   // Avatar ring animation
   const ringAnim = useSharedValue(0);
@@ -56,7 +58,9 @@ export default function ProfileScreen() {
   }, []);
 
   const animatedRingStyle = useAnimatedStyle(() => ({
-    borderColor: `rgba(${isDark ? '255,47,63' : '229,37,53'}, ${0.3 + ringAnim.value * 0.5})`,
+    borderColor: isDark
+      ? `rgba(255, 211, 0, ${0.3 + ringAnim.value * 0.5})`
+      : `rgba(249, 208, 15, ${0.3 + ringAnim.value * 0.5})`,
     transform: [{ scale: 1 + ringAnim.value * 0.03 }],
   }));
 
@@ -84,7 +88,7 @@ export default function ProfileScreen() {
     Bollywood: '#FF9933',
     Pop: '#FF4ECD',
     Rock: '#FF6B6B',
-    'Lo-Fi': '#7B61FF',
+    'Lo-Fi': palette.accentStrong,
     Electronic: '#00D4FF',
     Other: '#6B7280',
   };
@@ -97,6 +101,14 @@ export default function ProfileScreen() {
     );
   };
 
+  const rawLabel = displayName !== '' ? displayName : (email.split('@')[0] ?? 'Listener');
+  const isMsd = rawLabel.toLowerCase().includes('msd') ||
+                rawLabel.toLowerCase().includes('dhoni') ||
+                rawLabel.toLowerCase().includes('thala') ||
+                rawLabel.toLowerCase().includes('csk') ||
+                rawLabel.toLowerCase().includes('mahi') ||
+                rawLabel.toLowerCase().includes('7');
+
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
@@ -107,6 +119,7 @@ export default function ProfileScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
+            usePlayerStore.setState({ currentTrack: null, isPlaying: false, queue: [] });
             await supabase.auth.signOut();
           },
         },
@@ -284,8 +297,23 @@ export default function ProfileScreen() {
                 backgroundColor: accentColor,
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Text style={{ color: '#FFF', fontSize: 28, fontWeight: '900' }}>{initials}</Text>
+                <Text style={{ color: '#050505', fontSize: 28, fontWeight: '900' }}>{initials}</Text>
               </View>
+              {isMsd && (
+                <View style={{
+                  position: 'absolute',
+                  bottom: -8,
+                  backgroundColor: '#FFD300',
+                  borderWidth: 1.5,
+                  borderColor: '#005CA9',
+                  borderRadius: 10,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  zIndex: 2,
+                }}>
+                  <Text style={{ color: '#005CA9', fontWeight: '900', fontSize: 9 }}>NO. 7 🦁</Text>
+                </View>
+              )}
             </Animated.View>
 
             <Text style={{
@@ -364,7 +392,7 @@ export default function ProfileScreen() {
                 paddingHorizontal: 20,
               }}
             >
-              <Text style={{ color: isDark ? '#0A0A0A' : '#FFF', fontWeight: '800', fontSize: 13 }}>
+              <Text style={{ color: '#0A0A0A', fontWeight: '800', fontSize: 13 }}>
                 Save
               </Text>
             </TouchableOpacity>
@@ -404,6 +432,18 @@ export default function ProfileScreen() {
             ))}
           </View>
         </GlassCard>
+
+        {/* Dhoni Quote Card Easter Egg */}
+        {isMsd && (
+          <GlassCard delay={220} style={{ borderColor: 'rgba(255, 211, 0, 0.45)', backgroundColor: isDark ? 'rgba(255, 211, 0, 0.04)' : 'rgba(255, 211, 0, 0.02)' }}>
+            <Text style={{ color: isDark ? '#FFD300' : '#D46B08', fontWeight: '900', fontSize: 12, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>
+              Thala Captain Mode 🦁
+            </Text>
+            <Text style={{ color: palette.textMuted, fontSize: 13, fontStyle: 'italic', lineHeight: 18, fontWeight: '600' }}>
+              "It's not about the result, it's about the process." — MS Dhoni (Jersey No. 7)
+            </Text>
+          </GlassCard>
+        )}
 
         {/* Music DNA */}
         {topGenres.length > 0 && (
@@ -448,10 +488,10 @@ export default function ProfileScreen() {
         </Text>
 
         <ActionButton
-          icon={isDark ? <Sun stroke="#FFD700" size={20} /> : <Moon stroke="#7B61FF" size={20} />}
+          icon={isDark ? <Sun stroke="#FFD700" size={20} /> : <Moon stroke={palette.accentStrong} size={20} />}
           label={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           onPress={toggleTheme}
-          color={isDark ? '#FFD700' : '#7B61FF'}
+          color={isDark ? '#FFD700' : palette.accentStrong}
           delay={300}
         />
 

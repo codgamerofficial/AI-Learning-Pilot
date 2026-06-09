@@ -23,6 +23,7 @@ import { useAuthStore } from './src/store/authStore';
 import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from './src/store/playerStore';
 import { usePreferencesStore } from './src/store/preferencesStore';
 import { useJamStore } from './src/store/jamStore';
+import { getThemePalette } from './src/lib/themePalette';
 
 const DEV_WARNING_SUPPRESSIONS = [
   '"shadow*" style props are deprecated. Use "boxShadow".',
@@ -279,7 +280,8 @@ function MainTabs() {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const isDark = themeMode === 'dark';
   const shellBackground = isDark ? '#0A0A0A' : '#F3F4F6';
-  const accentColor = isDark ? '#FF2F3F' : '#E52535';
+  const palette = getThemePalette(themeMode);
+  const accentColor = palette.accent;
 
   return (
     <View style={{ flex: 1, backgroundColor: shellBackground }}>
@@ -317,7 +319,7 @@ function MainTabs() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 ...(focused ? {
-                  backgroundColor: isDark ? 'rgba(255,47,63,0.12)' : 'rgba(229,37,53,0.1)',
+                  backgroundColor: isDark ? 'rgba(255,211,0,0.12)' : 'rgba(249,208,15,0.1)',
                   borderRadius: 16,
                   paddingHorizontal: 14,
                   paddingVertical: 6,
@@ -452,9 +454,10 @@ export default function App() {
   }, [leaveSession, user]);
 
   if (loading) {
+    const palette = getThemePalette(themeMode);
     return (
       <View style={{ flex: 1, backgroundColor: shellBackground, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#FF2F3F" />
+        <ActivityIndicator size="large" color={palette.accent} />
       </View>
     );
   }

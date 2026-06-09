@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, Text, Image, Platform } from 'react-native';
+import { usePreferencesStore } from '../store/preferencesStore';
+import { getThemePalette } from '../lib/themePalette';
 
 export default function BrandLogo({ style }: { style?: any }) {
+  const themeMode = usePreferencesStore((state) => state.themeMode);
+  const palette = getThemePalette(themeMode);
+
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center' }, style]}>
       <View style={{
@@ -9,12 +14,12 @@ export default function BrandLogo({ style }: { style?: any }) {
         height: 32,
         borderRadius: 10,
         marginRight: 10,
-        shadowColor: '#FF2F3F',
+        shadowColor: palette.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.35,
         shadowRadius: 8,
         elevation: 5,
-        backgroundColor: '#FF2F3F',
+        backgroundColor: palette.accent,
       }}>
         <Image
           source={require('../../assets/icon.png')}
@@ -33,7 +38,7 @@ export default function BrandLogo({ style }: { style?: any }) {
           default: 'system-ui',
         }),
       }}>
-        Neo<Text style={{ color: '#FF2F3F' }}>Tunes</Text>
+        Neo<Text style={{ color: palette.accent }}>Tunes</Text>
       </Text>
     </View>
   );

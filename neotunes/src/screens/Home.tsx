@@ -513,10 +513,31 @@ async function getMoodTracks(query: string): Promise<Track[]> {
   return tracks;
 }
 
-function getGreeting(email: string): string {
+function getGreeting(email: string, displayName: string): string {
   const hour = new Date().getHours();
-  const name = email.split('@')[0] ?? 'Listener';
-  const capitalised = name.charAt(0).toUpperCase() + name.slice(1);
+  const rawName = displayName.trim() !== '' ? displayName : (email.split('@')[0] ?? 'Listener');
+  const nameLower = rawName.toLowerCase();
+  
+  // Dhoni / CSK Easter Egg Check
+  const isMsd = nameLower.includes('msd') ||
+                nameLower.includes('dhoni') ||
+                nameLower.includes('thala') ||
+                nameLower.includes('csk') ||
+                nameLower.includes('mahi') ||
+                nameLower.includes('7');
+                
+  if (isMsd) {
+    const dhoniGreetings = [
+      `Whistle Podu, Thala ${rawName}! 💛🦁`,
+      `Captain Cool ${rawName} is in the house! 💛🕶️`,
+      `Jersey No. 7 on the field! Play it cool ⚡🏏`,
+      `Defending the title, Thala style! 🦁💛`,
+      `Helicopter shot of music incoming, Mahi! 🚀💛`,
+    ];
+    return dhoniGreetings[hour % dhoniGreetings.length];
+  }
+  
+  const capitalised = rawName.charAt(0).toUpperCase() + rawName.slice(1);
   if (hour < 12) return `Good morning, ${capitalised} ☀️`;
   if (hour < 17) return `Good afternoon, ${capitalised} 🎵`;
   return `Good evening, ${capitalised} 🌙`;
@@ -525,6 +546,7 @@ function getGreeting(email: string): string {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const themeMode = usePreferencesStore((state) => state.themeMode);
+  const displayName = usePreferencesStore((state) => state.displayName);
   const palette = getThemePalette(themeMode);
   const jamConnected = useJamStore((state) => state.isConnected);
   const jamRole = useJamStore((state) => state.role);
@@ -558,8 +580,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const [dailyError, setDailyError] = useState<string | null>(null);
   const [dailyProviderErrors, setDailyProviderErrors] = useState<ApiProviderError[]>([]);
 
-  const greeting = getGreeting(user?.email ?? '');
-  const initials = user?.email?.slice(0, 2).toUpperCase() ?? 'NT';
+  const greeting = getGreeting(user?.email ?? '', displayName);
+  const initials = displayName.trim() !== '' 
+    ? displayName.slice(0, 2).toUpperCase() 
+    : (user?.email?.slice(0, 2).toUpperCase() ?? 'NT');
 
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiSynthesizing, setAiSynthesizing] = useState(false);
@@ -849,13 +873,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <View style={[
               {
                 width: 38, height: 38, borderRadius: 19,
-                backgroundColor: '#FF2F3F',
+                backgroundColor: palette.accent,
                 borderWidth: 1.5,
                 borderColor: 'rgba(255,255,255,0.8)',
                 alignItems: 'center', justifyContent: 'center',
               },
-              shadow('0px 4px 10px rgba(255, 47, 63, 0.35)', {
-                shadowColor: '#FF2F3F',
+              shadow(`0px 4px 10px ${palette.accent}55`, {
+                shadowColor: palette.accent,
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.35,
                 shadowRadius: 8,
@@ -907,15 +931,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                     paddingVertical: 9,
                     borderRadius: 11,
                     backgroundColor: isActive
-                      ? 'rgba(255, 47, 63, 0.12)'
+                      ? `${palette.accent}20`
                       : 'transparent',
                     borderWidth: 1.2,
                     borderColor: isActive
-                      ? 'rgba(255, 47, 63, 0.4)'
+                      ? palette.accent
                       : 'transparent',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: isActive ? '#FF2F3F' : 'transparent',
+                    shadowColor: isActive ? palette.accent : 'transparent',
                     shadowOffset: { width: 0, height: 0 },
                     shadowOpacity: isActive ? 0.25 : 0,
                     shadowRadius: 6,
@@ -924,7 +948,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 >
                   <Text style={{
                     color: isActive
-                      ? '#FF2F3F'
+                      ? palette.accent
                       : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
 
                     fontWeight: '800',
@@ -947,12 +971,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 padding: 22,
                 marginBottom: 28,
                 borderWidth: 1.5,
-                borderColor: themeMode === 'dark' ? 'rgba(255, 47, 63, 0.12)' : 'rgba(255, 47, 63, 0.08)',
+                borderColor: themeMode === 'dark' ? 'rgba(255, 211, 0, 0.15)' : 'rgba(249, 208, 15, 0.1)',
                 // @ts-ignore
                 backdropFilter: 'blur(30px)',
               },
-              shadow('0px 12px 32px rgba(255, 47, 63, 0.06)', {
-                shadowColor: '#FF2F3F',
+              shadow(`0px 12px 32px ${palette.accent}15`, {
+                shadowColor: palette.accent,
                 shadowOffset: { width: 0, height: 12 },
                 shadowOpacity: 0.08,
                 shadowRadius: 20,
@@ -992,7 +1016,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 paddingHorizontal: 14,
                 height: 48,
                 marginBottom: 20,
-                shadowColor: '#FF2F3F',
+                shadowColor: palette.accent,
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: aiPrompt.trim() ? 0.05 : 0,
                 shadowRadius: 10,
@@ -1007,14 +1031,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   style={{ flex: 1, color: palette.text, fontSize: 13.5, fontWeight: '600', height: '100%', padding: 0 }}
                 />
                 {aiSynthesizing ? (
-                  <ActivityIndicator size="small" color="#FF2F3F" />
+                  <ActivityIndicator size="small" color={palette.accent} />
                 ) : (
                   <TouchableOpacity 
                     onPress={() => handleAiSynthesize(aiPrompt)} 
                     disabled={!aiPrompt.trim()} 
                     style={{ 
-                      opacity: aiPrompt.trim() ? 1 : 0.35,
-                      backgroundColor: aiPrompt.trim() ? '#FF2F3F' : 'transparent',
+                      padding: 6,
+                      backgroundColor: aiPrompt.trim() ? palette.accent : 'transparent',
                       width: 28, height: 28, borderRadius: 14,
                       alignItems: 'center', justifyContent: 'center',
                     }}
@@ -1033,7 +1057,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                 {[
                   { name: 'Focus', query: 'lofi study coding instrumental beats', color: '#00FF85', bg: 'rgba(0, 255, 133, 0.06)', border: 'rgba(0, 255, 133, 0.2)', desc: 'Study Instrumental', icon: Brain },
-                  { name: 'Overdrive', query: 'cyberpunk synthwave electronic workout music', color: '#FF2F3F', bg: 'rgba(255, 47, 63, 0.06)', border: 'rgba(255, 47, 63, 0.2)', desc: 'High-Tempo Synth', icon: Zap },
+                  { name: 'Overdrive', query: 'cyberpunk synthwave electronic workout music', color: '#005CA9', bg: 'rgba(0, 92, 169, 0.06)', border: 'rgba(0, 92, 169, 0.2)', desc: 'High-Tempo Synth', icon: Zap },
                   { name: 'Synthesize', query: 'futuristic pop electronic dance hits 2024', color: '#00D4FF', bg: 'rgba(0, 212, 255, 0.06)', border: 'rgba(0, 212, 255, 0.2)', desc: 'Cyber-Pop Stream', icon: Sparkles },
                   { name: 'Ethereal', query: 'ambient space cinematic dream pads relaxing', color: '#FF4ECD', bg: 'rgba(255, 78, 205, 0.06)', border: 'rgba(255, 78, 205, 0.2)', desc: 'Cinematic Pads', icon: Compass }
                 ].map((mod) => {
@@ -1090,7 +1114,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             {/* ── RECENTLY PLAYED ── */}
             {recentTracks.length > 0 && (
           <>
-            <Text style={{ color: '#7B61FF', fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 10, marginTop: 16 }}>
+            <Text style={{ color: palette.accent, fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 10, marginTop: 16 }}>
               Recently Played
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, paddingVertical: 4 }}>
@@ -1122,7 +1146,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         {/* ── EVERYDAY RECOMMENDATIONS ── */}
         <View style={{ marginTop: 6, marginBottom: 22 }}>
-          <Text style={{ color: '#FF2F3F', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>
+          <Text style={{ color: palette.accentStrong, fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10 }}>
             Quick Picks
           </Text>
 
@@ -1200,11 +1224,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                               : (themeMode === 'dark' ? 'rgba(28,28,30,0.3)' : 'rgba(255,255,255,0.5)'),
                             borderWidth: 1.5,
                             borderColor: isCurrent 
-                              ? 'rgba(255, 47, 63, 0.35)' 
+                              ? 'rgba(255, 211, 0, 0.35)' 
                               : (themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
                           },
-                          shadow(isCurrent ? '0px 4px 12px rgba(255,47,63,0.15)' : '0px 2px 8px rgba(0,0,0,0.05)', {
-                            shadowColor: isCurrent ? '#FF2F3F' : '#000',
+                          shadow(isCurrent ? '0px 4px 12px rgba(255,211,0,0.15)' : '0px 2px 8px rgba(0,0,0,0.05)', {
+                            shadowColor: isCurrent ? palette.accent : '#000',
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.1,
                             shadowRadius: 4,
@@ -1220,7 +1244,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                         <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
                           <Text
                             style={{ 
-                              color: isCurrent ? '#FF2F3F' : palette.text, 
+                              color: isCurrent ? palette.accent : palette.text, 
                               fontWeight: '800', 
                               fontSize: 13, 
                               textTransform: 'uppercase', 
@@ -1247,10 +1271,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                         <View style={{ marginRight: 4 }}>
                           {isCurrent && isPlaying ? (
                             <View style={{ height: 24, justifyContent: 'center' }}>
-                              <EqualizerBars color="#FF2F3F" barCount={4} height={16} active={isPlaying} />
+                              <EqualizerBars color={palette.accent} barCount={4} height={16} active={isPlaying} />
                             </View>
                           ) : (
-                            <Play stroke={isCurrent ? '#FF2F3F' : palette.textSubtle} fill={isCurrent ? '#FF2F3F' : 'none'} size={16} />
+                            <Play stroke={isCurrent ? palette.accent : palette.textSubtle} fill={isCurrent ? palette.accent : 'none'} size={16} />
                           )}
                         </View>
                       </TouchableOpacity>
@@ -1637,8 +1661,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               <Text style={{ color: '#00D4FF', fontWeight: '900', fontSize: 16 }}>{globalRetentionProxy.toFixed(1)}%</Text>
               <Text style={{ color: palette.text, fontWeight: '800', fontSize: 10, textTransform: 'uppercase', marginTop: 2 }}>Global Retention</Text>
             </View>
-            <View style={{ width: '31%', borderWidth: 1.5, borderColor: 'rgba(123, 97, 255, 0.25)', padding: 10, borderRadius: 14, backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
-              <Text style={{ color: '#7B61FF', fontWeight: '900', fontSize: 16 }}>{diasporaPlayShare.toFixed(1)}%</Text>
+            <View style={{ width: '31%', borderWidth: 1.5, borderColor: themeMode === 'dark' ? 'rgba(0, 92, 169, 0.35)' : 'rgba(0, 75, 135, 0.25)', padding: 10, borderRadius: 14, backgroundColor: themeMode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}>
+              <Text style={{ color: palette.accentStrong, fontWeight: '900', fontSize: 16 }}>{diasporaPlayShare.toFixed(1)}%</Text>
               <Text style={{ color: palette.text, fontWeight: '800', fontSize: 10, textTransform: 'uppercase', marginTop: 2 }}>Diaspora Share</Text>
             </View>
           </View>
@@ -1808,7 +1832,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 }}>
           {['Focus', 'Chill', 'Gym', 'Party'].map((mood, i) => {
-            const moodColors = ['#7B61FF', '#1C1C1E', '#00FF85', '#00D4FF'];
+            const moodColors = [palette.accentStrong, '#1C1C1E', '#00FF85', '#00D4FF'];
             const textColors = ['#FFF', '#FFF', '#0A0A0A', '#0A0A0A'];
             const borderColors = ['#FFF', '#00D4FF', '#0A0A0A', '#0A0A0A'];
             const isActive = activeMood === mood;
@@ -2023,7 +2047,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 }}>
               {[
-                { name: 'Classic Books', query: 'Classic Books', color: '#7B61FF' },
+                { name: 'Classic Books', query: 'Classic Books', color: palette.accentStrong },
                 { name: 'Self-Growth', query: 'Self-Growth', color: '#00FF85' },
                 { name: 'Sci-Fi', query: 'Sci-Fi', color: '#FFD700' },
                 { name: 'Philosophy', query: 'Philosophy', color: '#FF4ECD' },
@@ -2078,7 +2102,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               {activeMood} Picks
             </Text>
             {loadingMood ? (
-              <ActivityIndicator size="large" color="#7B61FF" style={{ marginBottom: 40 }} />
+              <ActivityIndicator size="large" color={palette.accent} style={{ marginBottom: 40 }} />
             ) : (
               <View style={{ marginBottom: 40 }}>
                 {moodTracks.map((item) => (

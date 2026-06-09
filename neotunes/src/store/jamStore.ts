@@ -27,6 +27,7 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CLIENT_ID = Math.random().toString(36).slice(2, 10);
 
 let activeChannel: RealtimeChannel | null = null;
+let unsubscribePlayer: (() => void) | null = null;
 
 const normalizeRoomCode = (value: string) =>
   value
@@ -101,6 +102,10 @@ export const useJamStore = create<JamStoreState>((set, get) => {
   };
 
   const cleanupChannel = async () => {
+    if (unsubscribePlayer) {
+      unsubscribePlayer();
+      unsubscribePlayer = null;
+    }
     if (!activeChannel) return;
 
     try {
@@ -213,6 +218,30 @@ export const useJamStore = create<JamStoreState>((set, get) => {
     });
 
     if (role === 'host') {
+      let lastTrackId = usePlayerStore.getState().currentTrack?.id;
+      let lastIsPlaying = usePlayerStore.getState().isPlaying;
+      let lastShuffle = usePlayerStore.getState().shuffleEnabled;
+      let lastRepeat = usePlayerStore.getState().repeatMode;
+      let lastTime = usePlayerStore.getState().currentTime;
+
+      unsubscribePlayer = usePlayerStore.subscribe((state) => {
+        const hasTrackChanged = state.currentTrack?.id !== lastTrackId;
+        const hasPlayChanged = state.isPlaying !== lastIsPlaying;
+        const hasShuffleChanged = state.shuffleEnabled !== lastShuffle;
+        const hasRepeatChanged = state.repeatMode !== lastRepeat;
+        const hasSeeked = Math.abs(state.currentTime - lastTime) > 1.8;
+
+        lastTrackId = state.currentTrack?.id;
+        lastIsPlaying = state.isPlaying;
+        lastShuffle = state.shuffleEnabled;
+        lastRepeat = state.repeatMode;
+        lastTime = state.currentTime;
+
+        if (hasTrackChanged || hasPlayChanged || hasShuffleChanged || hasRepeatChanged || hasSeeked) {
+          void get().broadcastNow('player-state-changed');
+        }
+      });
+
       await get().broadcastNow('session-start');
     } else {
       await get().requestSync();

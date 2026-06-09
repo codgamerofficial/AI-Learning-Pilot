@@ -171,6 +171,42 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
   const { user } = useAuthStore();
   const [isSaved, setIsSaved] = useState(false);
+
+  // Check if track is saved in user's library
+  useEffect(() => {
+    let active = true;
+    const checkSaved = async () => {
+      if (!user || !currentTrack) {
+        setIsSaved(false);
+        return;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('saved_tracks')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('track_id', currentTrack.id)
+          .maybeSingle();
+
+        if (active) {
+          if (!error && data) {
+            setIsSaved(true);
+          } else {
+            setIsSaved(false);
+          }
+        }
+      } catch (err) {
+        if (active) {
+          setIsSaved(false);
+        }
+      }
+    };
+    checkSaved();
+    return () => {
+      active = false;
+    };
+  }, [currentTrack?.id, user]);
+
   const [jamModalVisible, setJamModalVisible] = useState(false);
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [jamBusy, setJamBusy] = useState(false);
@@ -362,20 +398,33 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
   const handleSaveTrack = async () => {
     if (!user) return Alert.alert('Error', 'You must be logged in to save tracks');
-    setIsSaved(true);
-    const { error } = await supabase.from('saved_tracks').insert([
-      {
-        user_id: user.id,
-        track_id: currentTrack.id,
-        title: currentTrack.title,
-        artist: currentTrack.artist,
-        artwork: currentTrack.artwork,
-        color: currentTrack.color,
-      },
-    ]);
-    if (error) {
+    if (isSaved) {
       setIsSaved(false);
-      Alert.alert('Error saving track', error.message);
+      const { error } = await supabase
+        .from('saved_tracks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('track_id', currentTrack.id);
+      if (error) {
+        setIsSaved(true);
+        Alert.alert('Error removing track', error.message);
+      }
+    } else {
+      setIsSaved(true);
+      const { error } = await supabase.from('saved_tracks').insert([
+        {
+          user_id: user.id,
+          track_id: currentTrack.id,
+          title: currentTrack.title,
+          artist: currentTrack.artist,
+          artwork: currentTrack.artwork,
+          color: currentTrack.color,
+        },
+      ]);
+      if (error) {
+        setIsSaved(false);
+        Alert.alert('Error saving track', error.message);
+      }
     }
   };
 
@@ -456,7 +505,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
     ? new Date(jamLastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : 'not synced yet';
 
-  const accentColor = isDark ? '#FF2F3F' : '#E52535';
+  const accentColor = palette.accent;
 
   // Glass card helper
   const GlassPanel = ({ children, style }: { children: React.ReactNode; style?: any }) => (
@@ -483,7 +532,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         width: 340,
         height: 340,
         borderRadius: 170,
-        backgroundColor: currentTrack.color || '#7B61FF',
+        backgroundColor: currentTrack.color || palette.accent,
         opacity: isDark ? 0.16 : 0.08,
         // @ts-ignore
         ...Platform.select({
@@ -499,7 +548,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         width: 300,
         height: 300,
         borderRadius: 150,
-        backgroundColor: isDark ? '#FF2F3F' : '#E52535',
+        backgroundColor: palette.accent,
         opacity: isDark ? 0.12 : 0.06,
         // @ts-ignore
         ...Platform.select({
@@ -515,7 +564,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         width: 320,
         height: 320,
         borderRadius: 160,
-        backgroundColor: '#7B61FF',
+        backgroundColor: palette.accentStrong,
         opacity: isDark ? 0.08 : 0.04,
         // @ts-ignore
         ...Platform.select({
@@ -588,7 +637,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
               width: ART_SIZE - 20,
               height: ART_SIZE - 20,
               borderRadius: 24,
-              backgroundColor: currentTrack.color || '#FF2F3F',
+              backgroundColor: currentTrack.color || accentColor,
               transform: [{ scale: glowPulseAnim }],
               opacity: isDark ? 0.45 : 0.25,
               // @ts-ignore
@@ -611,8 +660,8 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                   borderColor: 'rgba(255,255,255,0.08)',
                   backgroundColor: palette.surface,
                 },
-                shadow(`0 12px 36px ${(currentTrack.color || '#FF2F3F')}45`, {
-                  shadowColor: currentTrack.color || '#FF2F3F',
+                shadow(`0 12px 36px ${(currentTrack.color || accentColor)}45`, {
+                  shadowColor: currentTrack.color || accentColor,
                   shadowOffset: { width: 0, height: 12 },
                   shadowOpacity: 0.4,
                   shadowRadius: 24,
@@ -803,7 +852,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                   borderRadius: 12,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: isActive ? (currentTrack.color || '#FF2F3F') : 'transparent',
+                  backgroundColor: isActive ? (currentTrack.color || accentColor) : 'transparent',
                 }}
               >
                 <Text style={{
@@ -849,11 +898,11 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                       alignItems: 'center',
                       borderRadius: 14,
                       backgroundColor: isCurrent 
-                        ? `${(currentTrack.color || '#FF2F3F')}15` 
+                        ? `${(currentTrack.color || accentColor)}15` 
                         : (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'),
                       borderWidth: 1,
                       borderColor: isCurrent 
-                        ? `${(currentTrack.color || '#FF2F3F')}35` 
+                        ? `${(currentTrack.color || accentColor)}35` 
                         : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
                       padding: 10,
                       marginBottom: 8,
@@ -862,7 +911,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                   >
                     <SafeImage uri={track.artwork} style={{ width: 42, height: 42, borderRadius: 8 }} resizeMode="cover" />
                     <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
-                      <Text numberOfLines={1} style={{ color: isCurrent ? (currentTrack.color || '#FF2F3F') : palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                      <Text numberOfLines={1} style={{ color: isCurrent ? (currentTrack.color || accentColor) : palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3 }}>
                         {track.title}
                       </Text>
                       <Text numberOfLines={1} style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10.5, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -872,10 +921,10 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                     <View>
                       {isCurrent && isPlaying ? (
                         <View style={{ height: 18, justifyContent: 'center' }}>
-                          <EqualizerBars color={currentTrack.color || '#FF2F3F'} barCount={4} height={14} active={isPlaying} />
+                          <EqualizerBars color={currentTrack.color || accentColor} barCount={4} height={14} active={isPlaying} />
                         </View>
                       ) : (
-                        <Text style={{ color: isCurrent ? (currentTrack.color || '#FF2F3F') : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                        <Text style={{ color: isCurrent ? (currentTrack.color || accentColor) : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
                           {isCurrent ? 'NOW' : `#${index + 1}`}
                         </Text>
                       )}
@@ -891,20 +940,20 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
           <View style={{ marginTop: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Music2 stroke={currentTrack.color || '#FF2F3F'} size={16} />
+                <Music2 stroke={currentTrack.color || accentColor} size={16} />
                 <Text style={{ color: palette.textSubtle, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, marginLeft: 8, textTransform: 'uppercase' }}>
                   Synced Lyrics
                 </Text>
               </View>
               <View style={{
-                backgroundColor: `${(currentTrack.color || '#FF2F3F')}20`,
+                backgroundColor: `${(currentTrack.color || accentColor)}20`,
                 borderRadius: 8,
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderWidth: 1,
-                borderColor: `${(currentTrack.color || '#FF2F3F')}40`,
+                borderColor: `${(currentTrack.color || accentColor)}40`,
               }}>
-                <Text style={{ color: currentTrack.color || '#FF2F3F', fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>BEAT-SYNC ⚡</Text>
+                <Text style={{ color: currentTrack.color || accentColor, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>BEAT-SYNC ⚡</Text>
               </View>
             </View>
 
@@ -936,7 +985,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                     >
                       <Text
                         style={{
-                          color: isActive ? (currentTrack.color || '#FF2F3F') : palette.text,
+                          color: isActive ? (currentTrack.color || accentColor) : palette.text,
                           fontWeight: isActive ? '900' : '600',
                           fontSize: isActive ? 16.5 : 13.5,
                           textAlign: 'center',
@@ -944,7 +993,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                           textTransform: 'uppercase',
                           letterSpacing: isActive ? 0.3 : 0,
                           ...(isActive ? {
-                            textShadowColor: `${(currentTrack.color || '#FF2F3F')}60`,
+                            textShadowColor: `${(currentTrack.color || accentColor)}60`,
                             textShadowOffset: { width: 0, height: 0 },
                             textShadowRadius: 10,
                           } : {})
@@ -989,10 +1038,10 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                       borderRadius: 10,
                       alignItems: 'center',
                       backgroundColor: crossfadeSeconds === seconds
-                        ? (currentTrack.color || '#FF2F3F')
+                        ? (currentTrack.color || accentColor)
                         : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
                       borderWidth: 1,
-                      borderColor: crossfadeSeconds === seconds ? (currentTrack.color || '#FF2F3F') : 'transparent',
+                      borderColor: crossfadeSeconds === seconds ? (currentTrack.color || accentColor) : 'transparent',
                     }}
                   >
                     <Text style={{
@@ -1033,13 +1082,13 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                   paddingHorizontal: 12,
                   paddingVertical: 8,
                   borderRadius: 10,
-                  backgroundColor: gaplessEnabled ? `${(currentTrack.color || '#FF2F3F')}20` : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                  backgroundColor: gaplessEnabled ? `${(currentTrack.color || accentColor)}20` : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
                   borderWidth: 1,
-                  borderColor: gaplessEnabled ? (currentTrack.color || '#FF2F3F') : 'transparent',
+                  borderColor: gaplessEnabled ? (currentTrack.color || accentColor) : 'transparent',
                 }}
               >
                 <Text style={{
-                  color: gaplessEnabled ? (currentTrack.color || '#FF2F3F') : palette.textSubtle,
+                  color: gaplessEnabled ? (currentTrack.color || accentColor) : palette.textSubtle,
                   fontWeight: '800',
                   fontSize: 10.5,
                 }}>
