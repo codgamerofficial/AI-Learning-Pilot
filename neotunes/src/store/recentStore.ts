@@ -23,6 +23,7 @@ interface RecentState {
   addRecentTrack: (track: Omit<RecentTrack, 'playedAt'>) => void;
   clearRecent: () => void;
   loadFromStorage: () => void;
+  resetStore: () => void;
 }
 
 export const useRecentStore = create<RecentState>((set, get) => ({
@@ -53,6 +54,12 @@ export const useRecentStore = create<RecentState>((set, get) => ({
 
   clearRecent: () => {
     set({ recentTracks: [] });
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+  },
+
+  /** Full reset: clears data AND resets loaded flag so next user can reload fresh. */
+  resetStore: () => {
+    set({ recentTracks: [], loaded: false });
     AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
   },
 }));

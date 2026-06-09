@@ -315,18 +315,20 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         return { queue: updatedQueue };
       });
     } catch (e) {
-      console.warn('[PlayerStore] preloadNextTrack failed:', e);
+      if (__DEV__) console.warn('[PlayerStore] preloadNextTrack failed:', e);
     }
   },
 
   setPlaybackError: (playbackError) => {
+    const id = Date.now();
     set({ playbackError });
     if (playbackError) {
       setTimeout(() => {
+        // Only auto-dismiss if no newer error has been set
         if (get().playbackError === playbackError) {
           set({ playbackError: null });
         }
-      }, 4000);
+      }, 5000);
     }
   },
 }));

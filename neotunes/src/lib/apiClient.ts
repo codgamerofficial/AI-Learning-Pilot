@@ -139,7 +139,7 @@ export async function fetchResolve(searchQuery: string): Promise<ResolveResponse
     if (!res.ok) throw new Error('Network response was not ok');
     return (await res.json()) as ResolveResponse;
   } catch (err) {
-    console.error('API Error (Resolve):', err);
+    if (__DEV__) console.error('API Error (Resolve):', err);
     return null;
   }
 }

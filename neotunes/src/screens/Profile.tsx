@@ -7,7 +7,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming,
   withSequence, Easing, FadeInDown, FadeInRight,
 } from 'react-native-reanimated';
-import { LogOut, Music, Clock, Trash2, RotateCcw, Sun, Moon, Shield, Palette, Headphones, Zap } from 'lucide-react-native';
+import { LogOut, Music, Clock, Trash2, RotateCcw, Sun, Moon, Shield, Palette, Headphones, Zap, Bell, BellOff, Volume2 } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
 import { useRecentStore } from '../store/recentStore';
@@ -20,8 +20,12 @@ import { usePlayerStore } from '../store/playerStore';
 
 export default function ProfileScreen() {
   const { user } = useAuthStore();
-  const { recentTracks, clearRecent, loadFromStorage } = useRecentStore();
-  const { displayName, themeMode, setDisplayName, toggleTheme, loadPreferences } = usePreferencesStore();
+  const { recentTracks, clearRecent, loadFromStorage, resetStore: resetRecentStore } = useRecentStore();
+  const {
+    displayName, themeMode, audioQuality, notificationsEnabled,
+    setDisplayName, toggleTheme, cycleAudioQuality, toggleNotifications,
+    loadPreferences, resetStore: resetPreferencesStore,
+  } = usePreferencesStore();
   const [draftDisplayName, setDraftDisplayName] = useState('');
 
   useEffect(() => {
@@ -119,7 +123,10 @@ export default function ProfileScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: async () => {
+            // Clear all user-scoped state before signing out
             usePlayerStore.setState({ currentTrack: null, isPlaying: false, queue: [] });
+            resetRecentStore();
+            resetPreferencesStore();
             await supabase.auth.signOut();
           },
         },
@@ -183,6 +190,28 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleAudioQuality = () => {
+    cycleAudioQuality();
+    const next = audioQuality === 'auto' ? 'High' : audioQuality === 'high' ? 'Low' : 'Auto';
+    Alert.alert('Audio Quality', `Switched to ${next} quality.`);
+  };
+
+  const handleNotifications = () => {
+    toggleNotifications();
+    Alert.alert(
+      'Notifications',
+      notificationsEnabled ? 'Notifications disabled.' : 'Notifications enabled.'
+    );
+  };
+
+  // Audio quality label for display
+  const audioQualityLabel = audioQuality === 'auto' ? 'Auto' : audioQuality === 'high' ? 'High' : 'Low';
+  const audioQualityColors: Record<string, string> = {
+    auto: '#00D4FF',
+    high: '#00FF85',
+    low: '#FF9933',
+  };
+
   // Glass card wrapper helper
   const GlassCard = ({ children, style, delay = 0 }: { children: React.ReactNode; style?: any; delay?: number }) => (
     <Animated.View
@@ -212,8 +241,8 @@ export default function ProfileScreen() {
     </Animated.View>
   );
 
-  const ActionButton = ({ icon, label, onPress, color, delay = 0 }: {
-    icon: React.ReactNode; label: string; onPress: () => void; color: string; delay?: number;
+  const ActionButton = ({ icon, label, onPress, color, delay = 0, badge }: {
+    icon: React.ReactNode; label: string; onPress: () => void; color: string; delay?: number; badge?: string;
   }) => (
     <Animated.View entering={FadeInRight.delay(delay).springify()}>
       <TouchableOpacity
@@ -258,6 +287,19 @@ export default function ProfileScreen() {
         }}>
           {label}
         </Text>
+        {badge ? (
+          <View style={{
+            backgroundColor: `${color}20`,
+            borderRadius: 8,
+            paddingHorizontal: 10,
+            paddingVertical: 3,
+            marginRight: 8,
+          }}>
+            <Text style={{ color, fontWeight: '800', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6 }}>
+              {badge}
+            </Text>
+          </View>
+        ) : null}
         <Text style={{ color: palette.textMuted, fontSize: 16 }}>›</Text>
       </TouchableOpacity>
     </Animated.View>
@@ -496,11 +538,32 @@ export default function ProfileScreen() {
         />
 
         <ActionButton
+          icon={<Volume2 stroke={audioQualityColors[audioQuality]} size={20} />}
+          label="Audio Quality"
+          onPress={handleAudioQuality}
+          color={audioQualityColors[audioQuality]}
+          badge={audioQualityLabel}
+          delay={325}
+        />
+
+        <ActionButton
+          icon={notificationsEnabled
+            ? <Bell stroke="#00FF85" size={20} />
+            : <BellOff stroke="#FF6B6B" size={20} />
+          }
+          label={notificationsEnabled ? 'Notifications Enabled' : 'Notifications Disabled'}
+          onPress={handleNotifications}
+          color={notificationsEnabled ? '#00FF85' : '#FF6B6B'}
+          badge={notificationsEnabled ? 'ON' : 'OFF'}
+          delay={350}
+        />
+
+        <ActionButton
           icon={<Clock stroke={palette.textSubtle} size={20} />}
           label="Clear Play History"
           onPress={handleClearHistory}
           color={palette.textSubtle}
-          delay={350}
+          delay={375}
         />
 
         <ActionButton
@@ -516,11 +579,11 @@ export default function ProfileScreen() {
           label="Reset Market Telemetry"
           onPress={handleResetTelemetry}
           color="#FF9933"
-          delay={450}
+          delay={425}
         />
 
         {/* Sign Out */}
-        <Animated.View entering={FadeInDown.delay(500).springify()}>
+        <Animated.View entering={FadeInDown.delay(475).springify()}>
           <TouchableOpacity
             onPress={handleSignOut}
             activeOpacity={0.8}

@@ -81,7 +81,7 @@ export default function AuthScreen() {
               : { scheme: 'neotunes', path: 'auth/callback' }
           );
 
-      console.log('[AuthScreen] Google Sign-In redirect URI:', redirectTo);
+      if (__DEV__) console.log('[AuthScreen] Google Sign-In redirect URI:', redirectTo);
 
       // Supabase OAuth Sign In
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -126,7 +126,7 @@ export default function AuthScreen() {
             setError('Failed to retrieve authentication tokens from redirect.');
           }
         } else if (result.type === 'cancel') {
-          console.log('[AuthScreen] Google Sign-In was cancelled by the user.');
+          if (__DEV__) console.log('[AuthScreen] Google Sign-In was cancelled by the user.');
         } else {
           setError('Google Sign-In was not completed.');
         }
