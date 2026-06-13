@@ -4,21 +4,25 @@ const BLOCK_COLORS = ['#7B61FF', '#00D4FF', '#00FF85', '#FF6B6B', '#FFD700', '#F
 
 async function searchScraperFallback(query, maxResults = 10) {
   try {
-    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-    const response = await axios.get(url, {
+    const url = 'https://www.youtube.com/youtubei/v1/search';
+    const payload = {
+      context: {
+        client: {
+          clientName: 'WEB',
+          clientVersion: '2.20240308.00.00'
+        }
+      },
+      query: query
+    };
+
+    const response = await axios.post(url, payload, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       }
     });
 
-    const html = response.data;
-    const regex = /ytInitialData\s*=\s*({.+?});/;
-    const match = html.match(regex);
-    if (!match) return [];
-
-    const data = JSON.parse(match[1]);
-    const contents = data.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
+    const contents = response.data?.contents?.twoColumnSearchResultsRenderer?.primaryContents?.sectionListRenderer?.contents;
     if (!contents) return [];
 
     const itemSection = contents.find(c => c.itemSectionRenderer);
@@ -33,7 +37,7 @@ async function searchScraperFallback(query, maxResults = 10) {
       if (!video || !video.videoId) continue;
 
       const title = video.title?.runs?.[0]?.text || 'Unknown Title';
-      const artist = video.ownerText?.runs?.[0]?.text || 'Unknown Artist';
+      const artist = video.ownerText?.runs?.[0]?.text || video.shortBylineText?.runs?.[0]?.text || 'Unknown Artist';
       const artwork = video.thumbnail?.thumbnails?.[0]?.url;
 
       results.push({
@@ -48,7 +52,7 @@ async function searchScraperFallback(query, maxResults = 10) {
 
     return results;
   } catch (err) {
-    console.error('YouTube HTML Scraper Fallback Error:', err.message);
+    console.error('YouTube InnerTube Fallback Error:', err.message);
     return [];
   }
 }
