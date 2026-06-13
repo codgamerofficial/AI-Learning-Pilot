@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/neotunes-api/index.js"
+      "destination": "/api/index.js"
     }
   ]
 }

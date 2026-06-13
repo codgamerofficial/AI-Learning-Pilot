@@ -11,6 +11,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Middleware to strip /api prefix for Vercel rewritten routing
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api')) {
+    req.url = req.url.replace(/^\/api/, '');
+  }
+  next();
+});
+
 // In-Memory TTL Cache
 const cache = new Map();
 
@@ -235,9 +243,11 @@ app.get('/trending', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`🎵 NeoTunes API running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`🎵 NeoTunes API running on http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
