@@ -692,6 +692,48 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
             >
               {currentTrack.artist}
             </Text>
+            {currentTrack.source && (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                backgroundColor: currentTrack.source === 'youtube' 
+                  ? 'rgba(255, 0, 0, 0.12)' 
+                  : currentTrack.source === 'jamendo' 
+                    ? 'rgba(0, 255, 133, 0.12)' 
+                    : currentTrack.source === 'archive' 
+                      ? 'rgba(0, 212, 255, 0.12)'
+                      : 'rgba(255, 215, 0, 0.12)',
+                borderRadius: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                marginTop: 8,
+                alignSelf: 'flex-start'
+              }}>
+                <Text style={{
+                  color: currentTrack.source === 'youtube' 
+                    ? '#FF3B30' 
+                    : currentTrack.source === 'jamendo' 
+                      ? '#00FF85' 
+                      : currentTrack.source === 'archive' 
+                        ? '#00D4FF'
+                        : '#FFD700',
+                  fontSize: 10,
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5
+                }}>
+                  {currentTrack.source === 'youtube' 
+                    ? 'YouTube Music' 
+                    : currentTrack.source === 'jamendo' 
+                      ? 'Jamendo' 
+                      : currentTrack.source === 'archive' 
+                        ? 'Internet Archive'
+                        : currentTrack.source === 'spotify_proxy' 
+                          ? 'Spotify Preview' 
+                          : currentTrack.source}
+                </Text>
+              </View>
+            )}
           </View>
           <View style={{ minHeight: 48, justifyContent: 'center' }}>
             <EqualizerBars color={currentTrack.color} barCount={7} height={36} active={isPlaying} />

@@ -155,6 +155,39 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const setCurrentTrack = usePlayerStore((state) => state.setCurrentTrack);
   const setQueue = usePlayerStore((state) => state.setQueue);
 
+  const lastSearchQueryRef = React.useRef('');
+
+  const getFriendlyProviderError = React.useCallback((provider: string, rawError: string): string => {
+    const err = rawError.toLowerCase();
+    if (err.includes('quota') || err.includes('limit') || err.includes('exhausted') || err.includes('unavailable')) {
+      return 'Search provider temporarily unavailable. Trying backup source.';
+    }
+    if (err.includes('403') || err.includes('forbidden') || err.includes('premium') || err.includes('credential') || err.includes('authorization')) {
+      return 'Music service authorization issue. Reconnecting.';
+    }
+    return rawError;
+  }, []);
+
+  // Debounce search input
+  React.useEffect(() => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    if (query === lastSearchQueryRef.current) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setActiveGenre('');
+      setLastFusionGenerated(null);
+      lastSearchQueryRef.current = query;
+      performSearch(query, 'neutral');
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const fusionGeneratedLabel = React.useMemo(() => {
     if (!lastFusionGenerated) return '';
     const generatedDate = new Date(lastFusionGenerated.generatedAt);
@@ -183,6 +216,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const handleSearch = () => {
     setActiveGenre('');
     setLastFusionGenerated(null);
+    lastSearchQueryRef.current = query;
     performSearch(query, 'neutral');
   };
 
@@ -190,6 +224,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
     setActiveGenre(genre.label);
     setLastFusionGenerated(null);
     setQuery('');
+    lastSearchQueryRef.current = '';
     setResults([]);
     const hint: EditorialHint = genre.label === 'Bollywood' ? 'india' : 'neutral';
     performSearch(genre.query, hint);
@@ -198,6 +233,8 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const handleGenerateFusionPlaylist = async () => {
     setActiveGenre('Global x India');
     setQuery('');
+    setLastFusionGenerated(null);
+    lastSearchQueryRef.current = '';
     setSearchError(null);
     setSearchProviderErrors([]);
     setLoading(true);
@@ -373,6 +410,51 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
           </View>
         )}
 
+        {/* Provider Status Indicators */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+            borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+          }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: searchProviderErrors.some(e => e.provider === 'youtube' && e.error.toLowerCase().includes('quota')) ? '#FFD700' : '#00FF85', marginRight: 5 }} />
+            <Text style={{ color: palette.textSubtle, fontSize: 9, fontWeight: '700' }}>YT Music {searchProviderErrors.some(e => e.provider === 'youtube' && e.error.toLowerCase().includes('quota')) ? '(Scraper Fallback)' : ''}</Text>
+          </View>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: searchProviderErrors.some(e => e.provider === 'spotify') 
+              ? (isDark ? 'rgba(255,107,107,0.1)' : 'rgba(239,68,68,0.08)') 
+              : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+            paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+            borderWidth: 1, 
+            borderColor: searchProviderErrors.some(e => e.provider === 'spotify') 
+              ? (isDark ? 'rgba(255,107,107,0.2)' : 'rgba(239,68,68,0.15)') 
+              : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)')
+          }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: searchProviderErrors.some(e => e.provider === 'spotify') ? '#FF6B6B' : '#00FF85', marginRight: 5 }} />
+            <Text style={{ color: searchProviderErrors.some(e => e.provider === 'spotify') ? (isDark ? '#FF6B6B' : '#EF4444') : palette.textSubtle, fontSize: 9, fontWeight: '700' }}>Spotify {searchProviderErrors.some(e => e.provider === 'spotify') ? '(Auth Issue)' : ''}</Text>
+          </View>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+            borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+          }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#00FF85', marginRight: 5 }} />
+            <Text style={{ color: palette.textSubtle, fontSize: 9, fontWeight: '700' }}>Jamendo</Text>
+          </View>
+          <View style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+            paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10,
+            borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'
+          }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#00FF85', marginRight: 5 }} />
+            <Text style={{ color: palette.textSubtle, fontSize: 9, fontWeight: '700' }}>Archive.org</Text>
+          </View>
+        </View>
+
         {searchError && (
           <View style={{
             borderRadius: 12,
@@ -383,16 +465,29 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
             marginBottom: 14,
           }}>
             <Text style={{ color: '#FF6B6B', fontWeight: '700', fontSize: 11 }}>
-              {searchError}
+              Search Status Notice
             </Text>
             {searchProviderErrors.map((providerError, index) => (
               <Text
                 key={`${providerError.provider}-${index}`}
                 style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10, marginTop: 4 }}
               >
-                {providerError.provider}: {providerError.error}
+                • {providerError.provider.toUpperCase()}: {getFriendlyProviderError(providerError.provider, providerError.error)}
               </Text>
             ))}
+            <TouchableOpacity 
+              onPress={() => performSearch(query || 'Imagine Dragons', 'neutral')}
+              style={{
+                marginTop: 10,
+                alignSelf: 'flex-start',
+                backgroundColor: '#FF6B6B',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 8
+              }}
+            >
+              <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '800' }}>RETRY SEARCH</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -491,7 +586,12 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
                   {TRENDING_SEARCHES.map((term, i) => (
                     <TouchableOpacity
                       key={term}
-                      onPress={() => { setQuery(term); setActiveGenre(''); performSearch(term, 'neutral'); }}
+                      onPress={() => {
+                        setQuery(term);
+                        setActiveGenre('');
+                        lastSearchQueryRef.current = term;
+                        performSearch(term, 'neutral');
+                      }}
                       activeOpacity={0.8}
                       style={{
                         paddingHorizontal: 16, paddingVertical: 10,

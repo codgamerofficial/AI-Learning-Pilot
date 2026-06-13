@@ -41,6 +41,12 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
   const playerRef = React.useRef<any>(null);
   const isValidYTId = /^[a-zA-Z0-9_-]{11}$/.test(videoId);
 
+  // playRef tracks active play state without stale closures
+  const playRef = React.useRef(play);
+  React.useEffect(() => {
+    playRef.current = play;
+  }, [play]);
+
   // Preloading & Crossfading Refs
   const preloadedSoundRef = React.useRef<Audio.Sound | null>(null);
   const preloadedUrlRef = React.useRef<string | null>(null);
@@ -99,6 +105,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     onStateChange?.(state);
   }, [onStateChange]);
 
+  // Increased timeout to 15 seconds to prevent aggressive failure on slower networks
   React.useEffect(() => {
     if (audioUrl || !play || hasStartedOrReady) return;
 
@@ -107,7 +114,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
         console.warn('[NativeAudioPlayer] YouTube load timeout. Triggering error state.');
         onStateChange?.('error');
       }
-    }, 4500);
+    }, 15000);
 
     return () => clearTimeout(timer);
   }, [audioUrl, play, hasStartedOrReady, onStateChange]);
@@ -274,8 +281,8 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
         const loadResult = await Audio.Sound.createAsync(
           { uri: audioUrl },
           {
-            shouldPlay: play,
-            volume: crossfadeSeconds > 0 && play ? 0.0 : 1.0,
+            shouldPlay: playRef.current,
+            volume: crossfadeSeconds > 0 && playRef.current ? 0.0 : 1.0,
             progressUpdateIntervalMillis: 500,
           }
         );
@@ -323,7 +330,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
       });
 
       // Start playback and crossfade in
-      if (play) {
+      if (playRef.current) {
         try {
           if (crossfadeSeconds > 0) {
             await sound.setVolumeAsync(0.0);
@@ -340,7 +347,9 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
                 } catch {}
               } else {
                 try {
-                  await sound.setVolumeAsync(inVolume);
+                  if (playRef.current) {
+                    await sound.setVolumeAsync(inVolume);
+                  }
                 } catch {}
               }
             }, intervalMs);
@@ -415,10 +424,21 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     }
 
     if (play) {
+      // Clear any active fade-out intervals, as we are now playing
+      if (fadeOutIntervalRef.current) {
+        clearInterval(fadeOutIntervalRef.current);
+        fadeOutIntervalRef.current = null;
+      }
+      void sound.setVolumeAsync(1.0); // Reset volume to 1.0!
       void sound.playAsync();
       return;
     }
 
+    // Clear any active fade-in intervals, as we are pausing
+    if (fadeInIntervalRef.current) {
+      clearInterval(fadeInIntervalRef.current);
+      fadeInIntervalRef.current = null;
+    }
     void sound.pauseAsync();
   }, [play]);
 
@@ -430,11 +450,13 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     return null;
   }
 
+  // Setting width: 1, height: 1 and placing offscreen prevents OS from freezing/suspending webview.
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }}>
+    <View pointerEvents="none" style={{ position: 'absolute', width: 1, height: 1, left: -500, top: -500, opacity: 0.01 }}>
       <YoutubePlayer
         ref={playerRef}
-        height={0}
+        height={1}
+        width={1}
         play={play}
         videoId={videoId}
         onChangeState={handleStateChange}

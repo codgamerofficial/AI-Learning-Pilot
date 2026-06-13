@@ -2,9 +2,10 @@ require('dotenv').config();
 const youtube = require('./services/youtube');
 const jamendo = require('./services/jamendo');
 const spotify = require('./services/spotify');
+const archive = require('./services/internetArchive');
 
 async function check() {
-  const query = 'Believer Imagine Dragons';
+  const query = 'Imagine Dragons';
   const envVars = {
     YOUTUBE_API_KEY: !!process.env.YOUTUBE_API_KEY,
     JAMENDO_CLIENT_ID: !!process.env.JAMENDO_CLIENT_ID,
@@ -16,15 +17,20 @@ async function check() {
   const providers = [
     { name: 'Youtube', service: youtube },
     { name: 'Jamendo', service: jamendo },
-    { name: 'Spotify', service: spotify }
+    { name: 'Spotify', service: spotify },
+    { name: 'Internet Archive', service: archive }
   ];
 
   for (const p of providers) {
     try {
-      const results = await p.service.search(query, 3);
-      console.log(\\ results: \\);
+      console.log(`Searching ${p.name}...`);
+      const results = await p.service.search(query, 3, { throwOnError: true });
+      console.log(`${p.name} results count:`, results.length);
+      if (results.length > 0) {
+        console.log(`Sample result:`, JSON.stringify(results[0]));
+      }
     } catch (err) {
-      console.log(\\ error: \\);
+      console.error(`${p.name} error:`, err.message);
     }
   }
 }

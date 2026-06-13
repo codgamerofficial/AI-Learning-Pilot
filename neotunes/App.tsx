@@ -109,7 +109,7 @@ function GlobalAudioEngine() {
           return;
         }
 
-        usePlayerStore.getState().setPlaybackError(`Unable to stream "${track.title}". Playing offline.`);
+        usePlayerStore.getState().setPlaybackError(`Switching to alternative audio source...`);
         usePlayerStore.setState({
           currentTrack: {
             ...track,

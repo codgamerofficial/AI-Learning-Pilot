@@ -53,8 +53,30 @@ async function searchScraperFallback(query, maxResults = 10) {
   }
 }
 
+let youtubeQuotaExhausted = false;
+let quotaResetTime = 0;
+
+function checkQuotaStatus() {
+  if (youtubeQuotaExhausted && Date.now() > quotaResetTime) {
+    youtubeQuotaExhausted = false;
+  }
+  return youtubeQuotaExhausted;
+}
+
+function setQuotaExhausted() {
+  youtubeQuotaExhausted = true;
+  quotaResetTime = Date.now() + 6 * 60 * 60 * 1000; // 6 hours cooldown
+  console.warn(`⚠️ YouTube API quota marked as EXHAUSTED. Bypassing API for 6 hours.`);
+}
+
 async function search(query, maxResults = 10, options = {}) {
   const { throwOnError = false } = options;
+
+  // 1. Quota monitoring: Check if quota is marked as exhausted
+  if (checkQuotaStatus()) {
+    console.log(`[YouTube Service] Quota is exhausted. Routing search directly to scraper...`);
+    return await searchScraperFallback(query, maxResults);
+  }
 
   try {
     const apiKey = process.env.YOUTUBE_API_KEY;
@@ -101,6 +123,11 @@ async function search(query, maxResults = 10, options = {}) {
     const message = error.response?.data?.error?.message || error.message;
     console.warn(`⚠️ YouTube API Error (${message}). Falling back to HTML scraper...`);
     
+    // Check if the error is a quota error
+    if (message.toLowerCase().includes('quota') || message.toLowerCase().includes('limit')) {
+      setQuotaExhausted();
+    }
+
     try {
       const scraped = await searchScraperFallback(query, maxResults);
       if (scraped && scraped.length > 0) {
