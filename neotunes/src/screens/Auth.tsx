@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, SafeAreaView, TouchableOpacity, ScrollView,
-  ActivityIndicator, Platform, Alert, TextInput
+  ActivityIndicator, Platform, Alert, TextInput, Dimensions
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import Constants from 'expo-constants';
 import Svg, { Path } from 'react-native-svg';
-import { Sparkles, Music, Users, Fingerprint, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react-native';
+import {
+  Sparkles, Music, Users, Fingerprint, ShieldCheck, Mail, Lock,
+  Eye, EyeOff, ArrowRight, ArrowLeft, Headphones, Volume2
+} from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import BrandLogo from '../components/BrandLogo';
 import { shadow } from '../lib/shadow';
@@ -75,6 +78,103 @@ export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Welcome page carousel states
+  const [activeSlide, setActiveSlide] = useState(0);
+  const slideTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const welcomeSlides = [
+    {
+      title: 'Studio Acoustics',
+      description: 'Experience professional 10-band equalization, spatial 3D surround sound, and sound curves custom-tuned for legendary headsets.',
+      icon: Music,
+      color: '#D4AF37', // Gold
+      element: (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 60, marginTop: 10 }}>
+          {[30, 50, 75, 45, 80, 60, 35, 55, 40, 20].map((h, i) => (
+            <View
+              key={i}
+              style={{
+                width: 4,
+                height: h,
+                borderRadius: 2,
+                backgroundColor: i % 2 === 0 ? '#D4AF37' : 'rgba(255,255,255,0.25)',
+              }}
+            />
+          ))}
+        </View>
+      )
+    },
+    {
+      title: 'Seamless Playback',
+      description: 'Spotify-grade background playback system that streams smoothly when minimized, locked, or during system interruptions.',
+      icon: ShieldCheck,
+      color: '#00D4FF', // Electric Blue
+      element: (
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          borderWidth: 1,
+          borderColor: 'rgba(0, 212, 255, 0.25)',
+          borderRadius: 16,
+          paddingVertical: 10,
+          paddingHorizontal: 16,
+          gap: 12,
+          marginTop: 10,
+          width: '80%',
+        }}>
+          <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#00D4FF', alignItems: 'center', justifyContent: 'center' }}>
+            <Volume2 color="#050506" size={18} />
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <View style={{ width: 80, height: 8, borderRadius: 4, backgroundColor: '#FFF' }} />
+            <View style={{ width: 50, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)', marginTop: 6 }} />
+          </View>
+          <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00D4FF' }} />
+          </View>
+        </View>
+      )
+    },
+    {
+      title: 'Headset Intelligence',
+      description: 'Automatically profiles your Bluetooth earphones, calibrating optimal active noise cancelling (ANC) and custom sound signatures.',
+      icon: Headphones,
+      color: '#7B61FF', // Aurora Purple
+      element: (
+        <View style={{
+          backgroundColor: 'rgba(123, 97, 255, 0.08)',
+          borderWidth: 1,
+          borderColor: 'rgba(123, 97, 255, 0.25)',
+          borderRadius: 18,
+          paddingVertical: 8,
+          paddingHorizontal: 16,
+          alignItems: 'center',
+          marginTop: 10,
+          flexDirection: 'row',
+          gap: 8,
+        }}>
+          <Headphones color="#7B61FF" size={18} />
+          <Text style={{ color: '#E2E8F0', fontWeight: '800', fontSize: 10.5, letterSpacing: 0.5 }}>
+            SONY WH-1000XM5: LDAC ACTIVE
+          </Text>
+        </View>
+      )
+    }
+  ];
+
+  // Auto-scroll welcome slides
+  useEffect(() => {
+    if (viewMode === 'welcome') {
+      slideTimerRef.current = setInterval(() => {
+        setActiveSlide((prev) => (prev + 1) % welcomeSlides.length);
+      }, 5000);
+    }
+    return () => {
+      if (slideTimerRef.current) clearInterval(slideTimerRef.current);
+    };
+  }, [viewMode]);
+
   const handleEmailAuth = async () => {
     const email = emailInput.trim();
     const password = passwordInput;
@@ -89,7 +189,7 @@ export default function AuthScreen() {
     try {
       if (isSignUp) {
         // Sign Up
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -134,7 +234,6 @@ export default function AuthScreen() {
       if (supported) {
         const success = await Biometrics.authenticate('Log in to NeoTunes Premium');
         if (success) {
-          Alert.alert('Biometric Login', 'Successfully authenticated! Setting up developer session...');
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email: 'developer@neotunes.app',
             password: 'developerPassword123'
@@ -155,7 +254,23 @@ export default function AuthScreen() {
           }
         }
       } else {
-        Alert.alert('Biometrics Not Supported', 'Fallback credentials: developer@neotunes.app / developerPassword123');
+        // Fallback for emulator / web
+        Alert.alert('Biometrics Not Supported', 'Signing into Sandbox mode with default credentials.');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'developer@neotunes.app',
+          password: 'developerPassword123'
+        });
+        if (signInError) {
+          await supabase.auth.signUp({
+            email: 'developer@neotunes.app',
+            password: 'developerPassword123',
+            options: {
+              data: {
+                display_name: 'NeoTunes Developer'
+              }
+            }
+          });
+        }
       }
     } catch (e: any) {
       setError(e.message || 'Biometric authentication failed.');
@@ -232,121 +347,159 @@ export default function AuthScreen() {
     }
   };
 
+  const currentSlide = welcomeSlides[activeSlide];
+  const SlideIcon = currentSlide.icon;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#050506', overflow: 'hidden' }}>
-      {/* Large Ambient Gradients */}
+      {/* Dynamic Glowing Background Orbs */}
       <View style={{
-        position: 'absolute', top: -150, right: -150, width: 450, height: 450, borderRadius: 225,
-        backgroundColor: '#005CA9', opacity: 0.1,
+        position: 'absolute', top: -180, right: -120, width: 400, height: 400, borderRadius: 200,
+        backgroundColor: viewMode === 'welcome' ? currentSlide.color : '#D4AF37', opacity: 0.08,
         // @ts-ignore
         filter: 'blur(100px)'
       }} />
       <View style={{
-        position: 'absolute', bottom: -150, left: -150, width: 450, height: 450, borderRadius: 225,
-        backgroundColor: '#D4AF37', opacity: 0.1,
+        position: 'absolute', bottom: -180, left: -120, width: 400, height: 400, borderRadius: 200,
+        backgroundColor: '#005CA9', opacity: 0.08,
         // @ts-ignore
         filter: 'blur(100px)'
       }} />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center', alignItems: 'center' }}>
         
-        {/* ── WELCOME MODE ── */}
+        {/* ── REDESIGNED WELCOME / ONBOARDING SCREEN ── */}
         {viewMode === 'welcome' && (
           <View style={[
             {
-              backgroundColor: 'rgba(12, 12, 14, 0.75)',
+              backgroundColor: 'rgba(12, 12, 14, 0.72)',
               borderWidth: 1.5,
               borderColor: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: 28,
-              padding: 32,
+              borderRadius: 32,
+              padding: 28,
               width: '100%',
-              maxWidth: 400,
+              maxWidth: 420,
               alignItems: 'center',
               // @ts-ignore
               backdropFilter: 'blur(30px)',
             },
-            shadow('0px 20px 40px rgba(0, 0, 0, 0.45)', {
-              shadowColor: '#D4AF37',
-              shadowOffset: { width: 0, height: 16 },
-              shadowOpacity: 0.08,
-              shadowRadius: 32,
-              elevation: 12,
+            shadow('0px 24px 48px rgba(0, 0, 0, 0.55)', {
+              shadowColor: currentSlide.color,
+              shadowOffset: { width: 0, height: 18 },
+              shadowOpacity: 0.12,
+              shadowRadius: 36,
+              elevation: 16,
             })
           ]}>
-            {/* Logo */}
-            <View style={{ marginBottom: 20 }}>
-              <BrandLogo style={{ transform: [{ scale: 1.25 }] }} />
+            {/* Header branding */}
+            <View style={{ marginBottom: 12, alignItems: 'center' }}>
+              <BrandLogo style={{ transform: [{ scale: 1.2 }] }} />
             </View>
 
             <Text style={{
               color: '#D4AF37',
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: '900',
               textTransform: 'uppercase',
-              letterSpacing: 4,
+              letterSpacing: 6,
               textAlign: 'center',
               marginBottom: 4,
-              textShadowColor: 'rgba(255, 211, 0, 0.2)',
+              textShadowColor: 'rgba(255, 211, 0, 0.25)',
               textShadowOffset: { width: 0, height: 2 },
-              textShadowRadius: 6,
+              textShadowRadius: 8,
             }}>
               NEOTUNES
             </Text>
             
             <Text style={{
-              color: 'rgba(255, 255, 255, 0.35)',
+              color: 'rgba(255, 255, 255, 0.45)',
               fontWeight: '800',
               textTransform: 'uppercase',
-              fontSize: 9.5,
-              letterSpacing: 2,
-              marginBottom: 32,
+              fontSize: 10,
+              letterSpacing: 3,
+              marginBottom: 28,
               textAlign: 'center',
             }}>
-              The Future of Sound System
+              Professional Music Ecosystem
             </Text>
 
-            {/* Pulsing Visual Waveform */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 60, marginBottom: 40 }}>
-              {[12, 28, 48, 32, 54, 38, 20, 44, 24, 10].map((h, i) => (
-                <View
-                  key={i}
-                  style={{
-                    width: 3.5,
-                    height: h,
-                    borderRadius: 2,
-                    backgroundColor: i % 2 === 0 ? '#D4AF37' : '#005CA9',
-                  }}
-                />
-              ))}
+            {/* Slider Content Wrapper */}
+            <View style={{
+              width: '100%',
+              height: 230,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 8,
+              marginBottom: 20,
+            }}>
+              {/* Dynamic Icon */}
+              <View style={{
+                width: 68,
+                height: 68,
+                borderRadius: 34,
+                backgroundColor: `${currentSlide.color}15`,
+                borderWidth: 1.5,
+                borderColor: `${currentSlide.color}35`,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}>
+                <SlideIcon color={currentSlide.color} size={28} />
+              </View>
+
+              {/* Title & Description */}
+              <Text style={{
+                color: '#FFF',
+                fontSize: 19,
+                fontWeight: '900',
+                textTransform: 'uppercase',
+                letterSpacing: 1.2,
+                textAlign: 'center',
+                marginBottom: 10,
+              }}>
+                {currentSlide.title}
+              </Text>
+
+              <Text style={{
+                color: 'rgba(255, 255, 255, 0.55)',
+                fontSize: 12.5,
+                fontWeight: '500',
+                textAlign: 'center',
+                lineHeight: 18.5,
+                height: 56,
+              }}>
+                {currentSlide.description}
+              </Text>
+
+              {/* Custom Interactive Elements */}
+              <View style={{ height: 60, justifyContent: 'center', width: '100%', alignItems: 'center', marginTop: 12 }}>
+                {currentSlide.element}
+              </View>
             </View>
 
-            {/* Tagline */}
-            <Text style={{
-              color: '#FFF',
-              fontSize: 18,
-              fontWeight: '900',
-              textAlign: 'center',
-              lineHeight: 24,
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-              marginBottom: 12,
-            }}>
-              Recode Your Listening
-            </Text>
+            {/* Pagination Indicators */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 36 }}>
+              {welcomeSlides.map((_, index) => {
+                const isActive = index === activeSlide;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      if (slideTimerRef.current) clearInterval(slideTimerRef.current);
+                      setActiveSlide(index);
+                    }}
+                    style={{
+                      width: isActive ? 24 : 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: isActive ? currentSlide.color : 'rgba(255, 255, 255, 0.15)',
+                    }}
+                  />
+                );
+              })}
+            </View>
 
-            <Text style={{
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: 12,
-              fontWeight: '600',
-              textAlign: 'center',
-              lineHeight: 18,
-              paddingHorizontal: 8,
-              marginBottom: 40,
-            }}>
-              Immerse yourself in dynamic Dolby spatial sound profiles, 10-band peak equalizers, and collaborative friend Jams.
-            </Text>
-
-            {/* Action Get Started Button */}
+            {/* Bottom Actions */}
             <TouchableOpacity
               onPress={() => setViewMode('auth')}
               activeOpacity={0.88}
@@ -356,10 +509,11 @@ export default function AuthScreen() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: '#D4AF37',
-                  borderRadius: 16,
-                  height: 56,
+                  borderRadius: 18,
+                  height: 54,
                   width: '100%',
                   gap: 10,
+                  marginBottom: 12,
                 },
                 shadow('0px 10px 24px rgba(212, 175, 55, 0.25)', {
                   shadowColor: '#D4AF37',
@@ -371,37 +525,59 @@ export default function AuthScreen() {
               ]}
             >
               <Text style={{ color: '#0A0A0B', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5 }}>
-                GET STARTED
+                Get Started
               </Text>
               <ArrowRight size={16} color="#0A0A0B" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleBiometricMockLogin}
+              activeOpacity={0.8}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 44,
+                width: '100%',
+                gap: 8,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+              }}
+            >
+              <Fingerprint size={16} color="rgba(255, 255, 255, 0.45)" />
+              <Text style={{ color: 'rgba(255, 255, 255, 0.45)', fontWeight: '800', fontSize: 11.5, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                Biometric App Unlock
+              </Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ── AUTHENTICATION MODE ── */}
+        {/* ── REDESIGNED AUTHENTICATION SCREEN ── */}
         {viewMode === 'auth' && (
           <View style={[
             {
               backgroundColor: 'rgba(12, 12, 14, 0.75)',
               borderWidth: 1.5,
               borderColor: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: 28,
+              borderRadius: 32,
               padding: 24,
               width: '100%',
-              maxWidth: 400,
+              maxWidth: 420,
               // @ts-ignore
               backdropFilter: 'blur(30px)',
             },
-            shadow('0px 20px 40px rgba(0, 0, 0, 0.45)', {
+            shadow('0px 24px 48px rgba(0, 0, 0, 0.55)', {
               shadowColor: '#D4AF37',
-              shadowOffset: { width: 0, height: 16 },
-              shadowOpacity: 0.08,
-              shadowRadius: 32,
-              elevation: 12,
+              shadowOffset: { width: 0, height: 18 },
+              shadowOpacity: 0.1,
+              shadowRadius: 36,
+              elevation: 16,
             })
           ]}>
-            {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            {/* Navigation Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
               <TouchableOpacity
                 onPress={() => setViewMode('welcome')}
                 style={{
@@ -418,46 +594,76 @@ export default function AuthScreen() {
               <View style={{ width: 32 }} />
             </View>
 
-            <Text style={{
-              color: '#FFF',
-              fontSize: 20,
-              fontWeight: '900',
-              textAlign: 'center',
-              textTransform: 'uppercase',
-              letterSpacing: 1.2,
-              marginBottom: 4,
-            }}>
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </Text>
-
-            <Text style={{
-              color: 'rgba(255,255,255,0.4)',
-              fontSize: 11.5,
-              fontWeight: '600',
-              textAlign: 'center',
+            {/* Switch Tabs */}
+            <View style={{
+              flexDirection: 'row',
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              borderRadius: 16,
+              padding: 4,
+              borderWidth: 1.2,
+              borderColor: 'rgba(255,255,255,0.05)',
               marginBottom: 24,
             }}>
-              {isSignUp ? 'Sign up to recode your listening environment' : 'Log in to access your sound preferences'}
-            </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsSignUp(false);
+                  setError('');
+                }}
+                activeOpacity={0.8}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  alignItems: 'center',
+                  borderRadius: 12,
+                  backgroundColor: !isSignUp ? 'rgba(212,175,55,0.12)' : 'transparent',
+                  borderWidth: 1,
+                  borderColor: !isSignUp ? '#D4AF37' : 'transparent',
+                }}
+              >
+                <Text style={{ color: !isSignUp ? '#D4AF37' : 'rgba(255,255,255,0.4)', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsSignUp(true);
+                  setError('');
+                }}
+                activeOpacity={0.8}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  alignItems: 'center',
+                  borderRadius: 12,
+                  backgroundColor: isSignUp ? 'rgba(212,175,55,0.12)' : 'transparent',
+                  borderWidth: 1,
+                  borderColor: isSignUp ? '#D4AF37' : 'transparent',
+                }}
+              >
+                <Text style={{ color: isSignUp ? '#D4AF37' : 'rgba(255,255,255,0.4)', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-            {/* Error Message */}
+            {/* Error Message Box */}
             {error !== '' && (
               <View style={{
                 backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                borderWidth: 1,
-                borderColor: 'rgba(239, 68, 68, 0.2)',
-                borderRadius: 12,
+                borderWidth: 1.2,
+                borderColor: 'rgba(239, 68, 68, 0.25)',
+                borderRadius: 14,
                 padding: 12,
-                marginBottom: 16,
+                marginBottom: 18,
               }}>
-                <Text style={{ color: '#FF8A8A', fontWeight: '700', fontSize: 11, textAlign: 'center', lineHeight: 15 }}>
+                <Text style={{ color: '#FF8A8A', fontWeight: '700', fontSize: 11.5, textAlign: 'center', lineHeight: 16 }}>
                   {error}
                 </Text>
               </View>
             )}
 
-            {/* Credentials Fields */}
-            <View style={{ gap: 12, marginBottom: 20 }}>
+            {/* Form Fields */}
+            <View style={{ gap: 14, marginBottom: 24 }}>
               {isSignUp && (
                 <View style={{ position: 'relative' }}>
                   <TextInput
@@ -479,7 +685,7 @@ export default function AuthScreen() {
                     onChangeText={setDisplayNameInput}
                     autoCapitalize="words"
                   />
-                  <View style={{ position: 'absolute', left: 14, top: 12 }}>
+                  <View style={{ position: 'absolute', left: 14, top: 13 }}>
                     <Users size={16} color="rgba(255,255,255,0.35)" />
                   </View>
                 </View>
@@ -506,7 +712,7 @@ export default function AuthScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                <View style={{ position: 'absolute', left: 14, top: 12 }}>
+                <View style={{ position: 'absolute', left: 14, top: 13 }}>
                   <Mail size={16} color="rgba(255,255,255,0.35)" />
                 </View>
               </View>
@@ -532,12 +738,12 @@ export default function AuthScreen() {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
-                <View style={{ position: 'absolute', left: 14, top: 12 }}>
+                <View style={{ position: 'absolute', left: 14, top: 13 }}>
                   <Lock size={16} color="rgba(255,255,255,0.35)" />
                 </View>
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: 14, top: 12 }}
+                  style={{ position: 'absolute', right: 14, top: 13 }}
                 >
                   {showPassword ? (
                     <EyeOff size={16} color="rgba(255,255,255,0.35)" />
@@ -548,7 +754,7 @@ export default function AuthScreen() {
               </View>
             </View>
 
-            {/* Email Submit Button */}
+            {/* Submit Actions */}
             {loading ? (
               <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 12 }} />
             ) : (
@@ -558,35 +764,22 @@ export default function AuthScreen() {
                 style={[
                   {
                     backgroundColor: '#FFF',
-                    borderRadius: 14,
-                    height: 48,
+                    borderRadius: 16,
+                    height: 50,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: 16,
+                    marginBottom: 20,
                   },
                   shadow('0px 4px 12px rgba(255,255,255,0.1)')
                 ]}
               >
-                <Text style={{ color: '#050506', fontWeight: '900', fontSize: 12.5, textTransform: 'uppercase', letterSpacing: 1 }}>
-                  {isSignUp ? 'SIGN UP NOW' : 'SECURE SIGN IN'}
+                <Text style={{ color: '#050506', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  {isSignUp ? 'REGISTER ACCOUNT' : 'SECURE SIGN IN'}
                 </Text>
               </TouchableOpacity>
             )}
 
-            {/* Mode Switcher */}
-            <TouchableOpacity
-              onPress={() => {
-                setIsSignUp(!isSignUp);
-                setError('');
-              }}
-              style={{ alignSelf: 'center', marginBottom: 24 }}
-            >
-              <Text style={{ color: '#D4AF37', fontSize: 11.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 }}>
               <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
               <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>
                 OR CONNECT WITH
@@ -594,7 +787,7 @@ export default function AuthScreen() {
               <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
             </View>
 
-            {/* Social / Native Authentication Tiers */}
+            {/* Social / Biometric Login Tiers */}
             <View style={{ gap: 10 }}>
               <TouchableOpacity
                 onPress={handleGoogleSignIn}
@@ -625,7 +818,7 @@ export default function AuthScreen() {
                   justifyContent: 'center',
                   backgroundColor: 'rgba(212, 175, 55, 0.04)',
                   borderWidth: 1.2,
-                  borderColor: 'rgba(212, 175, 55, 0.2)',
+                  borderColor: 'rgba(212, 175, 55, 0.25)',
                   borderRadius: 14,
                   height: 48,
                 }}
@@ -637,17 +830,15 @@ export default function AuthScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={{
-              color: 'rgba(255, 255, 255, 0.2)',
-              fontSize: 8,
-              fontWeight: '700',
-              textTransform: 'uppercase',
-              letterSpacing: 0.8,
-              textAlign: 'center',
-              marginTop: 24,
-            }}>
-              By continuing you agree to the terms of service
-            </Text>
+            {/* Back to Slides Link */}
+            <TouchableOpacity
+              onPress={() => setViewMode('welcome')}
+              style={{ alignSelf: 'center', marginTop: 24 }}
+            >
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Back to Features
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 

@@ -59,17 +59,26 @@ async function ensureAudioMode() {
 async function initTrackPlayer() {
   if (isTrackPlayerInitialized || !TrackPlayer) return;
   try {
-    await TrackPlayer.setupPlayer({});
+    await TrackPlayer.setupPlayer({
+      // Allow playback to continue when app is backgrounded or screen is off
+      autoHandleInterruptions: true,
+    });
     await TrackPlayer.updateOptions({
       android: {
-        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.PausePlayback,
+        // ContinuePlayback: music keeps playing even if user swipes app from recents
+        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
       },
+      // Jump intervals for notification scrub buttons (±15 seconds)
+      forwardJumpInterval: 15,
+      backwardJumpInterval: 15,
       capabilities: [
         Capability.Play,
         Capability.Pause,
         Capability.SkipToNext,
         Capability.SkipToPrevious,
         Capability.SeekTo,
+        Capability.JumpForward,
+        Capability.JumpBackward,
       ],
       compactCapabilities: [
         Capability.Play,
