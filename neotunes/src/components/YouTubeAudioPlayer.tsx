@@ -241,9 +241,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
             } else {
               try {
                 await oldSound.setVolumeAsync(volume);
-              } catch {
-                if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
-              }
+              } catch {}
             }
           }, intervalMs);
         } else {
@@ -276,8 +274,8 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
         const loadResult = await Audio.Sound.createAsync(
           { uri: audioUrl },
           {
-            shouldPlay: false,
-            volume: crossfadeSeconds > 0 ? 0.0 : 1.0,
+            shouldPlay: play,
+            volume: crossfadeSeconds > 0 && play ? 0.0 : 1.0,
             progressUpdateIntervalMillis: 500,
           }
         );
@@ -343,9 +341,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
               } else {
                 try {
                   await sound.setVolumeAsync(inVolume);
-                } catch {
-                  if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
-                }
+                } catch {}
               }
             }, intervalMs);
           } else {

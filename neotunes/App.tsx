@@ -24,6 +24,7 @@ import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from './src/store/playerStore'
 import { usePreferencesStore } from './src/store/preferencesStore';
 import { useJamStore } from './src/store/jamStore';
 import { getThemePalette } from './src/lib/themePalette';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 
 const DEV_WARNING_SUPPRESSIONS = [
   '"shadow*" style props are deprecated. Use "boxShadow".',
@@ -432,6 +433,23 @@ export default function App() {
 
   React.useEffect(() => {
     loadPreferences();
+
+    const configureAudioMode = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+          interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (e) {
+        console.warn('[App] Failed to configure audio mode on startup:', e);
+      }
+    };
+    void configureAudioMode();
   }, [loadPreferences]);
 
   React.useEffect(() => {
@@ -479,7 +497,7 @@ export default function App() {
           {user ? (
             <>
               <Stack.Screen name="Main" component={MainTabs} />
-              <Stack.Screen name="Player" component={PlayerScreen} options={{ presentation: 'modal' }} />
+              <Stack.Screen name="Player" component={PlayerScreen} options={{ presentation: Platform.OS === 'web' ? 'card' : 'modal' }} />
             </>
           ) : (
             <Stack.Screen name="Auth" component={AuthScreen} />

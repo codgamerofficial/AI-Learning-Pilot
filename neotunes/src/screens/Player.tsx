@@ -7,13 +7,13 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
-  Dimensions,
   Animated,
   Easing,
   Share,
   Modal,
   TextInput,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Play,
@@ -51,7 +51,7 @@ type PlayerScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Player'>;
 };
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
 
 interface LyricLine {
   time: number;
@@ -127,7 +127,7 @@ const DEFAULT_LYRICS: LyricLine[] = [
   { time: 65, text: "Enjoy the continuous background playback!" },
 ];
 
-const ART_SIZE = Math.min(SCREEN_W - 64, SCREEN_H * 0.35, 320);
+
 
 const SLEEP_TIMER_OPTIONS = [
   { label: '15 min', minutes: 15 },
@@ -140,6 +140,8 @@ const SLEEP_TIMER_OPTIONS = [
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export default function PlayerScreen({ navigation }: PlayerScreenProps) {
+  const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
+  const ART_SIZE = Math.min(SCREEN_W - 64, SCREEN_H * 0.35, 320);
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const displayName = usePreferencesStore((state) => state.displayName);
   const palette = getThemePalette(themeMode);
