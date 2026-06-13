@@ -8,35 +8,41 @@ export interface ThemePalette {
   textMuted: string;
   textSubtle: string;
   border: string;
-  accent: string;
-  accentStrong: string;
+  accent: string;       // Premium Gold
+  accentStrong: string; // Electric Blue
+  accentPurple: string; // Aurora Purple
+  accentSilver: string; // Titanium Silver
   dangerSurface: string;
 }
 
 const DARK_PALETTE: ThemePalette = {
-  background: '#050505',
-  surface: '#121212',
-  surfaceAlt: '#1A1A1A',
-  text: '#FFFFFF',
-  textMuted: 'rgba(255,255,255,0.75)',
-  textSubtle: 'rgba(255,255,255,0.5)',
-  border: 'rgba(255,255,255,0.08)',
-  accent: '#FFD300', // CSK Canary Gold/Yellow
-  accentStrong: '#005CA9', // CSK Royal Blue
-  dangerSurface: '#3A1010',
+  background: '#050506', // Neo Black (AMOLED)
+  surface: '#0C0C0E',    // Spatial UI Surface
+  surfaceAlt: '#141417', // Secondary surface
+  text: '#E2E8F0',       // Titanium Silver text
+  textMuted: 'rgba(226,232,240,0.75)',
+  textSubtle: 'rgba(226,232,240,0.45)',
+  border: 'rgba(226,232,240,0.06)',
+  accent: '#D4AF37',       // Premium Gold
+  accentStrong: '#00D4FF', // Electric Blue
+  accentPurple: '#7B61FF', // Aurora Purple
+  accentSilver: '#E2E8F0', // Titanium Silver
+  dangerSurface: '#2A1010',
 };
 
 const LIGHT_PALETTE: ThemePalette = {
-  background: '#F9F9FB',
+  background: '#F8F9FA',
   surface: '#FFFFFF',
-  surfaceAlt: '#F0F0F2',
-  text: '#0A0A0A',
-  textMuted: '#374151',
-  textSubtle: '#6B7280',
-  border: 'rgba(0,0,0,0.08)',
-  accent: '#F9D00F', // CSK Canary Yellow
-  accentStrong: '#004B87', // CSK Royal Blue
-  dangerSurface: '#FEE2E2',
+  surfaceAlt: '#F1F3F5',
+  text: '#1A1D20',
+  textMuted: '#495057',
+  textSubtle: '#868E96',
+  border: 'rgba(0,0,0,0.06)',
+  accent: '#C59B27',       // Gold for light mode
+  accentStrong: '#00A3C4', // Cyan/Blue
+  accentPurple: '#6741D9', // Violet/Purple
+  accentSilver: '#495057', // Silver/Grey
+  dangerSurface: '#FFE3E3',
 };
 
 export function getThemePalette(themeMode: ThemeMode): ThemePalette {

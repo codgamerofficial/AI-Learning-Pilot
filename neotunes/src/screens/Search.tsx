@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, SafeAreaView, ScrollView,
-  TouchableOpacity, Image, ActivityIndicator, Alert
+  TouchableOpacity, Image, ActivityIndicator, Alert, Modal
 } from 'react-native';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
-import { Search as SearchIcon, Play, X, TrendingUp, Sparkles } from 'lucide-react-native';
+import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
+import { Search as SearchIcon, Play, X, TrendingUp, Sparkles, Mic, Volume2 } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { fetchSearch, fetchTrending, extractApiError, type ApiProviderError } from '../lib/apiClient';
@@ -136,6 +136,46 @@ function EditorialTagStrip({ tags }: { tags: EditorialTag[] }) {
   );
 }
 
+function VoiceWaveform() {
+  const h1 = useSharedValue(20);
+  const h2 = useSharedValue(40);
+  const h3 = useSharedValue(60);
+  const h4 = useSharedValue(30);
+  const h5 = useSharedValue(50);
+
+  React.useEffect(() => {
+    h1.value = withRepeat(withSequence(withTiming(60, { duration: 300 }), withTiming(20, { duration: 300 })), -1, true);
+    h2.value = withRepeat(withSequence(withTiming(20, { duration: 350 }), withTiming(70, { duration: 350 })), -1, true);
+    h3.value = withRepeat(withSequence(withTiming(80, { duration: 400 }), withTiming(30, { duration: 400 })), -1, true);
+    h4.value = withRepeat(withSequence(withTiming(40, { duration: 320 }), withTiming(90, { duration: 320 })), -1, true);
+    h5.value = withRepeat(withSequence(withTiming(70, { duration: 280 }), withTiming(20, { duration: 280 })), -1, true);
+  }, []);
+
+  const style1 = useAnimatedStyle(() => ({ height: h1.value }));
+  const style2 = useAnimatedStyle(() => ({ height: h2.value }));
+  const style3 = useAnimatedStyle(() => ({ height: h3.value }));
+  const style4 = useAnimatedStyle(() => ({ height: h4.value }));
+  const style5 = useAnimatedStyle(() => ({ height: h5.value }));
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 100, marginVertical: 20 }}>
+      {[style1, style2, style3, style4, style5].map((style, i) => (
+        <Animated.View
+          key={i}
+          style={[
+            {
+              width: 6,
+              borderRadius: 3,
+              backgroundColor: '#D4AF37',
+            },
+            style
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function SearchScreen({ navigation }: SearchScreenProps) {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const palette = getThemePalette(themeMode);
@@ -152,6 +192,10 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
   const [lastFusionGenerated, setLastFusionGenerated] = useState<{ trackCount: number; generatedAt: number } | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchProviderErrors, setSearchProviderErrors] = useState<ApiProviderError[]>([]);
+  const [searchFilter, setSearchFilter] = useState<'all' | 'songs' | 'artists' | 'podcasts' | 'albums'>('all');
+  const [isListening, setIsListening] = useState(false);
+  const [listeningStatus, setListeningStatus] = useState('Listening...');
+  const [typoSuggestion, setTypoSuggestion] = useState<string | null>(null);
   const setCurrentTrack = usePlayerStore((state) => state.setCurrentTrack);
   const setQueue = usePlayerStore((state) => state.setQueue);
 
@@ -168,10 +212,30 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
     return rawError;
   }, []);
 
+  const checkTypo = (term: string) => {
+    const normalized = term.toLowerCase().trim();
+    if (normalized === 'arijith' || normalized === 'arijt' || normalized === 'arjit') return 'Arijit Singh';
+    if (normalized === 'talyor' || normalized === 'tylor' || normalized === 'taylr') return 'Taylor Swift';
+    if (normalized === 'coldpley' || normalized === 'coldplayy') return 'Coldplay';
+    if (normalized === 'belli' || normalized === 'billie' || normalized === 'billi') return 'Billie Eilish';
+    if (normalized === 'ar rahman' || normalized === 'arrahman' || normalized === 'a r rahman') return 'A.R. Rahman';
+    return null;
+  };
+
+  const getFilteredQuery = (rawQuery: string, filter: typeof searchFilter) => {
+    if (!rawQuery.trim()) return '';
+    if (filter === 'podcasts') return `${rawQuery} podcast episode`;
+    if (filter === 'albums') return `${rawQuery} full album audio`;
+    if (filter === 'artists') return `${rawQuery} official songs jukebox`;
+    if (filter === 'songs') return `${rawQuery} song official audio`;
+    return rawQuery;
+  };
+
   // Debounce search input
   React.useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setTypoSuggestion(null);
       return;
     }
     if (query === lastSearchQueryRef.current) {
@@ -182,11 +246,37 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
       setActiveGenre('');
       setLastFusionGenerated(null);
       lastSearchQueryRef.current = query;
-      performSearch(query, 'neutral');
+      performSearch(query, 'neutral', searchFilter);
     }, 500);
 
     return () => clearTimeout(timer);
   }, [query]);
+
+  // Trigger search when filter changes
+  React.useEffect(() => {
+    if (query.trim()) {
+      performSearch(query, 'neutral', searchFilter);
+    }
+  }, [searchFilter]);
+
+  const startVoiceSearch = () => {
+    setIsListening(true);
+    setListeningStatus('Listening for your voice...');
+    
+    setTimeout(() => {
+      setListeningStatus('Analyzing sound wave...');
+    }, 800);
+    
+    setTimeout(() => {
+      setListeningStatus("Found match: 'Taylor Swift'!");
+    }, 1600);
+    
+    setTimeout(() => {
+      setIsListening(false);
+      setQuery('Taylor Swift');
+      performSearch('Taylor Swift', 'neutral', searchFilter);
+    }, 2400);
+  };
 
   const fusionGeneratedLabel = React.useMemo(() => {
     if (!lastFusionGenerated) return '';
@@ -194,13 +284,18 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
     return generatedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, [lastFusionGenerated]);
 
-  const performSearch = async (searchQuery: string, hint: EditorialHint = 'neutral') => {
+  const performSearch = async (searchQuery: string, hint: EditorialHint = 'neutral', customFilter = searchFilter) => {
     if (!searchQuery.trim()) return;
     setSearchError(null);
     setSearchProviderErrors([]);
     setLoading(true);
+
+    const typo = checkTypo(searchQuery);
+    setTypoSuggestion(typo);
+
+    const finalQuery = getFilteredQuery(searchQuery, customFilter);
     try {
-      const formatted = await fetchSearch(searchQuery, 'all');
+      const formatted = await fetchSearch(finalQuery, 'all');
       setResults(formatted);
       await recordTrackImpressions(formatted, hint);
     } catch (e) {
@@ -312,7 +407,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
               borderWidth: 1.2,
               borderColor: isDark ? 'rgba(255, 211, 0, 0.35)' : 'rgba(249, 208, 15, 0.35)',
               borderRadius: 16,
-              paddingHorizontal: 16, paddingVertical: 10, marginBottom: 20,
+              paddingHorizontal: 16, paddingVertical: 10, marginBottom: 16,
               // @ts-ignore
               backdropFilter: 'blur(24px)',
             },
@@ -326,7 +421,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
           ]}>
             <SearchIcon stroke={palette.textSubtle} size={20} />
             <TextInput
-              style={{ flex: 1, color: palette.text, fontWeight: '600', fontSize: 15, marginLeft: 12, letterSpacing: 0.3 }}
+              style={{ flex: 1, color: palette.text, fontWeight: '600', fontSize: 15, marginLeft: 12, marginRight: 8, letterSpacing: 0.3 }}
               placeholder="Songs, artists, podcasts..."
               placeholderTextColor={palette.textMuted}
               value={query}
@@ -336,12 +431,73 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
               autoCorrect={false}
             />
             {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')}>
+              <TouchableOpacity onPress={() => setQuery('')} style={{ marginRight: 8 }}>
                 <X stroke={palette.textMuted} size={16} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={startVoiceSearch} style={{
+              width: 32, height: 32, borderRadius: 16,
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+              alignItems: 'center', justifyContent: 'center'
+            }}>
+              <Mic stroke={palette.accent} size={16} />
+            </TouchableOpacity>
           </View>
         </Animated.View>
+
+        {/* Smart Filter Pills */}
+        <Animated.View entering={FadeInDown.delay(120).springify()} style={{ flexDirection: 'row', marginBottom: 18 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'songs', label: 'Songs' },
+              { key: 'artists', label: 'Artists' },
+              { key: 'podcasts', label: 'Podcasts' },
+              { key: 'albums', label: 'Albums' }
+            ].map((filter) => {
+              const isSelected = searchFilter === filter.key;
+              return (
+                <TouchableOpacity
+                  key={filter.key}
+                  onPress={() => setSearchFilter(filter.key as any)}
+                  activeOpacity={0.85}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    backgroundColor: isSelected ? palette.accent : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                    borderWidth: 1,
+                    borderColor: isSelected ? palette.accent : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)'),
+                  }}
+                >
+                  <Text style={{
+                    color: isSelected ? (isDark ? '#050506' : '#FFFFFF') : palette.textSubtle,
+                    fontWeight: '800',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5
+                  }}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </Animated.View>
+
+        {/* Typo Suggestion Banner */}
+        {typoSuggestion && (
+          <Animated.View entering={FadeInDown.springify()} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, paddingHorizontal: 4 }}>
+            <Text style={{ color: palette.textSubtle, fontSize: 12, fontWeight: '600' }}>
+              Did you mean:{' '}
+            </Text>
+            <TouchableOpacity onPress={() => { setQuery(typoSuggestion); performSearch(typoSuggestion, 'neutral', searchFilter); }}>
+              <Text style={{ color: palette.accent, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' }}>
+                {typoSuggestion}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Fusion Playlist Generator */}
         <Animated.View entering={FadeInDown.delay(150).springify()}>
@@ -663,6 +819,92 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
 
         </ScrollView>
       </View>
+
+      {/* Voice Search Simulation Overlay */}
+      <Modal
+        visible={isListening}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsListening(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(5, 5, 6, 0.85)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+        }}>
+          <View style={[
+            {
+              backgroundColor: isDark ? 'rgba(20, 20, 24, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+              borderRadius: 28,
+              padding: 36,
+              alignItems: 'center',
+              width: '100%',
+              maxWidth: 320,
+              borderWidth: 1.5,
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+            },
+            shadow('0px 12px 36px rgba(0, 0, 0, 0.5)', {
+              shadowColor: '#D4AF37',
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.2,
+              shadowRadius: 24,
+              elevation: 10,
+            })
+          ]}>
+            <View style={{
+              width: 64, height: 64, borderRadius: 32,
+              backgroundColor: 'rgba(212, 175, 55, 0.1)',
+              borderWidth: 1.5,
+              borderColor: '#D4AF37',
+              alignItems: 'center', justifyContent: 'center',
+              marginBottom: 16,
+            }}>
+              <Mic size={28} color="#D4AF37" />
+            </View>
+            
+            <Text style={{
+              color: palette.text,
+              fontSize: 18,
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              textAlign: 'center',
+            }}>
+              Voice Search
+            </Text>
+            
+            <VoiceWaveform />
+            
+            <Text style={{
+              color: palette.textSubtle,
+              fontSize: 13,
+              fontWeight: '700',
+              textAlign: 'center',
+              marginTop: 8,
+            }}>
+              {listeningStatus}
+            </Text>
+            
+            <TouchableOpacity
+              onPress={() => setIsListening(false)}
+              style={{
+                marginTop: 28,
+                paddingVertical: 10,
+                paddingHorizontal: 24,
+                borderRadius: 12,
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <Text style={{ color: palette.text, fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }

@@ -1,11 +1,11 @@
 import './global.css';
 import React from 'react';
-import { Text, ActivityIndicator, View, LogBox, Platform, Alert, TouchableOpacity } from 'react-native';
+import { Text, ActivityIndicator, View, LogBox, Platform, Alert, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'react-native';
-import { Home, Search, Library, User } from 'lucide-react-native';
+import { Home, Search, Library, User, Music, Users, Download, Radio, Sparkles, Lock } from 'lucide-react-native';
 
 // Screens
 import HomeScreen from './src/screens/Home';
@@ -18,6 +18,7 @@ import ProfileScreen from './src/screens/Profile';
 // Components
 import MiniPlayer from './src/components/MiniPlayer';
 import YouTubeAudioPlayer from './src/components/YouTubeAudioPlayer';
+import SafeImage from './src/components/SafeImage';
 
 import { useAuthStore } from './src/store/authStore';
 import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from './src/store/playerStore';
@@ -311,10 +312,10 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 
-function MainTabs() {
+function MobileTabs() {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const isDark = themeMode === 'dark';
-  const shellBackground = isDark ? '#0A0A0A' : '#F3F4F6';
+  const shellBackground = isDark ? '#050506' : '#F8F9FA';
   const palette = getThemePalette(themeMode);
   const accentColor = palette.accent;
 
@@ -393,6 +394,305 @@ function MainTabs() {
   );
 }
 
+function MainTabs({ navigation }: any) {
+  const { width } = useWindowDimensions();
+  const themeMode = usePreferencesStore((state) => state.themeMode);
+  const isDark = themeMode === 'dark';
+  const palette = getThemePalette(themeMode);
+  const currentTrack = usePlayerStore((state) => state.currentTrack);
+  const isPlaying = usePlayerStore((state) => state.isPlaying);
+  
+  const [activeTab, setActiveTab] = React.useState<'home' | 'search' | 'library' | 'profile'>('home');
+
+  if (width < 768) {
+    return <MobileTabs />;
+  }
+
+  const isDesktop = width >= 1024;
+  
+  return (
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: isDark ? '#050506' : '#F8F9FA' }}>
+      {/* Sidebar (Desktop) or Rail (Tablet) */}
+      <View style={{
+        width: isDesktop ? 240 : 80,
+        backgroundColor: isDark ? '#0C0C0E' : '#FFFFFF',
+        borderRightWidth: 1.5,
+        borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        paddingVertical: 24,
+        paddingHorizontal: isDesktop ? 16 : 0,
+        alignItems: isDesktop ? 'stretch' : 'center',
+        justifyContent: 'space-between',
+      }}>
+        <View style={{ width: '100%', alignItems: isDesktop ? 'stretch' : 'center' }}>
+          {/* Brand Logo / Icon */}
+          <View style={{ 
+            height: 50, 
+            paddingHorizontal: isDesktop ? 8 : 0, 
+            marginBottom: 24, 
+            justifyContent: 'center',
+            alignItems: isDesktop ? 'flex-start' : 'center'
+          }}>
+            {isDesktop ? (
+              <Text style={{ color: palette.accent, fontWeight: '900', fontSize: 22, letterSpacing: 1.5 }}>
+                NEO<Text style={{ color: palette.text }}>TUNES</Text>
+              </Text>
+            ) : (
+              <Text style={{ color: palette.accent, fontWeight: '900', fontSize: 24 }}>N</Text>
+            )}
+          </View>
+
+          {/* Nav Items */}
+          <View style={{ gap: 8, width: '100%' }}>
+            {[
+              { id: 'home', label: 'Home', icon: Home },
+              { id: 'search', label: 'Search', icon: Search },
+              { id: 'library', label: 'Library', icon: Library },
+              { id: 'profile', label: 'Profile', icon: User },
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => setActiveTab(item.id as any)}
+                  activeOpacity={0.8}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: isDesktop ? 'flex-start' : 'center',
+                    paddingVertical: 12,
+                    paddingHorizontal: isDesktop ? 16 : 0,
+                    borderRadius: 14,
+                    backgroundColor: isActive 
+                      ? (isDark ? 'rgba(255,211,0,0.12)' : 'rgba(249,208,15,0.08)')
+                      : 'transparent',
+                    borderWidth: 1,
+                    borderColor: isActive ? palette.accent + '30' : 'transparent',
+                  }}
+                >
+                  <Icon stroke={isActive ? palette.accent : palette.textSubtle} size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+                  {isDesktop && (
+                    <Text style={{
+                      marginLeft: 14,
+                      color: isActive ? palette.accent : palette.text,
+                      fontWeight: isActive ? '800' : '600',
+                      fontSize: 13.5,
+                      letterSpacing: 0.5,
+                    }}>{item.label}</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {isDesktop && (
+            <>
+              {/* Divider */}
+              <View style={{ height: 1.5, backgroundColor: 'rgba(255,255,255,0.06)', marginVertical: 20 }} />
+
+              {/* Curated Space Section */}
+              <Text style={{ 
+                color: palette.textSubtle, 
+                fontSize: 9, 
+                fontWeight: '900', 
+                letterSpacing: 1.5, 
+                textTransform: 'uppercase',
+                paddingHorizontal: 8,
+                marginBottom: 10 
+              }}>
+                YOUR SPACES
+              </Text>
+
+              <View style={{ gap: 4 }}>
+                {[
+                  { label: 'Music Jam', icon: Users, action: () => navigation.navigate('Player') },
+                  { label: 'Downloads', icon: Download, action: () => setActiveTab('library') },
+                  { label: 'Trending', icon: Radio, action: () => setActiveTab('home') },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <TouchableOpacity
+                      key={item.label}
+                      onPress={item.action}
+                      activeOpacity={0.8}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 10,
+                        paddingHorizontal: 12,
+                        borderRadius: 12,
+                      }}
+                    >
+                      <Icon stroke={palette.textSubtle} size={16} />
+                      <Text style={{
+                        marginLeft: 12,
+                        color: palette.textSubtle,
+                        fontWeight: '600',
+                        fontSize: 12.5,
+                      }}>{item.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* User Mini Profile at Bottom */}
+        <View style={{ width: '100%', alignItems: isDesktop ? 'stretch' : 'center', paddingHorizontal: isDesktop ? 8 : 0 }}>
+          {isDesktop ? (
+            <TouchableOpacity onPress={() => setActiveTab('profile')} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{
+                width: 32, height: 32, borderRadius: 16,
+                backgroundColor: palette.accent,
+                alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 11 }}>U</Text>
+              </View>
+              <View style={{ marginLeft: 10, flex: 1 }}>
+                <Text style={{ color: palette.text, fontWeight: '700', fontSize: 12 }} numberOfLines={1}>Premium User</Text>
+                <Text style={{ color: palette.textSubtle, fontSize: 10 }} numberOfLines={1}>Active Session</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => setActiveTab('profile')}>
+              <View style={{
+                width: 36, height: 36, borderRadius: 18,
+                backgroundColor: palette.accent,
+                alignItems: 'center', justifyContent: 'center'
+              }}>
+                <User stroke="#FFF" size={16} />
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Main Content Area */}
+      <View style={{ flex: 1, backgroundColor: isDark ? '#050506' : '#F8F9FA' }}>
+        {activeTab === 'home' && <HomeScreen navigation={navigation} />}
+        {activeTab === 'search' && <SearchScreen navigation={navigation} />}
+        {activeTab === 'library' && <LibraryScreen navigation={navigation} />}
+        {activeTab === 'profile' && <ProfileScreen />}
+      </View>
+
+      {/* Desktop Right Column: Player Mini HUD & Friend Activity */}
+      {isDesktop && (
+        <View style={{
+          width: 280,
+          backgroundColor: isDark ? '#0C0C0E' : '#FFFFFF',
+          borderLeftWidth: 1.5,
+          borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+          padding: 20,
+        }}>
+          {currentTrack ? (
+            <View style={{ flex: 1, justifyContent: 'space-between' }}>
+              <View>
+                <Text style={{ 
+                  color: palette.accent, 
+                  fontSize: 10, 
+                  fontWeight: '900', 
+                  letterSpacing: 1.5, 
+                  textTransform: 'uppercase',
+                  marginBottom: 14 
+                }}>
+                  NOW PLAYING
+                </Text>
+                
+                <TouchableOpacity 
+                  activeOpacity={0.9} 
+                  onPress={() => navigation.navigate('Player')}
+                  style={{
+                    borderRadius: 20,
+                    overflow: 'hidden',
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(255,255,255,0.06)',
+                    marginBottom: 16,
+                  }}
+                >
+                  <SafeImage uri={currentTrack.artwork} style={{ width: '100%', height: 240 }} resizeMode="cover" />
+                </TouchableOpacity>
+
+                <Text style={{ color: palette.text, fontWeight: '900', fontSize: 16 }} numberOfLines={1}>{currentTrack.title}</Text>
+                <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 12, marginTop: 4 }} numberOfLines={1}>{currentTrack.artist}</Text>
+
+                {/* Progress Mini Timeline */}
+                <View style={{ height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, marginTop: 14, overflow: 'hidden' }}>
+                  <View style={{ 
+                    width: '35%', // Simulated progress
+                    height: '100%', 
+                    backgroundColor: palette.accent 
+                  }} />
+                </View>
+              </View>
+
+              {/* Friend Activity Simulation */}
+              <View style={{ flex: 1, marginTop: 24 }}>
+                <Text style={{ 
+                  color: palette.textSubtle, 
+                  fontSize: 9, 
+                  fontWeight: '900', 
+                  letterSpacing: 1.5, 
+                  textTransform: 'uppercase',
+                  marginBottom: 12 
+                }}>
+                  FRIEND ACTIVITY
+                </Text>
+                <View style={{ gap: 12 }}>
+                  {[
+                    { name: 'Sarah', track: 'Imagine Dragons - Believer', time: '1m ago', avatarColor: '#7B61FF' },
+                    { name: 'David', track: 'Arijit Singh - Tum Hi Ho', time: '5m ago', avatarColor: '#00D4FF' },
+                  ].map((friend, i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{
+                        width: 28, height: 28, borderRadius: 14,
+                        backgroundColor: friend.avatarColor,
+                        alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 10 }}>{friend.name[0]}</Text>
+                      </View>
+                      <View style={{ marginLeft: 8, flex: 1 }}>
+                        <Text style={{ color: palette.text, fontWeight: '700', fontSize: 11 }}>{friend.name}</Text>
+                        <Text style={{ color: palette.textSubtle, fontSize: 9 }} numberOfLines={1}>{friend.track}</Text>
+                      </View>
+                      <Text style={{ color: palette.textSubtle, fontSize: 8 }}>{friend.time}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('Player')}
+                style={{
+                  backgroundColor: palette.accent,
+                  paddingVertical: 12,
+                  borderRadius: 14,
+                  alignItems: 'center',
+                  shadowColor: palette.accent,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 10,
+                  elevation: 4,
+                }}
+              >
+                <Text style={{ color: '#FFF', fontWeight: '900', fontSize: 12, letterSpacing: 0.5 }}>OPEN FULL PLAYER</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Music stroke={palette.textSubtle} size={48} opacity={0.3} />
+              <Text style={{ color: palette.textSubtle, fontSize: 12, fontWeight: '700', marginTop: 12, textAlign: 'center' }}>
+                Select a song to start listening
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function PlaybackErrorToast() {
   const playbackError = usePlayerStore((state) => state.playbackError);
   const setPlaybackError = usePlayerStore((state) => state.setPlaybackError);
@@ -462,8 +762,12 @@ export default function App() {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const loadPreferences = usePreferencesStore((state) => state.loadPreferences);
   const leaveSession = useJamStore((state) => state.leaveSession);
+  
+  const isBiometricLocked = usePreferencesStore((state) => state.isBiometricLocked);
+  const [isAppUnlocked, setIsAppUnlocked] = React.useState(false);
+
   const isDark = themeMode === 'dark';
-  const shellBackground = isDark ? '#0A0A0A' : '#F3F4F6';
+  const shellBackground = isDark ? '#050506' : '#F8F9FA';
 
   React.useEffect(() => {
     loadPreferences();
@@ -505,11 +809,79 @@ export default function App() {
     }
   }, [leaveSession, user]);
 
+  React.useEffect(() => {
+    if (!isBiometricLocked) {
+      setIsAppUnlocked(true);
+      return;
+    }
+    
+    const triggerBiometricUnlock = async () => {
+      const { Biometrics } = require('./src/lib/Biometrics');
+      const supported = await Biometrics.isSupported();
+      if (supported) {
+        const success = await Biometrics.authenticate('Unlock NeoTunes Premium');
+        if (success) {
+          setIsAppUnlocked(true);
+        }
+      } else {
+        setIsAppUnlocked(true);
+      }
+    };
+    
+    void triggerBiometricUnlock();
+  }, [isBiometricLocked]);
+
   if (loading) {
     const palette = getThemePalette(themeMode);
     return (
       <View style={{ flex: 1, backgroundColor: shellBackground, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={palette.accent} />
+      </View>
+    );
+  }
+
+  if (isBiometricLocked && !isAppUnlocked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#050506', alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{
+          backgroundColor: 'rgba(12, 12, 14, 0.75)',
+          borderWidth: 1.5,
+          borderColor: 'rgba(212, 175, 55, 0.2)',
+          borderRadius: 28,
+          padding: 32,
+          width: '90%',
+          maxWidth: 360,
+          alignItems: 'center',
+        }}>
+          <Lock stroke="#D4AF37" size={48} style={{ marginBottom: 20 }} />
+          <Text style={{ color: '#E2E8F0', fontWeight: '900', fontSize: 18, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+            NEOTUNES SECURED
+          </Text>
+          <Text style={{ color: 'rgba(226, 232, 240, 0.45)', fontSize: 11, fontWeight: '600', letterSpacing: 0.5, marginBottom: 24, textAlign: 'center' }}>
+            Biometric App Lock Active
+          </Text>
+          
+          <TouchableOpacity
+            onPress={async () => {
+              const { Biometrics } = require('./src/lib/Biometrics');
+              const success = await Biometrics.authenticate();
+              if (success) setIsAppUnlocked(true);
+            }}
+            activeOpacity={0.8}
+            style={{
+              backgroundColor: '#D4AF37',
+              paddingVertical: 14,
+              paddingHorizontal: 24,
+              borderRadius: 16,
+              width: '100%',
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#050506', fontWeight: '900', fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+              UNLOCK APP
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }

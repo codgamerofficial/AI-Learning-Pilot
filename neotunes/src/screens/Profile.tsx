@@ -23,6 +23,10 @@ export default function ProfileScreen() {
   const { recentTracks, clearRecent, loadFromStorage, resetStore: resetRecentStore } = useRecentStore();
   const {
     displayName, themeMode, audioQuality, notificationsEnabled,
+    isBiometricLocked, toggleBiometricLock,
+    gaplessPlayback, toggleGaplessPlayback,
+    crossfadeEnabled, toggleCrossfade,
+    audioNormalization, toggleNormalization,
     setDisplayName, toggleTheme, cycleAudioQuality, toggleNotifications,
     loadPreferences, resetStore: resetPreferencesStore,
   } = usePreferencesStore();
@@ -475,6 +479,92 @@ export default function ProfileScreen() {
           </View>
         </GlassCard>
 
+        {/* Milestone Badges */}
+        <GlassCard delay={210}>
+          <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>
+            Ecosystem Badges
+          </Text>
+          <View style={{ gap: 10 }}>
+            {[
+              {
+                title: 'Acoustic Voyager',
+                desc: 'Listen to 5 or more tracks to begin your neotunes voyage.',
+                unlocked: totalTracks >= 5,
+                metric: `${totalTracks}/5 tracks`,
+                icon: '🚀',
+                color: '#00D4FF',
+              },
+              {
+                title: 'Decibel Demon',
+                desc: 'Listen to 15 tracks to unlock audiophile level tuning.',
+                unlocked: totalTracks >= 15,
+                metric: `${totalTracks}/15 tracks`,
+                icon: '😈',
+                color: '#FF4ECD',
+              },
+              {
+                title: 'Night Owl',
+                desc: 'Listen to 25 tracks to dominate the night vibe feeds.',
+                unlocked: totalTracks >= 25,
+                metric: `${totalTracks}/25 tracks`,
+                icon: '🦉',
+                color: '#FF9933',
+              },
+              {
+                title: 'Genre Blender',
+                desc: 'Discover 3 or more unique creators to fuse your DNA.',
+                unlocked: uniqueArtists >= 3,
+                metric: `${uniqueArtists}/3 artists`,
+                icon: '🧬',
+                color: '#00FF85',
+              },
+              {
+                title: 'Neo Pioneer',
+                desc: 'Personalize your identity by setting a profile display name.',
+                unlocked: displayName !== '',
+                metric: displayName !== '' ? 'Customized' : 'Not Set',
+                icon: '💎',
+                color: '#FFD700',
+              }
+            ].map((badge, index) => (
+              <View
+                key={index}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: 12,
+                  borderRadius: 14,
+                  backgroundColor: badge.unlocked
+                    ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)')
+                    : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'),
+                  borderWidth: 1.2,
+                  borderColor: badge.unlocked ? `${badge.color}35` : 'transparent',
+                  opacity: badge.unlocked ? 1 : 0.55,
+                }}
+              >
+                <View style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: badge.unlocked ? `${badge.color}15` : (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)'),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12,
+                }}>
+                  <Text style={{ fontSize: 20 }}>{badge.icon}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 }}>{badge.title}</Text>
+                    <Text style={{ color: badge.unlocked ? badge.color : palette.textMuted, fontWeight: '700', fontSize: 10, textTransform: 'uppercase' }}>{badge.metric}</Text>
+                  </View>
+                  <Text style={{ color: palette.textSubtle, fontSize: 10.5, marginTop: 2, fontWeight: '600' }} numberOfLines={2}>{badge.desc}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </GlassCard>
+
         {/* Dhoni Quote Card Easter Egg */}
         {isMsd && (
           <GlassCard delay={220} style={{ borderColor: 'rgba(255, 211, 0, 0.45)', backgroundColor: isDark ? 'rgba(255, 211, 0, 0.04)' : 'rgba(255, 211, 0, 0.02)' }}>
@@ -556,6 +646,59 @@ export default function ProfileScreen() {
           color={notificationsEnabled ? '#00FF85' : '#FF6B6B'}
           badge={notificationsEnabled ? 'ON' : 'OFF'}
           delay={350}
+        />
+
+        <ActionButton
+          icon={<Shield stroke={isBiometricLocked ? '#00FF85' : palette.textSubtle} size={20} />}
+          label="Biometric App Lock"
+          onPress={() => {
+            toggleBiometricLock();
+            Alert.alert(
+              'Biometric Lock',
+              !isBiometricLocked 
+                ? 'Biometric app lock enabled. You will be prompted on next launch.' 
+                : 'Biometric app lock disabled.'
+            );
+          }}
+          color={isBiometricLocked ? '#00FF85' : palette.textSubtle}
+          badge={isBiometricLocked ? 'ACTIVE' : 'OFF'}
+          delay={355}
+        />
+
+        <ActionButton
+          icon={<Headphones stroke={gaplessPlayback ? '#00D4FF' : palette.textSubtle} size={20} />}
+          label="Gapless Playback"
+          onPress={() => {
+            toggleGaplessPlayback();
+            Alert.alert('Gapless Playback', !gaplessPlayback ? 'Gapless playback enabled.' : 'Gapless playback disabled.');
+          }}
+          color={gaplessPlayback ? '#00D4FF' : palette.textSubtle}
+          badge={gaplessPlayback ? 'ON' : 'OFF'}
+          delay={360}
+        />
+
+        <ActionButton
+          icon={<Zap stroke={crossfadeEnabled ? '#FF4ECD' : palette.textSubtle} size={20} />}
+          label="Crossfade Transitions"
+          onPress={() => {
+            toggleCrossfade();
+            Alert.alert('Crossfade', !crossfadeEnabled ? 'Crossfade enabled.' : 'Crossfade disabled.');
+          }}
+          color={crossfadeEnabled ? '#FF4ECD' : palette.textSubtle}
+          badge={crossfadeEnabled ? 'ON' : 'OFF'}
+          delay={365}
+        />
+
+        <ActionButton
+          icon={<Volume2 stroke={audioNormalization ? '#FF9933' : palette.textSubtle} size={20} />}
+          label="Audio Normalization"
+          onPress={() => {
+            toggleNormalization();
+            Alert.alert('Audio Normalization', !audioNormalization ? 'Audio normalization enabled.' : 'Audio normalization disabled.');
+          }}
+          color={audioNormalization ? '#FF9933' : palette.textSubtle}
+          badge={audioNormalization ? 'ON' : 'OFF'}
+          delay={370}
         />
 
         <ActionButton

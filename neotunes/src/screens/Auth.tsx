@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, SafeAreaView, TouchableOpacity, ScrollView,
-  ActivityIndicator, Platform
+  ActivityIndicator, Platform, Alert
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import Constants from 'expo-constants';
 import Svg, { Path } from 'react-native-svg';
-import { Sparkles, Music, Users } from 'lucide-react-native';
+import { Sparkles, Music, Users, Fingerprint, ShieldCheck } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import BrandLogo from '../components/BrandLogo';
 import { shadow } from '../lib/shadow';
@@ -66,6 +66,45 @@ function GoogleIcon() {
 export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleBiometricMockLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { Biometrics } = require('../lib/Biometrics');
+      const supported = await Biometrics.isSupported();
+      if (supported) {
+        const success = await Biometrics.authenticate('Log in to NeoTunes Premium');
+        if (success) {
+          Alert.alert('Biometric Login', 'Successfully authenticated! Setting up developer session...');
+          const { data, error: signInError } = await supabase.auth.signInWithPassword({
+            email: 'developer@neotunes.app',
+            password: 'developerPassword123'
+          });
+          if (signInError) {
+            const { error: signUpError } = await supabase.auth.signUp({
+              email: 'developer@neotunes.app',
+              password: 'developerPassword123',
+              options: {
+                data: {
+                  display_name: 'NeoTunes Developer'
+                }
+              }
+            });
+            if (signUpError) {
+              setError(signUpError.message);
+            }
+          }
+        }
+      } else {
+        Alert.alert('Biometrics Not Supported', 'Please use Google Sign-In on this device.');
+      }
+    } catch (e: any) {
+      setError(e.message || 'Biometric authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -149,13 +188,13 @@ export default function AuthScreen() {
       }} />
       <View style={{
         position: 'absolute', bottom: -150, left: -150, width: 450, height: 450, borderRadius: 225,
-        backgroundColor: '#FFD300', opacity: 0.12,
+        backgroundColor: '#D4AF37', opacity: 0.12,
         // @ts-ignore
         filter: 'blur(100px)'
       }} />
       <View style={{
         position: 'absolute', top: '25%', left: '10%', width: 350, height: 350, borderRadius: 175,
-        backgroundColor: '#FFD300', opacity: 0.04,
+        backgroundColor: '#D4AF37', opacity: 0.04,
         // @ts-ignore
         filter: 'blur(120px)'
       }} />
@@ -177,7 +216,7 @@ export default function AuthScreen() {
             backdropFilter: 'blur(30px)',
           },
           shadow('0px 20px 40px rgba(0, 0, 0, 0.5)', {
-            shadowColor: '#FFD300',
+            shadowColor: '#D4AF37',
             shadowOffset: { width: 0, height: 16 },
             shadowOpacity: 0.1,
             shadowRadius: 32,
@@ -192,7 +231,7 @@ export default function AuthScreen() {
 
           {/* Premium Tagline */}
           <Text style={{
-            color: '#FFD300',
+            color: '#D4AF37',
             fontSize: 19,
             fontWeight: '900',
             marginBottom: 6,
@@ -226,7 +265,7 @@ export default function AuthScreen() {
                 width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255, 211, 0, 0.06)',
                 borderWidth: 1, borderColor: 'rgba(255, 211, 0, 0.15)', alignItems: 'center', justifyContent: 'center'
               }}>
-                <Music size={18} color="#FFD300" />
+                <Music size={18} color="#D4AF37" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Lossless Sound Engine</Text>
@@ -254,7 +293,7 @@ export default function AuthScreen() {
                 width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255, 211, 0, 0.06)',
                 borderWidth: 1, borderColor: 'rgba(255, 211, 0, 0.15)', alignItems: 'center', justifyContent: 'center'
               }}>
-                <Users size={18} color="#FFD300" />
+                <Users size={18} color="#D4AF37" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Real-Time Jams</Text>
@@ -284,7 +323,7 @@ export default function AuthScreen() {
           {/* Google Sign In Button */}
           {loading ? (
             <View style={{ paddingVertical: 12, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              <ActivityIndicator size="large" color="#FFD300" style={{ marginBottom: 16 }} />
+              <ActivityIndicator size="large" color="#D4AF37" style={{ marginBottom: 16 }} />
               <Text style={{
                 color: 'rgba(255,255,255,0.5)',
                 fontSize: 12,
@@ -302,47 +341,90 @@ export default function AuthScreen() {
               </Text>
             </View>
           ) : (
-            <TouchableOpacity
-              onPress={handleGoogleSignIn}
-              activeOpacity={0.9}
-              style={[
-                {
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 16,
-                  height: 56,
-                  width: '100%'
-                },
-                shadow('0px 10px 25px rgba(255, 255, 255, 0.12)', {
-                  shadowColor: '#FFF',
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.12,
-                  shadowRadius: 10,
-                  elevation: 5
-                })
-              ]}
-            >
-              {/* Google logo SVG */}
-              <View style={{ marginRight: 12 }}>
-                <GoogleIcon />
-              </View>
-              <Text style={{
-                color: '#050505',
-                fontWeight: '900',
-                fontSize: 14,
-                textTransform: 'uppercase',
-                letterSpacing: 0.8,
-                fontFamily: Platform.select({
-                  ios: 'Helvetica Neue',
-                  android: 'sans-serif-medium',
-                  default: 'system-ui',
-                }),
-              }}>
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
+            <View style={{ width: '100%', gap: 14 }}>
+              <TouchableOpacity
+                onPress={handleGoogleSignIn}
+                activeOpacity={0.9}
+                style={[
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: 16,
+                    height: 56,
+                    width: '100%'
+                  },
+                  shadow('0px 10px 25px rgba(255, 255, 255, 0.12)', {
+                    shadowColor: '#FFF',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.12,
+                    shadowRadius: 10,
+                    elevation: 5
+                  })
+                ]}
+              >
+                {/* Google logo SVG */}
+                <View style={{ marginRight: 12 }}>
+                  <GoogleIcon />
+                </View>
+                <Text style={{
+                  color: '#050505',
+                  fontWeight: '900',
+                  fontSize: 14,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.8,
+                  fontFamily: Platform.select({
+                    ios: 'Helvetica Neue',
+                    android: 'sans-serif-medium',
+                    default: 'system-ui',
+                  }),
+                }}>
+                  Continue with Google
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleBiometricMockLogin}
+                activeOpacity={0.88}
+                style={[
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(212, 175, 55, 0.3)',
+                    borderRadius: 16,
+                    height: 56,
+                    width: '100%'
+                  },
+                  shadow('0px 10px 25px rgba(212, 175, 55, 0.08)', {
+                    shadowColor: '#D4AF37',
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 10,
+                    elevation: 3
+                  })
+                ]}
+              >
+                <Fingerprint size={20} color="#D4AF37" style={{ marginRight: 12 }} />
+                <Text style={{
+                  color: '#D4AF37',
+                  fontWeight: '900',
+                  fontSize: 14,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.8,
+                  fontFamily: Platform.select({
+                    ios: 'Helvetica Neue',
+                    android: 'sans-serif-medium',
+                    default: 'system-ui',
+                  }),
+                }}>
+                  Biometric Login
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Terms footnote */}

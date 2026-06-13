@@ -82,6 +82,10 @@ interface PlayerState {
   playbackError: string | null;
   setPlaybackError: (err: string | null) => void;
 
+  // Offline Downloads
+  offlineTracks: string[];
+  toggleOfflineTrack: (trackId: string) => void;
+
   preloadNextTrack: () => Promise<void>;
 }
 
@@ -113,6 +117,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   crossfadeSeconds: 3,
   gaplessEnabled: true,
   playbackError: null,
+  offlineTracks: [],
+  toggleOfflineTrack: (trackId) => set((state) => {
+    const isDownloaded = state.offlineTracks.includes(trackId);
+    const updated = isDownloaded
+      ? state.offlineTracks.filter(id => id !== trackId)
+      : [...state.offlineTracks, trackId];
+    return { offlineTracks: updated };
+  }),
 
   setCurrentTrack: async (track) => {
     ensureAudioContext();

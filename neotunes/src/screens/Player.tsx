@@ -14,6 +14,7 @@ import {
   TextInput,
   Platform,
   useWindowDimensions,
+  PanResponder,
 } from 'react-native';
 import {
   Play,
@@ -32,6 +33,8 @@ import {
   Gauge,
   Music2,
   Settings,
+  Headphones,
+  Sparkles,
 } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
@@ -46,6 +49,7 @@ import { useJamStore } from '../store/jamStore';
 import EqualizerBars from '../components/EqualizerBars';
 import SafeImage from '../components/SafeImage';
 import Svg, { Circle, Line, G } from 'react-native-svg';
+import { EQ_FREQUENCIES, EQ_PRESETS } from '../lib/EqualizerEngine';
 
 type PlayerScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Player'>;
@@ -224,6 +228,57 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const setCrossfadeSeconds = usePlayerStore((state) => state.setCrossfadeSeconds);
   const gaplessEnabled = usePlayerStore((state) => state.gaplessEnabled);
   const setGaplessEnabled = usePlayerStore((state) => state.setGaplessEnabled);
+
+  const spatialAudio = usePreferencesStore((state) => state.spatialAudio);
+  const headTracking = usePreferencesStore((state) => state.headTracking);
+  const ancMode = usePreferencesStore((state) => state.ancMode);
+  const ancDevice = usePreferencesStore((state) => state.ancDevice);
+  const eqPreset = usePreferencesStore((state) => state.eqPreset);
+  const eqBands = usePreferencesStore((state) => state.eqBands);
+  const soundProfile = usePreferencesStore((state) => state.soundProfile);
+  
+  const setSpatialAudio = usePreferencesStore((state) => state.setSpatialAudio);
+  const setHeadTracking = usePreferencesStore((state) => state.setHeadTracking);
+  const setAncMode = usePreferencesStore((state) => state.setAncMode);
+  const setAncDevice = usePreferencesStore((state) => state.setAncDevice);
+  const setEqPreset = usePreferencesStore((state) => state.setEqPreset);
+  const setEqBands = usePreferencesStore((state) => state.setEqBands);
+  const setEqBandValue = usePreferencesStore((state) => state.setEqBandValue);
+  const setSoundProfile = usePreferencesStore((state) => state.setSoundProfile);
+
+  const lastTapRef = useRef<number>(0);
+
+  const coverPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+        if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+          handleSaveTrack();
+          return;
+        }
+        lastTapRef.current = now;
+
+        const SWIPE_THRESHOLD = 50;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx < -SWIPE_THRESHOLD) {
+            setActiveTab('lyrics');
+          } else if (dx > SWIPE_THRESHOLD) {
+            setActiveTab('upnext');
+          }
+        } else {
+          if (dy < -SWIPE_THRESHOLD) {
+            setActiveTab('upnext');
+          } else if (dy > SWIPE_THRESHOLD) {
+            navigation.goBack();
+          }
+        }
+      }
+    })
+  ).current;
 
   const lyricsScrollViewRef = useRef<ScrollView>(null);
 
@@ -652,6 +707,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
             {/* Artwork Card */}
             <Animated.View
+              {...coverPanResponder.panHandlers}
               style={[
                 {
                   width: ART_SIZE,
@@ -1055,9 +1111,262 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
 
         {activeTab === 'audio' && (
           <View style={{ marginTop: 4 }}>
-            <Text style={{ color: palette.textSubtle, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 14 }}>
-              Audio Settings
-            </Text>
+            {/* ── DEVICE HUD (HEADPHONE SIMULATOR) ── */}
+            <View style={{
+              backgroundColor: isDark ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
+              borderRadius: 20,
+              padding: 16,
+              borderWidth: 1.5,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              marginBottom: 16,
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Headphones stroke={currentTrack.color || accentColor} size={18} />
+                  <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase' }}>
+                    Device Monitor
+                  </Text>
+                </View>
+                <View style={{
+                  backgroundColor: 'rgba(0, 255, 133, 0.12)',
+                  borderRadius: 6,
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                }}>
+                  <Text style={{ color: '#00FF85', fontSize: 8.5, fontWeight: '900' }}>LDAC 990kbps</Text>
+                </View>
+              </View>
+
+              {/* Headphone Selection */}
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+                {['Sony WH-1000XM5', 'Apple AirPods Pro'].map((device) => {
+                  const isActive = ancDevice === device;
+                  return (
+                    <TouchableOpacity
+                      key={device}
+                      onPress={() => setAncDevice(device)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        backgroundColor: isActive ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.03)',
+                        borderWidth: 1,
+                        borderColor: isActive ? '#D4AF37' : 'transparent',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#D4AF37' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                        {device}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* ANC Simulator */}
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {[
+                  { key: 'off', label: 'Off', storeValue: 'off' as const },
+                  { key: 'anc', label: 'Noise Cancelling', storeValue: 'on' as const },
+                  { key: 'ambient', label: 'Ambient', storeValue: 'transparency' as const }
+                ].map((item) => {
+                  const isActive = ancMode === item.storeValue;
+                  const modeColors = { off: palette.textSubtle, anc: '#FF3B30', ambient: '#00FF85' };
+                  return (
+                    <TouchableOpacity
+                      key={item.key}
+                      onPress={() => setAncMode(item.storeValue)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        backgroundColor: isActive ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.02)',
+                        borderWidth: 1,
+                        borderColor: isActive ? modeColors[item.key as 'off'|'anc'|'ambient'] : 'transparent',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: isActive ? modeColors[item.key as 'off'|'anc'|'ambient'] : palette.textSubtle, fontWeight: '800', fontSize: 10, textTransform: 'uppercase' }}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* ── SPATIAL AUDIO HUD ── */}
+            <View style={{
+              backgroundColor: isDark ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
+              borderRadius: 20,
+              padding: 16,
+              borderWidth: 1.5,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              marginBottom: 16,
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Sparkles stroke={currentTrack.color || accentColor} size={18} />
+                  <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase' }}>
+                    Dolby Atmos & Spatializer
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {/* Spatial Toggle */}
+                <TouchableOpacity
+                  onPress={() => setSpatialAudio(!spatialAudio)}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: spatialAudio ? 'rgba(0,212,255,0.1)' : 'rgba(0,0,0,0.03)',
+                    borderWidth: 1,
+                    borderColor: spatialAudio ? '#00D4FF' : 'transparent',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: spatialAudio ? '#00D4FF' : palette.textSubtle, fontWeight: '800', fontSize: 11 }}>
+                    SPATIAL AUDIO
+                  </Text>
+                  <Text style={{ color: palette.textMuted, fontSize: 8.5, fontWeight: '600', marginTop: 2 }}>
+                    {spatialAudio ? 'DOLBY SIMULATOR ON' : 'OFF'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Head Tracking */}
+                <TouchableOpacity
+                  onPress={() => setHeadTracking(!headTracking)}
+                  disabled={!spatialAudio}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 12,
+                    backgroundColor: headTracking ? 'rgba(123,97,255,0.1)' : 'rgba(0,0,0,0.03)',
+                    borderWidth: 1,
+                    borderColor: headTracking ? '#7B61FF' : 'transparent',
+                    alignItems: 'center',
+                    opacity: spatialAudio ? 1 : 0.45,
+                  }}
+                >
+                  <Text style={{ color: headTracking ? '#7B61FF' : palette.textSubtle, fontWeight: '800', fontSize: 11 }}>
+                    HEAD TRACKING
+                  </Text>
+                  <Text style={{ color: palette.textMuted, fontSize: 8.5, fontWeight: '600', marginTop: 2 }}>
+                    {headTracking ? 'DYNAMIC MATRIX ON' : 'OFF'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* ── 10-BAND PEAK EQUALIZER HUD ── */}
+            <View style={{
+              backgroundColor: isDark ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
+              borderRadius: 20,
+              padding: 16,
+              borderWidth: 1.5,
+              borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              marginBottom: 16,
+            }}>
+              <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', marginBottom: 12 }}>
+                10-Band Equalizer
+              </Text>
+
+              {/* Sound Profile Presets */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                {Object.keys(EQ_PRESETS).map((preset) => {
+                  const isActive = eqPreset === preset;
+                  return (
+                    <TouchableOpacity
+                      key={preset}
+                      onPress={() => {
+                        setEqPreset(preset);
+                        setEqBands(EQ_PRESETS[preset]);
+                      }}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 12,
+                        backgroundColor: isActive ? currentTrack.color : 'rgba(0,0,0,0.03)',
+                        borderWidth: 1,
+                        borderColor: isActive ? currentTrack.color : 'transparent',
+                        marginRight: 6,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#FFF' : palette.textSubtle, fontWeight: '800', fontSize: 9.5, textTransform: 'uppercase' }}>
+                        {preset}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Sound Signature Tuning */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                {['none', 'sony', 'bose', 'jbl', 'harman', 'studio'].map((profile) => {
+                  const isActive = soundProfile === profile;
+                  return (
+                    <TouchableOpacity
+                      key={profile}
+                      onPress={() => setSoundProfile(profile as any)}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 12,
+                        backgroundColor: isActive ? '#D4AF37' : 'rgba(0,0,0,0.03)',
+                        borderWidth: 1,
+                        borderColor: isActive ? '#D4AF37' : 'transparent',
+                        marginRight: 6,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#FFF' : palette.textSubtle, fontWeight: '800', fontSize: 9.5, textTransform: 'uppercase' }}>
+                        {profile} Curve
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Slider Slats */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', height: 110, paddingVertical: 4 }}>
+                {eqBands.map((gain, index) => {
+                  const freq = EQ_FREQUENCIES[index];
+                  const freqLabel = freq >= 1000 ? `${freq / 1000}k` : freq;
+                  return (
+                    <View key={index} style={{ flex: 1, alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ color: palette.textMuted, fontSize: 8, fontWeight: '700' }}>
+                        {gain > 0 ? `+${gain}` : gain}
+                      </Text>
+                      {/* Interactive Gain bar */}
+                      <View style={{ height: 70, width: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 3, justifyContent: 'flex-end', position: 'relative' }}>
+                        {/* Touch mapping to set gain */}
+                        <TouchableOpacity
+                          activeOpacity={1}
+                          onPress={(evt) => {
+                            const touchY = evt.nativeEvent.locationY;
+                            const mappedGain = Math.round(12 - (touchY / 70) * 24);
+                            setEqBandValue(index, Math.max(-12, Math.min(12, mappedGain)));
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: 0, right: 0, top: 0, bottom: 0,
+                          }}
+                        />
+                        <View style={{
+                          height: `${((gain + 12) / 24) * 100}%`,
+                          backgroundColor: currentTrack.color,
+                          borderRadius: 3,
+                        }} />
+                      </View>
+                      <Text style={{ color: palette.textSubtle, fontSize: 8, fontWeight: '700', marginTop: 4 }}>
+                        {freqLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
 
             {/* Crossfade Card */}
             <View style={{

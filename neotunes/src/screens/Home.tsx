@@ -203,6 +203,62 @@ const CURATED_AUDIOBOOKS: Track[] = [
   }
 ];
 
+const HERO_CAROUSEL_ITEMS = [
+  {
+    id: 'hero-1',
+    title: 'Random Access Memories',
+    artist: 'Daft Punk',
+    artwork: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&q=80',
+    color: '#D4AF37',
+    tagline: 'Experience Lossless Studio Quality',
+    searchQuery: 'Daft Punk Random Access Memories full album audio',
+  },
+  {
+    id: 'hero-2',
+    title: 'Starboy (Deluxe)',
+    artist: 'The Weeknd',
+    artwork: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=800&q=80',
+    color: '#00D4FF',
+    tagline: 'Dolby Atmos Spatial Audio Enabled',
+    searchQuery: 'The Weeknd Starboy official audio',
+  },
+  {
+    id: 'hero-3',
+    title: 'Aashiqui 2 Soundtrack',
+    artist: 'Mithoon, Ankit Tiwari',
+    artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+    color: '#7B61FF',
+    tagline: '#1 Trending in India Spotlight',
+    searchQuery: 'Aashiqui 2 full album songs audio jukebox',
+  }
+];
+
+const RADIO_STATIONS = [
+  { id: 'radio-1', title: 'Neo Gold Classics', artist: 'Retro Hits & Melodies', artwork: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=300&q=80', color: '#D4AF37', searchQuery: '70s 80s classic retro hit songs' },
+  { id: 'radio-2', title: 'Electric Vibe FM', artist: 'Future House & Cyber Synth', artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80', color: '#00D4FF', searchQuery: 'future house synthwave electro club dance' },
+  { id: 'radio-3', title: 'Chillout Space Radio', artist: 'Lofi Ambient Beats', artwork: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&q=80', color: '#7B61FF', searchQuery: 'lofi hip hop ambient beats space study' },
+  { id: 'radio-4', title: 'Bollywood Spice', artist: 'Latest Dance & Romance', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FF6B6B', searchQuery: 'bollywood latest party rom-com hits 2024' },
+];
+
+const CONCERTS = [
+  { id: 'c-1', artist: 'Diljit Dosanjh', city: 'Mumbai, IN', venue: 'D.Y. Patil Stadium', date: 'Oct 24, 2026', artwork: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&q=80' },
+  { id: 'c-2', artist: 'Coldplay', city: 'Ahmedabad, IN', venue: 'Narendra Modi Stadium', date: 'Jan 18, 2027', artwork: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&q=80' },
+  { id: 'c-3', artist: 'Arijit Singh', city: 'Kolkata, IN', venue: 'Salt Lake Stadium', date: 'Dec 12, 2026', artwork: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&q=80' },
+];
+
+const ARTIST_SPOTLIGHT = {
+  name: 'A.R. Rahman',
+  bio: 'The Mozart of Madras. Winner of two Academy Awards, two Grammy Awards, a BAFTA, a Golden Globe, and multiple National Film Awards.',
+  artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&q=80',
+  query: 'A R Rahman best hit composition songs audio jukebox',
+};
+
+const COMMUNITY_PICKS = [
+  { id: 'cp-1', title: 'Kun Faya Kun', artist: 'A.R. Rahman, Javed Ali, Mohit Chauhan', artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80', color: '#7B61FF', searchQuery: 'Kun Faya Kun Rockstar official audio' },
+  { id: 'cp-2', title: 'Fix You', artist: 'Coldplay', artwork: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&q=80', color: '#00D4FF', searchQuery: 'Coldplay Fix You official audio' },
+  { id: 'cp-3', title: 'Kabira', artist: 'Pritam, Tochi Raina, Rekha Bhardwaj', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#D4AF37', searchQuery: 'Kabira Yeh Jawaani Hai Deewani official audio' },
+];
+
 const TOP_CHARTS_TRACKS: Track[] = [
   {
     id: 'top-1',
@@ -587,6 +643,163 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiSynthesizing, setAiSynthesizing] = useState(false);
+  const [loadingCarouselId, setLoadingCarouselId] = useState<string | null>(null);
+
+  const handleHeroPress = async (item: typeof HERO_CAROUSEL_ITEMS[0]) => {
+    if (loadingCarouselId) return;
+    setLoadingCarouselId(item.id);
+    try {
+      const tracks = await fetchSearch(item.searchQuery, 'youtube');
+      if (tracks && tracks.length > 0) {
+        const prepared = tracks.map((t: any, idx: number) => idx === 0 ? {
+          ...t,
+          title: item.title,
+          artist: item.artist,
+          artwork: item.artwork,
+          color: item.color
+        } : t);
+        playSong(prepared[0], prepared, 'global');
+      } else {
+        const fallbackTrack: Track = {
+          id: item.id,
+          title: item.title,
+          artist: item.artist,
+          artwork: item.artwork,
+          color: item.color,
+          searchQuery: item.searchQuery,
+        };
+        playSong(fallbackTrack, [fallbackTrack], 'global');
+      }
+    } catch (e) {
+      const fallbackTrack: Track = {
+        id: item.id,
+        title: item.title,
+        artist: item.artist,
+        artwork: item.artwork,
+        color: item.color,
+        searchQuery: item.searchQuery,
+      };
+      playSong(fallbackTrack, [fallbackTrack], 'global');
+    } finally {
+      setLoadingCarouselId(null);
+    }
+  };
+
+  const handleRadioPress = async (station: typeof RADIO_STATIONS[0]) => {
+    if (loadingCarouselId) return;
+    setLoadingCarouselId(station.id);
+    try {
+      const tracks = await fetchSearch(station.searchQuery, 'youtube');
+      if (tracks && tracks.length > 0) {
+        const prepared = tracks.map((t: any, idx: number) => idx === 0 ? {
+          ...t,
+          title: station.title,
+          artist: station.artist,
+          artwork: station.artwork,
+          color: station.color
+        } : t);
+        playSong(prepared[0], prepared, 'global');
+      } else {
+        const fallbackTrack: Track = {
+          id: station.id,
+          title: station.title,
+          artist: station.artist,
+          artwork: station.artwork,
+          color: station.color,
+          searchQuery: station.searchQuery,
+        };
+        playSong(fallbackTrack, [fallbackTrack], 'global');
+      }
+    } catch (e) {
+      const fallbackTrack: Track = {
+        id: station.id,
+        title: station.title,
+        artist: station.artist,
+        artwork: station.artwork,
+        color: station.color,
+        searchQuery: station.searchQuery,
+      };
+      playSong(fallbackTrack, [fallbackTrack], 'global');
+    } finally {
+      setLoadingCarouselId(null);
+    }
+  };
+
+  const handleSpotlightPress = async () => {
+    if (loadingCarouselId) return;
+    setLoadingCarouselId('spotlight');
+    try {
+      const tracks = await fetchSearch(ARTIST_SPOTLIGHT.query, 'youtube');
+      if (tracks && tracks.length > 0) {
+        const prepared = tracks.map((t: any, idx: number) => idx === 0 ? {
+          ...t,
+          title: 'A.R. Rahman Hits Jukebox',
+          artist: 'A.R. Rahman',
+          artwork: ARTIST_SPOTLIGHT.artwork,
+          color: '#7B61FF'
+        } : t);
+        playSong(prepared[0], prepared, 'india');
+      } else {
+        const fallbackTrack: Track = {
+          id: 'spotlight-fallback',
+          title: 'A.R. Rahman Showcase',
+          artist: 'A.R. Rahman',
+          artwork: ARTIST_SPOTLIGHT.artwork,
+          color: '#7B61FF',
+        };
+        playSong(fallbackTrack, [fallbackTrack], 'india');
+      }
+    } catch (e) {
+      const fallbackTrack: Track = {
+        id: 'spotlight-fallback',
+        title: 'A.R. Rahman Showcase',
+        artist: 'A.R. Rahman',
+        artwork: ARTIST_SPOTLIGHT.artwork,
+        color: '#7B61FF',
+      };
+      playSong(fallbackTrack, [fallbackTrack], 'india');
+    } finally {
+      setLoadingCarouselId(null);
+    }
+  };
+
+  const handleCommunityPickPress = async (pick: typeof COMMUNITY_PICKS[0]) => {
+    if (loadingCarouselId) return;
+    setLoadingCarouselId(pick.id);
+    try {
+      const tracks = await fetchSearch(pick.searchQuery, 'youtube');
+      if (tracks && tracks.length > 0) {
+        const prepared = tracks.map((t: any, idx: number) => idx === 0 ? {
+          ...t,
+          title: pick.title,
+          artist: pick.artist,
+          artwork: pick.artwork,
+          color: pick.color
+        } : t);
+        playSong(prepared[0], prepared, 'neutral');
+      } else {
+        const fallbackTrack: Track = {
+          id: pick.id,
+          title: pick.title,
+          artist: pick.artist,
+          artwork: pick.artwork,
+          color: pick.color,
+        };
+        playSong(fallbackTrack, [fallbackTrack], 'neutral');
+      }
+    } catch (e) {
+      const fallbackTrack: Track = {
+        id: pick.id,
+        title: pick.title,
+        artist: pick.artist,
+        artwork: pick.artwork,
+        color: pick.color,
+      };
+      playSong(fallbackTrack, [fallbackTrack], 'neutral');
+    } finally {
+      setLoadingCarouselId(null);
+    }
+  };
 
   const handleAiSynthesize = async (promptText: string) => {
     if (!promptText.trim()) return;
@@ -963,6 +1176,86 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         {activeFeed === 'music' && (
           <>
+            {/* ── HERO CAROUSEL ── */}
+            <View style={{ marginBottom: 26 }}>
+              <Text style={{ color: palette.accentStrong, fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+                Spotlight Releases
+              </Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={{ paddingVertical: 4 }}
+              >
+                {HERO_CAROUSEL_ITEMS.map((item) => {
+                  const isCurrentLoading = loadingCarouselId === item.id;
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      activeOpacity={0.88}
+                      onPress={() => handleHeroPress(item)}
+                      style={[
+                        {
+                          width: 290,
+                          marginRight: 16,
+                          borderRadius: 24,
+                          overflow: 'hidden',
+                          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.55)' : 'rgba(255,255,255,0.7)',
+                          borderWidth: 1.5,
+                          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                          position: 'relative',
+                        },
+                        shadow(`0px 8px 24px ${item.color}20`, {
+                          shadowColor: item.color,
+                          shadowOffset: { width: 0, height: 6 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 12,
+                          elevation: 4,
+                        })
+                      ]}
+                    >
+                      <SafeImage uri={item.artwork} style={{ width: '100%', height: 160 }} resizeMode="cover" />
+                      <View style={{
+                        padding: 16,
+                        backgroundColor: themeMode === 'dark' ? 'rgba(12,12,14,0.85)' : 'rgba(255,255,255,0.9)',
+                        borderTopWidth: 1,
+                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                      }}>
+                        <Text style={{ color: item.color, fontSize: 9.5, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                          {item.tagline}
+                        </Text>
+                        <Text style={{ color: palette.text, fontSize: 16, fontWeight: '900', marginTop: 4, textTransform: 'uppercase' }} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={{ color: palette.textSubtle, fontSize: 11.5, fontWeight: '700', marginTop: 2 }} numberOfLines={1}>
+                          {item.artist}
+                        </Text>
+                      </View>
+                      
+                      <View style={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: 'rgba(5,5,6,0.75)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.15)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {isCurrentLoading ? (
+                          <ActivityIndicator size="small" color={item.color} />
+                        ) : (
+                          <Play stroke={item.color} fill={item.color} size={14} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
             {/* ── AI CO-PILOT STAGE ── */}
             <View style={[
               {
@@ -1111,38 +1404,76 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </View>
 
 
-            {/* ── RECENTLY PLAYED ── */}
+            {/* ── CONTINUE LISTENING (Redesigned Recently Played) ── */}
             {recentTracks.length > 0 && (
-          <>
-            <Text style={{ color: palette.accent, fontWeight: '700', fontSize: 14, textTransform: 'uppercase', letterSpacing: 4, marginBottom: 10, marginTop: 16 }}>
-              Recently Played
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24, paddingVertical: 4 }}>
-              {recentTracks.slice(0, 8).map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  activeOpacity={0.85}
-                  onPress={() => playSong(item as any, recentTracks as any, 'neutral')}
-                  style={{ marginRight: 16, alignItems: 'center', width: 84 }}
-                >
-                  <View style={[
-                    { borderRadius: 16, borderWidth: 2.5, borderColor: item.color, overflow: 'hidden', marginBottom: 8 },
-                    shadow('2px 2px 8px rgba(0,0,0,0.15)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 })
-                  ]}>
-                    <SafeImage
-                      uri={item.artwork}
-                      style={{ width: 72, height: 72 }}
-                      resizeMode="cover"
-                    />
-                  </View>
-                  <Text style={{ color: palette.text, fontWeight: '800', fontSize: 10, textTransform: 'uppercase', textAlign: 'center', letterSpacing: 0.5 }} numberOfLines={2}>
-                    {item.title}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
-        )}
+              <View style={{ marginBottom: 28, marginTop: 8 }}>
+                <Text style={{ color: palette.accent, fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+                  Continue Listening
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
+                  {recentTracks.slice(0, 8).map((item, index) => {
+                    const simulatedProgress = ((index * 23) % 70) + 15;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        activeOpacity={0.88}
+                        onPress={() => playSong(item as any, recentTracks as any, 'neutral')}
+                        style={[
+                          {
+                            width: 140,
+                            marginRight: 16,
+                            borderRadius: 18,
+                            borderWidth: 1.5,
+                            borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                            backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)',
+                            overflow: 'hidden',
+                            padding: 10,
+                          },
+                          shadow(`0px 4px 12px rgba(0,0,0,0.1)`, {
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 3 },
+                            shadowOpacity: 0.1,
+                            shadowRadius: 5,
+                            elevation: 2,
+                          })
+                        ]}
+                      >
+                        <View style={{ borderRadius: 10, overflow: 'hidden', position: 'relative' }}>
+                          <SafeImage
+                            uri={item.artwork}
+                            style={{ width: '100%', height: 100 }}
+                            resizeMode="cover"
+                          />
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: 4,
+                            backgroundColor: 'rgba(255,255,255,0.25)',
+                          }}>
+                            <View style={{
+                              width: `${simulatedProgress}%`,
+                              height: '100%',
+                              backgroundColor: item.color || palette.accent,
+                            }} />
+                          </View>
+                        </View>
+                        <Text style={{ color: palette.text, fontWeight: '900', fontSize: 11, marginTop: 8, textTransform: 'uppercase' }} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 9.5, marginTop: 2, textTransform: 'uppercase' }} numberOfLines={1}>
+                          {item.artist}
+                        </Text>
+                        <Text style={{ color: palette.textMuted, fontWeight: '600', fontSize: 8.5, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          {simulatedProgress}% completed
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
 
         {/* ── EVERYDAY RECOMMENDATIONS ── */}
         <View style={{ marginTop: 6, marginBottom: 22 }}>
@@ -1448,6 +1779,273 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               </TouchableOpacity>
             ))}
           </ScrollView>
+        </View>
+
+        {/* ── DYNAMIC RADIO STATIONS ── */}
+        <View style={{ marginTop: 8, marginBottom: 26 }}>
+          <Text style={{ color: palette.accent, fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+            Dynamic Radio Stations
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
+            {RADIO_STATIONS.map((station) => {
+              const isCurrentLoading = loadingCarouselId === station.id;
+              return (
+                <TouchableOpacity
+                  key={station.id}
+                  onPress={() => handleRadioPress(station)}
+                  activeOpacity={0.88}
+                  style={[
+                    {
+                      width: 140,
+                      marginRight: 16,
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                      backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.7)',
+                      padding: 10,
+                      alignItems: 'center',
+                    },
+                    shadow(`0px 6px 14px ${station.color}15`, {
+                      shadowColor: station.color,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 8,
+                      elevation: 3,
+                    })
+                  ]}
+                >
+                  <View style={{ position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+                    <SafeImage uri={station.artwork} style={{ width: 120, height: 120 }} resizeMode="cover" />
+                    <View style={{
+                      position: 'absolute',
+                      bottom: 6,
+                      left: 6,
+                      backgroundColor: 'rgba(0,0,0,0.75)',
+                      borderRadius: 6,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                    }}>
+                      <Text style={{ color: '#00FF85', fontSize: 7.5, fontWeight: '900', letterSpacing: 0.5 }}>LIVE FM</Text>
+                    </View>
+                    <View style={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(0,0,0,0.65)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {isCurrentLoading ? (
+                        <ActivityIndicator size="small" color={station.color} />
+                      ) : (
+                        <Play stroke={station.color} fill={station.color} size={10} />
+                      )}
+                    </View>
+                  </View>
+                  <Text style={{ color: palette.text, fontWeight: '900', fontSize: 11, marginTop: 8, textAlign: 'center', textTransform: 'uppercase' }} numberOfLines={1}>
+                    {station.title}
+                  </Text>
+                  <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 9, marginTop: 2, textAlign: 'center', textTransform: 'uppercase' }} numberOfLines={1}>
+                    {station.artist}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* ── CONCERT DISCOVERY ── */}
+        <View style={{ marginTop: 8, marginBottom: 26 }}>
+          <Text style={{ color: '#00FF85', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+            Concert Discovery Near You
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
+            {CONCERTS.map((concert) => (
+              <View
+                key={concert.id}
+                style={[
+                  {
+                    width: 260,
+                    marginRight: 16,
+                    borderRadius: 20,
+                    borderWidth: 1.5,
+                    borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.7)',
+                    padding: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  },
+                  shadow('0px 4px 12px rgba(0,0,0,0.1)', {
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  })
+                ]}
+              >
+                <SafeImage uri={concert.artwork} style={{ width: 68, height: 68, borderRadius: 10 }} resizeMode="cover" />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={{ color: palette.text, fontWeight: '900', fontSize: 12.5, textTransform: 'uppercase' }} numberOfLines={1}>
+                    {concert.artist}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3, gap: 4 }}>
+                    <MapPin stroke={palette.textSubtle} size={10} />
+                    <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 9.5 }} numberOfLines={1}>
+                      {concert.city}
+                    </Text>
+                  </View>
+                  <Text style={{ color: '#FF9500', fontWeight: '800', fontSize: 9.5, marginTop: 3, textTransform: 'uppercase' }}>
+                    {concert.date}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => Alert.alert('Premium Tickets', `Redirecting to ticketing dashboard for ${concert.artist} at ${concert.venue}...`)}
+                    style={{
+                      marginTop: 6,
+                      backgroundColor: 'rgba(0,255,133,0.12)',
+                      borderWidth: 1,
+                      borderColor: '#00FF85',
+                      borderRadius: 8,
+                      paddingVertical: 3,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#00FF85', fontSize: 8.5, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }}>Get Tickets</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* ── ARTIST SPOTLIGHT ── */}
+        <View style={{ marginTop: 8, marginBottom: 28 }}>
+          <Text style={{ color: '#7B61FF', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+            Artist Spotlight
+          </Text>
+          <View style={[
+            {
+              borderRadius: 22,
+              borderWidth: 1.5,
+              borderColor: 'rgba(123, 97, 255, 0.25)',
+              backgroundColor: themeMode === 'dark' ? 'rgba(20, 20, 24, 0.7)' : 'rgba(255, 255, 255, 0.85)',
+              overflow: 'hidden',
+              position: 'relative',
+            },
+            shadow('0px 8px 24px rgba(123, 97, 255, 0.15)', {
+              shadowColor: '#7B61FF',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.15,
+              shadowRadius: 16,
+              elevation: 4,
+            })
+          ]}>
+            <SafeImage uri={ARTIST_SPOTLIGHT.artwork} style={{ width: '100%', height: 160 }} resizeMode="cover" />
+            <View style={{ padding: 18 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#7B61FF' }} />
+                <Text style={{ color: '#7B61FF', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                  FEATURED MAESTRO
+                </Text>
+              </View>
+              <Text style={{ color: palette.text, fontWeight: '900', fontSize: 20, textTransform: 'uppercase' }}>
+                {ARTIST_SPOTLIGHT.name}
+              </Text>
+              <Text style={{ color: palette.textSubtle, fontWeight: '600', fontSize: 11.5, lineHeight: 18, marginTop: 8 }}>
+                {ARTIST_SPOTLIGHT.bio}
+              </Text>
+              <TouchableOpacity
+                onPress={handleSpotlightPress}
+                disabled={loadingCarouselId === 'spotlight'}
+                style={{
+                  marginTop: 14,
+                  backgroundColor: '#7B61FF',
+                  borderRadius: 12,
+                  paddingVertical: 10,
+                  alignItems: 'center',
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                {loadingCarouselId === 'spotlight' ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Play stroke="#FFF" fill="#FFF" size={12} />
+                    <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      Play Spotlight Hits Jukebox
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {/* ── COMMUNITY PICKS ── */}
+        <View style={{ marginTop: 8, marginBottom: 28 }}>
+          <Text style={{ color: '#D4AF37', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+            Community Picks
+          </Text>
+          <View style={{ gap: 10 }}>
+            {COMMUNITY_PICKS.map((pick) => {
+              const isCurrentLoading = loadingCarouselId === pick.id;
+              return (
+                <TouchableOpacity
+                  key={pick.id}
+                  onPress={() => handleCommunityPickPress(pick)}
+                  activeOpacity={0.88}
+                  style={[
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: 10,
+                      borderRadius: 16,
+                      borderWidth: 1.5,
+                      borderColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255, 255, 255, 0.7)',
+                    },
+                    shadow('0px 2px 8px rgba(0,0,0,0.05)', {
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 4,
+                      elevation: 1,
+                    })
+                  ]}
+                >
+                  <SafeImage uri={pick.artwork} style={{ width: 48, height: 48, borderRadius: 8 }} resizeMode="cover" />
+                  <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                    <Text style={{ color: palette.text, fontWeight: '900', fontSize: 12.5, textTransform: 'uppercase' }} numberOfLines={1}>
+                      {pick.title}
+                    </Text>
+                    <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 10.5, marginTop: 2 }} numberOfLines={1}>
+                      {pick.artist}
+                    </Text>
+                  </View>
+                  <View style={{
+                    width: 32, height: 32,
+                    borderRadius: 16,
+                    backgroundColor: `${pick.color}15`,
+                    borderWidth: 1,
+                    borderColor: `${pick.color}35`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    {isCurrentLoading ? (
+                      <ActivityIndicator size="small" color={pick.color} />
+                    ) : (
+                      <Play stroke={pick.color} fill={pick.color} size={11} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* ── TRENDING NOW ── */}
