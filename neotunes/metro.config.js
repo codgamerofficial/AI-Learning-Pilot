@@ -30,6 +30,15 @@ config.resolver = {
         type: "sourceFile",
       };
     }
+
+    // Stub out react-native-track-player on web to avoid shaka-player crash
+    if (platform === "web" && moduleName === "react-native-track-player") {
+      return {
+        filePath: path.resolve(__dirname, "src/lib/trackPlayerStub.web.js"),
+        type: "sourceFile",
+      };
+    }
+
     return context.resolveRequest(context, moduleName, platform);
   },
 };
