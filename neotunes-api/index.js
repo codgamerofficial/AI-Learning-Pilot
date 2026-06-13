@@ -111,71 +111,79 @@ app.get('/search', async (req, res) => {
 // Resolve Proxy Audio Endpoint
 app.get('/resolve', async (req, res) => {
   try {
-    const { searchQuery } = req.query;
+    const { searchQuery, excludeSources = '' } = req.query;
     if (!searchQuery) return res.status(400).json({ error: 'Missing searchQuery' });
 
-    console.log(`[API Resolve] SearchQuery: "${searchQuery}"`);
+    console.log(`[API Resolve] SearchQuery: "${searchQuery}" | Exclude: "${excludeSources}"`);
 
-    // Check Cache
-    const cacheKey = `resolve:${searchQuery}`;
+    // Check Cache (partitioned by excluded sources)
+    const cacheKey = `resolve:${searchQuery}:${excludeSources}`;
     const cachedData = getCached(cacheKey);
     if (cachedData) {
-      console.log(`[Cache Hit] Resolve Query: "${searchQuery}"`);
+      console.log(`[Cache Hit] Resolve Query: "${searchQuery}" (Exclude: ${excludeSources})`);
       return res.json(cachedData);
     }
 
+    const excluded = new Set(excludeSources.split(',').map(s => s.trim().toLowerCase()));
+
     // 1. Try Jamendo
-    try {
-      const jamendoTracks = await jamendoService.search(searchQuery, 1);
-      if (jamendoTracks.length > 0 && jamendoTracks[0].url) {
-        const responseData = {
-          url: jamendoTracks[0].url,
-          id: jamendoTracks[0].id,
-          resolvedSource: 'jamendo',
-        };
-        setCached(cacheKey, responseData, 24 * 60 * 60); // 24 hours
-        return res.json(responseData);
+    if (!excluded.has('jamendo')) {
+      try {
+        const jamendoTracks = await jamendoService.search(searchQuery, 1);
+        if (jamendoTracks.length > 0 && jamendoTracks[0].url) {
+          const responseData = {
+            url: jamendoTracks[0].url,
+            id: jamendoTracks[0].id,
+            resolvedSource: 'jamendo',
+          };
+          setCached(cacheKey, responseData, 24 * 60 * 60); // 24 hours
+          return res.json(responseData);
+        }
+      } catch (err) {
+        console.warn('[Resolve] Jamendo lookup failed:', err.message);
       }
-    } catch (err) {
-      console.warn('[Resolve] Jamendo lookup failed:', err.message);
     }
 
     // 2. Try Internet Archive
-    try {
-      const archiveTracks = await archiveService.search(searchQuery, 3);
-      if (archiveTracks.length > 0) {
-        for (const track of archiveTracks) {
-          const identifier = track.id.replace('archive_', '');
-          const url = await archiveService.resolveTrackUrl(identifier);
-          if (url) {
-            const responseData = {
-              url: url,
-              id: track.id,
-              resolvedSource: 'archive',
-            };
-            setCached(cacheKey, responseData, 24 * 60 * 60); // 24 hours
-            return res.json(responseData);
+    if (!excluded.has('archive')) {
+      try {
+        const archiveTracks = await archiveService.search(searchQuery, 3);
+        if (archiveTracks.length > 0) {
+          for (const track of archiveTracks) {
+            const identifier = track.id.replace('archive_', '');
+            const url = await archiveService.resolveTrackUrl(identifier);
+            if (url) {
+              const responseData = {
+                url: url,
+                id: track.id,
+                resolvedSource: 'archive',
+              };
+              setCached(cacheKey, responseData, 24 * 60 * 60); // 24 hours
+              return res.json(responseData);
+            }
           }
         }
+      } catch (err) {
+        console.warn('[Resolve] Internet Archive lookup failed:', err.message);
       }
-    } catch (err) {
-      console.warn('[Resolve] Internet Archive lookup failed:', err.message);
     }
 
     // 3. Try YouTube
-    try {
-      const youtubeTracks = await youtubeService.search(searchQuery, 1);
-      if (youtubeTracks.length > 0) {
-        const responseData = {
-          url: null,
-          id: youtubeTracks[0].id,
-          resolvedSource: 'youtube',
-        };
-        setCached(cacheKey, responseData, 24 * 60 * 60); // 24 hours
-        return res.json(responseData);
+    if (!excluded.has('youtube')) {
+      try {
+        const youtubeTracks = await youtubeService.search(searchQuery, 1);
+        if (youtubeTracks.length > 0) {
+          const responseData = {
+            url: null,
+            id: youtubeTracks[0].id,
+            resolvedSource: 'youtube',
+          };
+          setCached(cacheKey, responseData, 24 * 60 * 60); // 24 hours
+          return res.json(responseData);
+        }
+      } catch (err) {
+        console.warn('[Resolve] YouTube lookup failed:', err.message);
       }
-    } catch (err) {
-      console.warn('[Resolve] YouTube lookup failed:', err.message);
     }
 
     res.status(404).json({ error: 'Could not resolve audio for track.' });

@@ -103,23 +103,57 @@ function GlobalAudioEngine() {
       pause();
       const track = usePlayerStore.getState().currentTrack;
       if (track) {
-        if (track.url === OFFLINE_FALLBACK_AUDIO) {
-          usePlayerStore.getState().setPlaybackError(`Unable to play "${track.title}". Skipping...`);
-          nextTrack();
-          return;
+        const isOfflineFallback = track.url === OFFLINE_FALLBACK_AUDIO;
+
+        if (!isOfflineFallback) {
+          usePlayerStore.getState().setPlaybackError(`Switching to alternative audio source...`);
+          
+          const failedSource = track.source || '';
+          const resolveQuery = track.searchQuery?.trim() || `${track.title} ${track.artist}`.trim();
+          
+          if (resolveQuery) {
+            console.warn(`[Playback Fallback] Stream failed for source "${failedSource}". Re-resolving...`);
+            
+            const { fetchResolve } = require('./src/lib/apiClient');
+            fetchResolve(resolveQuery, failedSource)
+              .then((resolved: any) => {
+                if (resolved && (resolved.url || resolved.id)) {
+                  console.log(`[Playback Fallback] Re-resolved to source: ${resolved.resolvedSource}`);
+                  usePlayerStore.setState({
+                    currentTrack: {
+                      ...track,
+                      url: resolved.url || undefined,
+                      playbackId: resolved.id || undefined,
+                      source: resolved.resolvedSource ?? track.source,
+                    },
+                    isPlaying: true
+                  });
+                } else {
+                  // Fall back to offline fallback audio
+                  usePlayerStore.setState({
+                    currentTrack: {
+                      ...track,
+                      url: OFFLINE_FALLBACK_AUDIO,
+                    }
+                  });
+                  setTimeout(() => usePlayerStore.getState().play(), 100);
+                }
+              })
+              .catch(() => {
+                usePlayerStore.setState({
+                  currentTrack: {
+                    ...track,
+                    url: OFFLINE_FALLBACK_AUDIO,
+                  }
+                });
+                setTimeout(() => usePlayerStore.getState().play(), 100);
+              });
+            return;
+          }
         }
 
-        usePlayerStore.getState().setPlaybackError(`Switching to alternative audio source...`);
-        usePlayerStore.setState({
-          currentTrack: {
-            ...track,
-            url: OFFLINE_FALLBACK_AUDIO,
-          }
-        });
-
-        setTimeout(() => {
-          usePlayerStore.getState().play();
-        }, 100);
+        usePlayerStore.getState().setPlaybackError(`Unable to play "${track.title}". Skipping...`);
+        nextTrack();
         return;
       }
       nextTrack();

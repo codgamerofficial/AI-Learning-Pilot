@@ -133,9 +133,13 @@ export type ResolveResponse = {
   resolvedSource?: 'youtube' | 'jamendo' | string;
 };
 
-export async function fetchResolve(searchQuery: string): Promise<ResolveResponse | null> {
+export async function fetchResolve(searchQuery: string, excludeSources?: string): Promise<ResolveResponse | null> {
   try {
-    const res = await fetch(`${BASE_URL}/resolve?searchQuery=${encodeURIComponent(searchQuery)}`);
+    let url = `${BASE_URL}/resolve?searchQuery=${encodeURIComponent(searchQuery)}`;
+    if (excludeSources) {
+      url += `&excludeSources=${encodeURIComponent(excludeSources)}`;
+    }
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Network response was not ok');
     return (await res.json()) as ResolveResponse;
   } catch (err) {
