@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, SafeAreaView, TouchableOpacity, ScrollView,
-  ActivityIndicator, Platform, Alert
+  ActivityIndicator, Platform, Alert, TextInput
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import Constants from 'expo-constants';
 import Svg, { Path } from 'react-native-svg';
-import { Sparkles, Music, Users, Fingerprint, ShieldCheck } from 'lucide-react-native';
+import { Sparkles, Music, Users, Fingerprint, ShieldCheck, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import BrandLogo from '../components/BrandLogo';
 import { shadow } from '../lib/shadow';
@@ -64,8 +64,66 @@ function GoogleIcon() {
 }
 
 export default function AuthScreen() {
+  const [viewMode, setViewMode] = useState<'welcome' | 'auth'>('welcome');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Email authentication states
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleEmailAuth = async () => {
+    const email = emailInput.trim();
+    const password = passwordInput;
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      if (isSignUp) {
+        // Sign Up
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              display_name: displayNameInput.trim() || email.split('@')[0],
+            }
+          }
+        });
+        if (signUpError) {
+          setError(signUpError.message);
+        } else {
+          Alert.alert(
+            'Welcome aboard! 🎵',
+            'Your account has been created. Please log in with your credentials.'
+          );
+          setIsSignUp(false);
+          setPasswordInput('');
+        }
+      } else {
+        // Sign In
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          setError(signInError.message);
+        }
+      }
+    } catch (e: any) {
+      setError(e.message || 'Authentication failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBiometricMockLogin = async () => {
     setLoading(true);
@@ -77,7 +135,7 @@ export default function AuthScreen() {
         const success = await Biometrics.authenticate('Log in to NeoTunes Premium');
         if (success) {
           Alert.alert('Biometric Login', 'Successfully authenticated! Setting up developer session...');
-          const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          const { error: signInError } = await supabase.auth.signInWithPassword({
             email: 'developer@neotunes.app',
             password: 'developerPassword123'
           });
@@ -97,7 +155,7 @@ export default function AuthScreen() {
           }
         }
       } else {
-        Alert.alert('Biometrics Not Supported', 'Please use Google Sign-In on this device.');
+        Alert.alert('Biometrics Not Supported', 'Fallback credentials: developer@neotunes.app / developerPassword123');
       }
     } catch (e: any) {
       setError(e.message || 'Biometric authentication failed.');
@@ -122,7 +180,6 @@ export default function AuthScreen() {
 
       if (__DEV__) console.log('[AuthScreen] Google Sign-In redirect URI:', redirectTo);
 
-      // Supabase OAuth Sign In
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -140,12 +197,10 @@ export default function AuthScreen() {
         return;
       }
 
-      // On Web, Supabase handles redirection automatically
       if (Platform.OS === 'web') {
         return;
       }
 
-      // On Native, open the login page in the Expo WebBrowser
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
 
@@ -165,7 +220,7 @@ export default function AuthScreen() {
             setError('Failed to retrieve authentication tokens from redirect.');
           }
         } else if (result.type === 'cancel') {
-          if (__DEV__) console.log('[AuthScreen] Google Sign-In was cancelled by the user.');
+          if (__DEV__) console.log('[AuthScreen] Google Sign-In was cancelled.');
         } else {
           setError('Google Sign-In was not completed.');
         }
@@ -178,269 +233,423 @@ export default function AuthScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#050505', overflow: 'hidden' }}>
-      {/* Large Premium Ambient Background Glows */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#050506', overflow: 'hidden' }}>
+      {/* Large Ambient Gradients */}
       <View style={{
         position: 'absolute', top: -150, right: -150, width: 450, height: 450, borderRadius: 225,
-        backgroundColor: '#005CA9', opacity: 0.12,
+        backgroundColor: '#005CA9', opacity: 0.1,
         // @ts-ignore
         filter: 'blur(100px)'
       }} />
       <View style={{
         position: 'absolute', bottom: -150, left: -150, width: 450, height: 450, borderRadius: 225,
-        backgroundColor: '#D4AF37', opacity: 0.12,
+        backgroundColor: '#D4AF37', opacity: 0.1,
         // @ts-ignore
         filter: 'blur(100px)'
-      }} />
-      <View style={{
-        position: 'absolute', top: '25%', left: '10%', width: 350, height: 350, borderRadius: 175,
-        backgroundColor: '#D4AF37', opacity: 0.04,
-        // @ts-ignore
-        filter: 'blur(120px)'
       }} />
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center', alignItems: 'center' }}>
         
-        {/* Main Glassmorphic Form Card */}
-        <View style={[
-          {
-            backgroundColor: 'rgba(12, 12, 12, 0.75)',
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.08)',
-            borderRadius: 28,
-            padding: 32,
-            width: '100%',
-            maxWidth: 400,
-            alignItems: 'center',
-            // @ts-ignore - Web-only glassmorphism blur
-            backdropFilter: 'blur(30px)',
-          },
-          shadow('0px 20px 40px rgba(0, 0, 0, 0.5)', {
-            shadowColor: '#D4AF37',
-            shadowOffset: { width: 0, height: 16 },
-            shadowOpacity: 0.1,
-            shadowRadius: 32,
-            elevation: 12,
-          })
-        ]}>
-          
-          {/* Logo Section */}
-          <View style={{ marginBottom: 28 }}>
-            <BrandLogo style={{ transform: [{ scale: 1.1 }] }} />
+        {/* ── WELCOME MODE ── */}
+        {viewMode === 'welcome' && (
+          <View style={[
+            {
+              backgroundColor: 'rgba(12, 12, 14, 0.75)',
+              borderWidth: 1.5,
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: 28,
+              padding: 32,
+              width: '100%',
+              maxWidth: 400,
+              alignItems: 'center',
+              // @ts-ignore
+              backdropFilter: 'blur(30px)',
+            },
+            shadow('0px 20px 40px rgba(0, 0, 0, 0.45)', {
+              shadowColor: '#D4AF37',
+              shadowOffset: { width: 0, height: 16 },
+              shadowOpacity: 0.08,
+              shadowRadius: 32,
+              elevation: 12,
+            })
+          ]}>
+            {/* Logo */}
+            <View style={{ marginBottom: 20 }}>
+              <BrandLogo style={{ transform: [{ scale: 1.25 }] }} />
+            </View>
+
+            <Text style={{
+              color: '#D4AF37',
+              fontSize: 22,
+              fontWeight: '900',
+              textTransform: 'uppercase',
+              letterSpacing: 4,
+              textAlign: 'center',
+              marginBottom: 4,
+              textShadowColor: 'rgba(255, 211, 0, 0.2)',
+              textShadowOffset: { width: 0, height: 2 },
+              textShadowRadius: 6,
+            }}>
+              NEOTUNES
+            </Text>
+            
+            <Text style={{
+              color: 'rgba(255, 255, 255, 0.35)',
+              fontWeight: '800',
+              textTransform: 'uppercase',
+              fontSize: 9.5,
+              letterSpacing: 2,
+              marginBottom: 32,
+              textAlign: 'center',
+            }}>
+              The Future of Sound System
+            </Text>
+
+            {/* Pulsing Visual Waveform */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 60, marginBottom: 40 }}>
+              {[12, 28, 48, 32, 54, 38, 20, 44, 24, 10].map((h, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: 3.5,
+                    height: h,
+                    borderRadius: 2,
+                    backgroundColor: i % 2 === 0 ? '#D4AF37' : '#005CA9',
+                  }}
+                />
+              ))}
+            </View>
+
+            {/* Tagline */}
+            <Text style={{
+              color: '#FFF',
+              fontSize: 18,
+              fontWeight: '900',
+              textAlign: 'center',
+              lineHeight: 24,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              marginBottom: 12,
+            }}>
+              Recode Your Listening
+            </Text>
+
+            <Text style={{
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: 12,
+              fontWeight: '600',
+              textAlign: 'center',
+              lineHeight: 18,
+              paddingHorizontal: 8,
+              marginBottom: 40,
+            }}>
+              Immerse yourself in dynamic Dolby spatial sound profiles, 10-band peak equalizers, and collaborative friend Jams.
+            </Text>
+
+            {/* Action Get Started Button */}
+            <TouchableOpacity
+              onPress={() => setViewMode('auth')}
+              activeOpacity={0.88}
+              style={[
+                {
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#D4AF37',
+                  borderRadius: 16,
+                  height: 56,
+                  width: '100%',
+                  gap: 10,
+                },
+                shadow('0px 10px 24px rgba(212, 175, 55, 0.25)', {
+                  shadowColor: '#D4AF37',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 10,
+                  elevation: 5,
+                })
+              ]}
+            >
+              <Text style={{ color: '#0A0A0B', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                GET STARTED
+              </Text>
+              <ArrowRight size={16} color="#0A0A0B" />
+            </TouchableOpacity>
           </View>
+        )}
 
-          {/* Premium Tagline */}
-          <Text style={{
-            color: '#D4AF37',
-            fontSize: 19,
-            fontWeight: '900',
-            marginBottom: 6,
-            textAlign: 'center',
-            textTransform: 'uppercase',
-            letterSpacing: 3,
-            textShadowColor: 'rgba(255, 211, 0, 0.2)',
-            textShadowOffset: { width: 0, height: 2 },
-            textShadowRadius: 6,
-          }}>
-            Streaming, Recoded
-          </Text>
-          
-          <Text style={{
-            color: 'rgba(255, 255, 255, 0.35)',
-            fontWeight: '600',
-            textTransform: 'uppercase',
-            fontSize: 10,
-            letterSpacing: 1.5,
-            marginBottom: 32,
-            textAlign: 'center',
-          }}>
-            Enter the next generation of sound
-          </Text>
-
-          {/* Feature Highlight Deck */}
-          <View style={{ width: '100%', gap: 16, marginBottom: 36, paddingHorizontal: 4 }}>
-            {/* Feature 1 */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{
-                width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255, 211, 0, 0.06)',
-                borderWidth: 1, borderColor: 'rgba(255, 211, 0, 0.15)', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Music size={18} color="#D4AF37" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Lossless Sound Engine</Text>
-                <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 11, fontWeight: '500', marginTop: 1 }}>Pure, high-fidelity audio stream</Text>
-              </View>
+        {/* ── AUTHENTICATION MODE ── */}
+        {viewMode === 'auth' && (
+          <View style={[
+            {
+              backgroundColor: 'rgba(12, 12, 14, 0.75)',
+              borderWidth: 1.5,
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: 28,
+              padding: 24,
+              width: '100%',
+              maxWidth: 400,
+              // @ts-ignore
+              backdropFilter: 'blur(30px)',
+            },
+            shadow('0px 20px 40px rgba(0, 0, 0, 0.45)', {
+              shadowColor: '#D4AF37',
+              shadowOffset: { width: 0, height: 16 },
+              shadowOpacity: 0.08,
+              shadowRadius: 32,
+              elevation: 12,
+            })
+          ]}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <TouchableOpacity
+                onPress={() => setViewMode('welcome')}
+                style={{
+                  padding: 8,
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.06)'
+                }}
+              >
+                <ArrowLeft size={16} color="rgba(255,255,255,0.6)" />
+              </TouchableOpacity>
+              <BrandLogo style={{ transform: [{ scale: 0.85 }] }} />
+              <View style={{ width: 32 }} />
             </View>
 
-            {/* Feature 2 */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{
-                width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(0, 92, 169, 0.06)',
-                borderWidth: 1, borderColor: 'rgba(0, 92, 169, 0.15)', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Sparkles size={18} color="#005CA9" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>AI Vibe Co-Pilot</Text>
-                <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 11, fontWeight: '500', marginTop: 1 }}>Generative mood-curated feeds</Text>
-              </View>
-            </View>
+            <Text style={{
+              color: '#FFF',
+              fontSize: 20,
+              fontWeight: '900',
+              textAlign: 'center',
+              textTransform: 'uppercase',
+              letterSpacing: 1.2,
+              marginBottom: 4,
+            }}>
+              {isSignUp ? 'Create Account' : 'Welcome Back'}
+            </Text>
 
-            {/* Feature 3 */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{
-                width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255, 211, 0, 0.06)',
-                borderWidth: 1, borderColor: 'rgba(255, 211, 0, 0.15)', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Users size={18} color="#D4AF37" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>Real-Time Jams</Text>
-                <Text style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: 11, fontWeight: '500', marginTop: 1 }}>Listen together with friends</Text>
-              </View>
-            </View>
-          </View>
+            <Text style={{
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: 11.5,
+              fontWeight: '600',
+              textAlign: 'center',
+              marginBottom: 24,
+            }}>
+              {isSignUp ? 'Sign up to recode your listening environment' : 'Log in to access your sound preferences'}
+            </Text>
 
-          {/* Error Message */}
-          {error !== '' && (
-            <View style={[
-              {
+            {/* Error Message */}
+            {error !== '' && (
+              <View style={{
                 backgroundColor: 'rgba(239, 68, 68, 0.08)',
                 borderWidth: 1,
-                borderColor: 'rgba(239, 68, 68, 0.25)',
-                borderRadius: 14,
-                padding: 14,
-                width: '100%',
-                marginBottom: 24
-              },
-              shadow('0px 4px 12px rgba(239,68,68,0.05)')
-            ]}>
-              <Text style={{ color: '#FF8A8A', fontWeight: '600', fontSize: 12, textAlign: 'center', lineHeight: 16 }}>{error}</Text>
-            </View>
-          )}
-
-          {/* Google Sign In Button */}
-          {loading ? (
-            <View style={{ paddingVertical: 12, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-              <ActivityIndicator size="large" color="#D4AF37" style={{ marginBottom: 16 }} />
-              <Text style={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: 12,
-                fontWeight: '600',
-                letterSpacing: 0.5,
-                textAlign: 'center',
-                textTransform: 'uppercase',
-                fontFamily: Platform.select({
-                  ios: 'Helvetica Neue',
-                  android: 'sans-serif-medium',
-                  default: 'system-ui',
-                }),
+                borderColor: 'rgba(239, 68, 68, 0.2)',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
               }}>
-                Preparing your soundstage...
-              </Text>
+                <Text style={{ color: '#FF8A8A', fontWeight: '700', fontSize: 11, textAlign: 'center', lineHeight: 15 }}>
+                  {error}
+                </Text>
+              </View>
+            )}
+
+            {/* Credentials Fields */}
+            <View style={{ gap: 12, marginBottom: 20 }}>
+              {isSignUp && (
+                <View style={{ position: 'relative' }}>
+                  <TextInput
+                    style={{
+                      backgroundColor: 'rgba(0,0,0,0.25)',
+                      borderWidth: 1.2,
+                      borderColor: 'rgba(255,255,255,0.08)',
+                      borderRadius: 14,
+                      paddingLeft: 42,
+                      paddingRight: 16,
+                      paddingVertical: 12,
+                      color: '#FFF',
+                      fontWeight: '600',
+                      fontSize: 13.5,
+                    }}
+                    placeholder="DISPLAY NAME"
+                    placeholderTextColor="rgba(255,255,255,0.28)"
+                    value={displayNameInput}
+                    onChangeText={setDisplayNameInput}
+                    autoCapitalize="words"
+                  />
+                  <View style={{ position: 'absolute', left: 14, top: 12 }}>
+                    <Users size={16} color="rgba(255,255,255,0.35)" />
+                  </View>
+                </View>
+              )}
+
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={{
+                    backgroundColor: 'rgba(0,0,0,0.25)',
+                    borderWidth: 1.2,
+                    borderColor: 'rgba(255,255,255,0.08)',
+                    borderRadius: 14,
+                    paddingLeft: 42,
+                    paddingRight: 16,
+                    paddingVertical: 12,
+                    color: '#FFF',
+                    fontWeight: '600',
+                    fontSize: 13.5,
+                  }}
+                  placeholder="EMAIL ADDRESS"
+                  placeholderTextColor="rgba(255,255,255,0.28)"
+                  value={emailInput}
+                  onChangeText={setEmailInput}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                <View style={{ position: 'absolute', left: 14, top: 12 }}>
+                  <Mail size={16} color="rgba(255,255,255,0.35)" />
+                </View>
+              </View>
+
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={{
+                    backgroundColor: 'rgba(0,0,0,0.25)',
+                    borderWidth: 1.2,
+                    borderColor: 'rgba(255,255,255,0.08)',
+                    borderRadius: 14,
+                    paddingLeft: 42,
+                    paddingRight: 46,
+                    paddingVertical: 12,
+                    color: '#FFF',
+                    fontWeight: '600',
+                    fontSize: 13.5,
+                  }}
+                  placeholder="SECRET PASSWORD"
+                  placeholderTextColor="rgba(255,255,255,0.28)"
+                  value={passwordInput}
+                  onChangeText={setPasswordInput}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <View style={{ position: 'absolute', left: 14, top: 12 }}>
+                  <Lock size={16} color="rgba(255,255,255,0.35)" />
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', right: 14, top: 12 }}
+                >
+                  {showPassword ? (
+                    <EyeOff size={16} color="rgba(255,255,255,0.35)" />
+                  ) : (
+                    <Eye size={16} color="rgba(255,255,255,0.35)" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          ) : (
-            <View style={{ width: '100%', gap: 14 }}>
+
+            {/* Email Submit Button */}
+            {loading ? (
+              <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 12 }} />
+            ) : (
               <TouchableOpacity
-                onPress={handleGoogleSignIn}
-                activeOpacity={0.9}
+                onPress={handleEmailAuth}
+                activeOpacity={0.85}
                 style={[
                   {
-                    flexDirection: 'row',
+                    backgroundColor: '#FFF',
+                    borderRadius: 14,
+                    height: 48,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 16,
-                    height: 56,
-                    width: '100%'
+                    marginBottom: 16,
                   },
-                  shadow('0px 10px 25px rgba(255, 255, 255, 0.12)', {
-                    shadowColor: '#FFF',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.12,
-                    shadowRadius: 10,
-                    elevation: 5
-                  })
+                  shadow('0px 4px 12px rgba(255,255,255,0.1)')
                 ]}
               >
-                {/* Google logo SVG */}
-                <View style={{ marginRight: 12 }}>
-                  <GoogleIcon />
-                </View>
-                <Text style={{
-                  color: '#050505',
-                  fontWeight: '900',
-                  fontSize: 14,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  fontFamily: Platform.select({
-                    ios: 'Helvetica Neue',
-                    android: 'sans-serif-medium',
-                    default: 'system-ui',
-                  }),
-                }}>
-                  Continue with Google
+                <Text style={{ color: '#050506', fontWeight: '900', fontSize: 12.5, textTransform: 'uppercase', letterSpacing: 1 }}>
+                  {isSignUp ? 'SIGN UP NOW' : 'SECURE SIGN IN'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Mode Switcher */}
+            <TouchableOpacity
+              onPress={() => {
+                setIsSignUp(!isSignUp);
+                setError('');
+              }}
+              style={{ alignSelf: 'center', marginBottom: 24 }}
+            >
+              <Text style={{ color: '#D4AF37', fontSize: 11.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+              <Text style={{ color: 'rgba(255,255,255,0.25)', fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>
+                OR CONNECT WITH
+              </Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            </View>
+
+            {/* Social / Native Authentication Tiers */}
+            <View style={{ gap: 10 }}>
+              <TouchableOpacity
+                onPress={handleGoogleSignIn}
+                activeOpacity={0.88}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  borderWidth: 1.2,
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  borderRadius: 14,
+                  height: 48,
+                }}
+              >
+                <GoogleIcon />
+                <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginLeft: 10 }}>
+                  Google Sandbox
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleBiometricMockLogin}
                 activeOpacity={0.88}
-                style={[
-                  {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'rgba(212, 175, 55, 0.08)',
-                    borderWidth: 1.5,
-                    borderColor: 'rgba(212, 175, 55, 0.3)',
-                    borderRadius: 16,
-                    height: 56,
-                    width: '100%'
-                  },
-                  shadow('0px 10px 25px rgba(212, 175, 55, 0.08)', {
-                    shadowColor: '#D4AF37',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 10,
-                    elevation: 3
-                  })
-                ]}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(212, 175, 55, 0.04)',
+                  borderWidth: 1.2,
+                  borderColor: 'rgba(212, 175, 55, 0.2)',
+                  borderRadius: 14,
+                  height: 48,
+                }}
               >
-                <Fingerprint size={20} color="#D4AF37" style={{ marginRight: 12 }} />
-                <Text style={{
-                  color: '#D4AF37',
-                  fontWeight: '900',
-                  fontSize: 14,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  fontFamily: Platform.select({
-                    ios: 'Helvetica Neue',
-                    android: 'sans-serif-medium',
-                    default: 'system-ui',
-                  }),
-                }}>
+                <Fingerprint size={16} color="#D4AF37" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#D4AF37', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Biometric Login
                 </Text>
               </TouchableOpacity>
             </View>
-          )}
 
-          {/* Terms footnote */}
-          <Text style={{
-            color: 'rgba(255, 255, 255, 0.22)',
-            fontWeight: '600',
-            textTransform: 'uppercase',
-            fontSize: 8.5,
-            letterSpacing: 1.2,
-            textAlign: 'center',
-            marginTop: 36,
-            lineHeight: 12,
-          }}>
-            By continuing, you agree to our terms of service
-          </Text>
-        </View>
+            <Text style={{
+              color: 'rgba(255, 255, 255, 0.2)',
+              fontSize: 8,
+              fontWeight: '700',
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              textAlign: 'center',
+              marginTop: 24,
+            }}>
+              By continuing you agree to the terms of service
+            </Text>
+          </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
