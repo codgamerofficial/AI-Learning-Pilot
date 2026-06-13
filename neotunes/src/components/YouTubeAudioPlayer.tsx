@@ -1,13 +1,34 @@
 /**
  * YouTubeAudioPlayer.tsx
- * Native playback engine.
- * Uses expo-av when a direct audio URL is available, otherwise falls back to the hidden YouTube iframe.
+ * Native background playback engine.
+ * Uses react-native-track-player on native mobile platforms for system notifications, 
+ * lock screen controls, and background playback, while falling back to expo-av on Web.
  */
 import React from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { usePlayerStore, OFFLINE_FALLBACK_AUDIO } from '../store/playerStore';
+
+// Conditional imports for react-native-track-player to maintain web compile compatibility
+let TrackPlayer: any;
+let Capability: any;
+let State: any;
+let Event: any;
+let AppKilledPlaybackBehavior: any;
+
+if (Platform.OS !== 'web') {
+  try {
+    const rntp = require('react-native-track-player');
+    TrackPlayer = rntp.default;
+    Capability = rntp.Capability;
+    State = rntp.State;
+    Event = rntp.Event;
+    AppKilledPlaybackBehavior = rntp.AppKilledPlaybackBehavior;
+  } catch (e) {
+    console.error('Failed to import react-native-track-player:', e);
+  }
+}
 
 interface Props {
   videoId: string;
@@ -17,12 +38,12 @@ interface Props {
 }
 
 let audioModeConfigured = false;
+let isTrackPlayerInitialized = false;
 
 async function ensureAudioMode() {
   if (audioModeConfigured) {
     return;
   }
-
   await Audio.setAudioModeAsync({
     allowsRecordingIOS: false,
     staysActiveInBackground: true,
@@ -32,8 +53,42 @@ async function ensureAudioMode() {
     shouldDuckAndroid: true,
     playThroughEarpieceAndroid: false,
   });
-
   audioModeConfigured = true;
+}
+
+async function initTrackPlayer() {
+  if (isTrackPlayerInitialized || !TrackPlayer) return;
+  try {
+    await TrackPlayer.setupPlayer({});
+    await TrackPlayer.updateOptions({
+      android: {
+        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.PausePlayback,
+      },
+      capabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+        Capability.SeekTo,
+      ],
+      compactCapabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+      ],
+      notificationCapabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+        Capability.SeekTo,
+      ],
+    });
+    isTrackPlayerInitialized = true;
+    console.log('[TrackPlayer] Native background player setup complete.');
+  } catch (e) {
+    console.error('[TrackPlayer] setupPlayer error:', e);
+  }
 }
 
 function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
@@ -47,7 +102,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     playRef.current = play;
   }, [play]);
 
-  // Preloading & Crossfading Refs
+  // Preloading & Crossfading Refs for Web
   const preloadedSoundRef = React.useRef<Audio.Sound | null>(null);
   const preloadedUrlRef = React.useRef<string | null>(null);
   const fadeSoundRef = React.useRef<Audio.Sound | null>(null);
@@ -105,7 +160,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     onStateChange?.(state);
   }, [onStateChange]);
 
-  // Increased timeout to 15 seconds to prevent aggressive failure on slower networks
+  // YouTube Timeout
   React.useEffect(() => {
     if (audioUrl || !play || hasStartedOrReady) return;
 
@@ -119,6 +174,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     return () => clearTimeout(timer);
   }, [audioUrl, play, hasStartedOrReady, onStateChange]);
 
+  // YouTube seek register
   React.useEffect(() => {
     if (!audioUrl && isValidYTId) {
       usePlayerStore.getState().registerSeekFn((seconds: number) => {
@@ -132,6 +188,7 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     };
   }, [audioUrl, isValidYTId]);
 
+  // YouTube time progress sync
   React.useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
     if (play && !audioUrl && isValidYTId) {
@@ -153,293 +210,343 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     };
   }, [play, audioUrl, isValidYTId]);
 
-  React.useEffect(() => {
-    if (!audioUrl && !isValidYTId) {
-      console.warn('[NativeAudioPlayer] Invalid videoId detected for playback:', videoId);
-      onStateChange?.('error');
-    }
-  }, [audioUrl, isValidYTId, videoId, onStateChange]);
-
-  const fallbackIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
-  const fallbackTimeRef = React.useRef(0);
-
+  // ── TRACK PLAYER OR EXPO-AV STATE DRIVER ──
   React.useEffect(() => {
     let cancelled = false;
 
     if (!audioUrl) {
-      return () => {
-        cancelled = true;
-      };
+      return;
     }
 
-    const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
+    if (Platform.OS !== 'web') {
+      // 📱 NATIVE DRIVER (react-native-track-player)
+      let progressInterval: ReturnType<typeof setInterval> | null = null;
+      let stateListener: any = null;
 
-    if (isFallback) {
-      usePlayerStore.getState().setCurrentTime(0);
-      usePlayerStore.getState().setDuration(180);
-      fallbackTimeRef.current = 0;
+      const setupNativePlayer = async () => {
+        await initTrackPlayer();
+        if (cancelled) return;
 
-      usePlayerStore.getState().registerSeekFn((seconds: number) => {
-        fallbackTimeRef.current = seconds;
-        usePlayerStore.getState().setCurrentTime(seconds);
-      });
+        try {
+          await TrackPlayer.reset();
+          const trackInfo = usePlayerStore.getState().currentTrack;
+          await TrackPlayer.add({
+            id: videoId,
+            url: audioUrl,
+            title: trackInfo?.title || 'Unknown Title',
+            artist: trackInfo?.artist || 'Unknown Artist',
+            artwork: trackInfo?.artwork || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&q=80',
+          });
 
-      const startFallbackTimer = () => {
-        if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
-        fallbackIntervalRef.current = setInterval(() => {
-          fallbackTimeRef.current += 1;
-          if (fallbackTimeRef.current >= 180) {
-            fallbackTimeRef.current = 0;
-            if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
-            onStateChange?.('ended');
-          } else {
-            usePlayerStore.getState().setCurrentTime(fallbackTimeRef.current);
+          if (cancelled) {
+            await TrackPlayer.reset();
+            return;
           }
-        }, 1000);
-      };
 
-      const stopFallbackTimer = () => {
-        if (fallbackIntervalRef.current) {
-          clearInterval(fallbackIntervalRef.current);
-          fallbackIntervalRef.current = null;
+          usePlayerStore.getState().registerSeekFn((seconds: number) => {
+            void TrackPlayer.seekTo(seconds);
+          });
+
+          if (playRef.current) {
+            await TrackPlayer.play();
+          }
+
+          // Polling progress interval
+          progressInterval = setInterval(async () => {
+            try {
+              const position = await TrackPlayer.getPosition();
+              const duration = await TrackPlayer.getDuration();
+              if (position >= 0 && duration > 0) {
+                usePlayerStore.getState().setCurrentTime(position);
+                usePlayerStore.getState().setDuration(duration);
+
+                // Preload trigger when 15 seconds remain
+                if (duration - position < 15) {
+                  void preloadNextAudio();
+                }
+
+                // Check ended state manually
+                if (duration - position < 0.5) {
+                  onStateChange?.('ended');
+                }
+              }
+            } catch {}
+          }, 500);
+
+          // State change listener
+          stateListener = TrackPlayer.addEventListener(Event.PlaybackState, (event: any) => {
+            const stateName = event.state;
+            if (stateName === State.Playing || stateName === 'playing') {
+              onStateChange?.('playing');
+            } else if (stateName === State.Paused || stateName === 'paused') {
+              onStateChange?.('paused');
+            } else if (stateName === State.Buffering || stateName === 'buffering') {
+              onStateChange?.('buffering');
+            }
+          });
+
+        } catch (e) {
+          console.warn('[TrackPlayer] Setup failed, loading fallback:', e);
+          onStateChange?.('error');
         }
       };
 
-      onStateChange?.(play ? 'playing' : 'paused');
-      if (play) {
-        startFallbackTimer();
-      }
+      void setupNativePlayer();
 
       return () => {
         cancelled = true;
-        stopFallbackTimer();
         usePlayerStore.getState().registerSeekFn(() => {});
+        if (progressInterval) clearInterval(progressInterval);
+        if (stateListener) stateListener.remove();
+        void TrackPlayer.reset();
       };
-    }
+    } else {
+      // 🌐 WEB DRIVER (expo-av)
+      const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
+      let fallbackInterval: ReturnType<typeof setInterval> | null = null;
+      let fallbackTime = 0;
 
-    const setupSound = async () => {
-      await ensureAudioMode();
+      if (isFallback) {
+        usePlayerStore.getState().setCurrentTime(0);
+        usePlayerStore.getState().setDuration(180);
+        fallbackTime = 0;
 
-      // Clear active fade-out and fade-in intervals
-      if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
-      if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+        usePlayerStore.getState().registerSeekFn((seconds: number) => {
+          fallbackTime = seconds;
+          usePlayerStore.getState().setCurrentTime(seconds);
+        });
 
-      const crossfadeSeconds = usePlayerStore.getState().crossfadeSeconds;
-      const oldSound = soundRef.current;
-
-      // Handle the previous sound (crossfade out)
-      if (oldSound) {
-        if (crossfadeSeconds > 0) {
-          fadeSoundRef.current = oldSound;
-          soundRef.current = null;
-
-          let volume = 1.0;
-          const intervalMs = (crossfadeSeconds * 1000) / 10;
-          fadeOutIntervalRef.current = setInterval(async () => {
-            volume -= 0.1;
-            if (volume <= 0.05) {
-              if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
-              try {
-                await oldSound.unloadAsync();
-              } catch {}
-              if (fadeSoundRef.current === oldSound) {
-                fadeSoundRef.current = null;
-              }
+        const startFallbackTimer = () => {
+          if (fallbackInterval) clearInterval(fallbackInterval);
+          fallbackInterval = setInterval(() => {
+            fallbackTime += 1;
+            if (fallbackTime >= 180) {
+              fallbackTime = 0;
+              if (fallbackInterval) clearInterval(fallbackInterval);
+              onStateChange?.('ended');
             } else {
-              try {
-                await oldSound.setVolumeAsync(volume);
-              } catch {}
+              usePlayerStore.getState().setCurrentTime(fallbackTime);
             }
-          }, intervalMs);
-        } else {
-          // No crossfade, unload immediately
-          void oldSound.unloadAsync();
-          soundRef.current = null;
+          }, 1000);
+        };
+
+        onStateChange?.(play ? 'playing' : 'paused');
+        if (play) {
+          startFallbackTimer();
         }
+
+        return () => {
+          cancelled = true;
+          if (fallbackInterval) clearInterval(fallbackInterval);
+          usePlayerStore.getState().registerSeekFn(() => {});
+        };
       }
 
-      // Load/Retrieve new sound
-      let sound: Audio.Sound;
-      let isPreloaded = false;
+      const setupSound = async () => {
+        await ensureAudioMode();
 
-      if (preloadedSoundRef.current && preloadedUrlRef.current === audioUrl) {
-        console.log('[NativeAudioPlayer] Using preloaded sound for:', audioUrl);
-        sound = preloadedSoundRef.current;
-        isPreloaded = true;
-        
-        preloadedSoundRef.current = null;
-        preloadedUrlRef.current = null;
-      } else {
-        // Discard old preloaded sound if it doesn't match
+        if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+        if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+
+        const crossfadeSeconds = usePlayerStore.getState().crossfadeSeconds;
+        const oldSound = soundRef.current;
+
+        if (oldSound) {
+          if (crossfadeSeconds > 0) {
+            fadeSoundRef.current = oldSound;
+            soundRef.current = null;
+
+            let volume = 1.0;
+            const intervalMs = (crossfadeSeconds * 1000) / 10;
+            fadeOutIntervalRef.current = setInterval(async () => {
+              volume -= 0.1;
+              if (volume <= 0.05) {
+                if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+                try {
+                  await oldSound.unloadAsync();
+                } catch {}
+                if (fadeSoundRef.current === oldSound) {
+                  fadeSoundRef.current = null;
+                }
+              } else {
+                try {
+                  await oldSound.setVolumeAsync(volume);
+                } catch {}
+              }
+            }, intervalMs);
+          } else {
+            void oldSound.unloadAsync();
+            soundRef.current = null;
+          }
+        }
+
+        let sound: Audio.Sound;
+        let isPreloaded = false;
+
+        if (preloadedSoundRef.current && preloadedUrlRef.current === audioUrl) {
+          console.log('[NativeAudioPlayer] Using preloaded sound:', audioUrl);
+          sound = preloadedSoundRef.current;
+          isPreloaded = true;
+          preloadedSoundRef.current = null;
+          preloadedUrlRef.current = null;
+        } else {
+          if (preloadedSoundRef.current) {
+            void preloadedSoundRef.current.unloadAsync();
+            preloadedSoundRef.current = null;
+            preloadedUrlRef.current = null;
+          }
+
+          console.log('[NativeAudioPlayer] Loading sound fresh:', audioUrl);
+          const loadResult = await Audio.Sound.createAsync(
+            { uri: audioUrl },
+            {
+              shouldPlay: playRef.current,
+              volume: crossfadeSeconds > 0 && playRef.current ? 0.0 : 1.0,
+              progressUpdateIntervalMillis: 500,
+            }
+          );
+          sound = loadResult.sound;
+        }
+
+        if (cancelled) {
+          await sound.unloadAsync();
+          return;
+        }
+
+        soundRef.current = sound;
+
+        usePlayerStore.getState().registerSeekFn((seconds: number) => {
+          void soundRef.current?.setPositionAsync(seconds * 1000);
+        });
+
+        sound.setOnPlaybackStatusUpdate((playbackStatus) => {
+          if (!playbackStatus.isLoaded) {
+            if ('error' in playbackStatus && playbackStatus.error) {
+              onStateChange?.('error');
+            }
+            return;
+          }
+
+          const pos = (playbackStatus.positionMillis ?? 0) / 1000;
+          const dur = (playbackStatus.durationMillis ?? 0) / 1000;
+
+          usePlayerStore.getState().setCurrentTime(pos);
+          usePlayerStore.getState().setDuration(dur);
+
+          if (playbackStatus.isPlaying && dur > 0 && dur - pos < 15) {
+            void preloadNextAudio();
+          }
+
+          if (playbackStatus.didJustFinish) {
+            onStateChange?.('ended');
+            return;
+          }
+
+          onStateChange?.(playbackStatus.isPlaying ? 'playing' : 'paused');
+        });
+
+        if (playRef.current) {
+          try {
+            if (crossfadeSeconds > 0) {
+              await sound.setVolumeAsync(0.0);
+              await sound.playAsync();
+
+              let inVolume = 0.0;
+              const intervalMs = (crossfadeSeconds * 1000) / 10;
+              fadeInIntervalRef.current = setInterval(async () => {
+                inVolume += 0.1;
+                if (inVolume >= 1.0) {
+                  if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+                  try {
+                    await sound.setVolumeAsync(1.0);
+                  } catch {}
+                } else {
+                  try {
+                    if (playRef.current) {
+                      await sound.setVolumeAsync(inVolume);
+                    }
+                  } catch {}
+                }
+              }, intervalMs);
+            } else {
+              await sound.setVolumeAsync(1.0);
+              await sound.playAsync();
+            }
+          } catch (e) {
+            console.warn('[NativeAudioPlayer] Play error:', e);
+          }
+        } else {
+          try {
+            await sound.setVolumeAsync(1.0);
+          } catch {}
+        }
+      };
+
+      void setupSound();
+
+      return () => {
+        cancelled = true;
+        usePlayerStore.getState().registerSeekFn(() => {});
+        if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
+        if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
+
+        if (soundRef.current) {
+          void soundRef.current.unloadAsync();
+          soundRef.current = null;
+        }
+        if (fadeSoundRef.current) {
+          void fadeSoundRef.current.unloadAsync();
+          fadeSoundRef.current = null;
+        }
         if (preloadedSoundRef.current) {
           void preloadedSoundRef.current.unloadAsync();
           preloadedSoundRef.current = null;
           preloadedUrlRef.current = null;
         }
-
-        console.log('[NativeAudioPlayer] Loading sound fresh:', audioUrl);
-        const loadResult = await Audio.Sound.createAsync(
-          { uri: audioUrl },
-          {
-            shouldPlay: playRef.current,
-            volume: crossfadeSeconds > 0 && playRef.current ? 0.0 : 1.0,
-            progressUpdateIntervalMillis: 500,
-          }
-        );
-        sound = loadResult.sound;
-      }
-
-      if (cancelled) {
-        await sound.unloadAsync();
-        return;
-      }
-
-      soundRef.current = sound;
-
-      // Register the seek function for the new sound
-      usePlayerStore.getState().registerSeekFn((seconds: number) => {
-        void soundRef.current?.setPositionAsync(seconds * 1000);
-      });
-
-      // Update callback for active playback
-      sound.setOnPlaybackStatusUpdate((playbackStatus) => {
-        if (!playbackStatus.isLoaded) {
-          if ('error' in playbackStatus && playbackStatus.error) {
-            onStateChange?.('error');
-          }
-          return;
-        }
-
-        const pos = (playbackStatus.positionMillis ?? 0) / 1000;
-        const dur = (playbackStatus.durationMillis ?? 0) / 1000;
-
-        usePlayerStore.getState().setCurrentTime(pos);
-        usePlayerStore.getState().setDuration(dur);
-
-        // Preload next audio when within 15 seconds of the end
-        if (playbackStatus.isPlaying && dur > 0 && dur - pos < 15) {
-          void preloadNextAudio();
-        }
-
-        if (playbackStatus.didJustFinish) {
-          onStateChange?.('ended');
-          return;
-        }
-
-        onStateChange?.(playbackStatus.isPlaying ? 'playing' : 'paused');
-      });
-
-      // Start playback and crossfade in
-      if (playRef.current) {
-        try {
-          if (crossfadeSeconds > 0) {
-            await sound.setVolumeAsync(0.0);
-            await sound.playAsync();
-
-            let inVolume = 0.0;
-            const intervalMs = (crossfadeSeconds * 1000) / 10;
-            fadeInIntervalRef.current = setInterval(async () => {
-              inVolume += 0.1;
-              if (inVolume >= 1.0) {
-                if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
-                try {
-                  await sound.setVolumeAsync(1.0);
-                } catch {}
-              } else {
-                try {
-                  if (playRef.current) {
-                    await sound.setVolumeAsync(inVolume);
-                  }
-                } catch {}
-              }
-            }, intervalMs);
-          } else {
-            await sound.setVolumeAsync(1.0);
-            await sound.playAsync();
-          }
-        } catch (e) {
-          console.warn('[NativeAudioPlayer] Error starting play:', e);
-        }
-      } else {
-        try {
-          await sound.setVolumeAsync(1.0);
-        } catch {}
-      }
-    };
-
-    void setupSound();
-
-    return () => {
-      cancelled = true;
-      usePlayerStore.getState().registerSeekFn(() => {});
-
-      if (fadeOutIntervalRef.current) clearInterval(fadeOutIntervalRef.current);
-      if (fadeInIntervalRef.current) clearInterval(fadeInIntervalRef.current);
-
-      if (soundRef.current) {
-        void soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-      if (fadeSoundRef.current) {
-        void fadeSoundRef.current.unloadAsync();
-        fadeSoundRef.current = null;
-      }
-      if (preloadedSoundRef.current) {
-        void preloadedSoundRef.current.unloadAsync();
-        preloadedSoundRef.current = null;
-        preloadedUrlRef.current = null;
-      }
-    };
+      };
+    }
   }, [audioUrl]);
 
+  // play/pause sync when prop changes
   React.useEffect(() => {
+    if (Platform.OS !== 'web') {
+      if (isTrackPlayerInitialized && TrackPlayer) {
+        if (play) {
+          void TrackPlayer.play();
+        } else {
+          void TrackPlayer.pause();
+        }
+      }
+      return;
+    }
+
     const isFallback = audioUrl === OFFLINE_FALLBACK_AUDIO;
     if (isFallback) {
       if (play) {
         onStateChange?.('playing');
-        if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
-        fallbackIntervalRef.current = setInterval(() => {
-          fallbackTimeRef.current += 1;
-          if (fallbackTimeRef.current >= 180) {
-            fallbackTimeRef.current = 0;
-            if (fallbackIntervalRef.current) clearInterval(fallbackIntervalRef.current);
-            onStateChange?.('ended');
-          } else {
-            usePlayerStore.getState().setCurrentTime(fallbackTimeRef.current);
-          }
-        }, 1000);
       } else {
         onStateChange?.('paused');
-        if (fallbackIntervalRef.current) {
-          clearInterval(fallbackIntervalRef.current);
-          fallbackIntervalRef.current = null;
-        }
       }
       return;
     }
 
     const sound = soundRef.current;
-    if (!sound) {
-      return;
-    }
+    if (!sound) return;
 
     if (play) {
-      // Clear any active fade-out intervals, as we are now playing
       if (fadeOutIntervalRef.current) {
         clearInterval(fadeOutIntervalRef.current);
         fadeOutIntervalRef.current = null;
       }
-      void sound.setVolumeAsync(1.0); // Reset volume to 1.0!
+      void sound.setVolumeAsync(1.0);
       void sound.playAsync();
-      return;
+    } else {
+      if (fadeInIntervalRef.current) {
+        clearInterval(fadeInIntervalRef.current);
+        fadeInIntervalRef.current = null;
+      }
+      void sound.pauseAsync();
     }
-
-    // Clear any active fade-in intervals, as we are pausing
-    if (fadeInIntervalRef.current) {
-      clearInterval(fadeInIntervalRef.current);
-      fadeInIntervalRef.current = null;
-    }
-    void sound.pauseAsync();
   }, [play]);
 
   if (audioUrl) {
@@ -450,7 +557,6 @@ function NativeAudioPlayer({ videoId, audioUrl, play, onStateChange }: Props) {
     return null;
   }
 
-  // Setting width: 1, height: 1 and placing offscreen prevents OS from freezing/suspending webview.
   return (
     <View pointerEvents="none" style={{ position: 'absolute', width: 1, height: 1, left: -500, top: -500, opacity: 0.01 }}>
       <YoutubePlayer
