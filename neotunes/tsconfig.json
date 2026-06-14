@@ -1,0 +1,17 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".expo",
+    ".netlify",
+    "babel.config.js",
+    "metro.config.js",
+    "*.js",
+    "**/*.js"
+  ]
+}

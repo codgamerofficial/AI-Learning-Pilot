@@ -1,153 +1,63 @@
-# AI Learning OS
+<div align="center">
+  <img src="https://img.shields.io/badge/EXPO-000020?style=for-the-badge&logo=expo&logoColor=white" />
+  <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
+  <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" />
+</div>
 
-AI Learning OS is a Vite-based student workspace that combines three high-value academic workflows in one product:
+<br />
 
-- Study Copilot
-- Performance Dashboard
-- Homework Solver
+<div align="center">
+  <h1 align="center">🎵 NeoTunes</h1>
+  <p align="center">
+    <strong>A high-performance, royalty-free music streaming app with a Brutalist aesthetic.</strong>
+  </p>
+</div>
 
-The goal is to feel like a real product, not a pile of disconnected demos.
+## ✨ Features
 
-## What It Does
+- **Multi-Source Streaming Engine:** Effortlessly pull tracks from massive platforms like **YouTube** or discover legal, royalty-free MP3s via the **Jamendo API**.
+- **Global Audio Engine:** Audio lives completely outside of the screen hierarchy. You can navigate the entire app seamlessly without music dropping, skipping, or reloading.
+- **Premium UI & Animations:** Built with `react-native-reanimated`. Includes silky-smooth glassmorphism interfaces, animated Equalizer bars responding instantly to play states, a rotating vinyl disc player, and a buttery timeline progress slider.
+- **Node.js Express Backend (`/neotunes-api`):** Offloads heavy processing from the frontend. Automatically blends search results from multiple disparate platforms into one clean stream of `Track` models.
+- **Dual Trending Feeds:** Toggle dynamically between "Global Hits" and "India Bollywood" directly on the Home Screen. Blazingly fast due to in-memory caching.
+- **Supabase Cloud State:** Global user states, Authentication, and "Saved Tracks" dynamically backed up and synced via PostgreSQL on Supabase.
+- **Cross-Platform:** Writes once, runs seamlessly with Native performance on iOS/Android, and works interactively on React Native Web environments.
 
-### Study Copilot
-
-- Paste or upload notes
-- Generate student-friendly bullet summaries
-- Create MCQ quizzes
-- Ask grounded follow-up questions in a tutor chat
-
-### Performance Dashboard
-
-- Enter subjects and marks in an editable table
-- Compare current, previous, and target scores
-- Visualize progress with charts
-- Generate AI-style insights, weak areas, and study priorities
-
-### Homework Solver
-
-- Paste a homework prompt
-- Get a step-by-step solution
-- Rewrite the explanation in simpler language
-- Generate similar practice questions
-
-## Product Highlights
-
-- React + Vite app with a thin Vercel server function for secure AI calls
-- Tailwind CSS v4 styling
-- Local-first persistence with `localStorage`
-- Dark mode
-- Exportable outputs
-- Demo-ready sample data
-- Lazy-loaded module screens for lighter first load
-
-## Tech Stack
-
-- React 19
-- Vite
-- TypeScript
-- Tailwind CSS
-- Recharts
-- Lucide React
-
-## AI Mode
-
-The app supports two modes:
-
-### Demo mode
-
-Default mode. The app uses polished local logic and sample data so the UX works immediately without any credentials.
-
-### Secure AI mode
-
-Set `VITE_AI_PROVIDER=server` on the frontend and configure the server-side env vars in Vercel. The browser talks to `/api/ai`, and the model key stays inside the Vercel Function.
-
-The default secure setup is now Hugging Face Inference Providers through its OpenAI-compatible chat endpoint, so the frontend architecture stays the same while the server route swaps providers.
-
-## Local Development
-
-```bash
-npm install
-npm run dev
-```
-
-`npm run dev` is enough for mock mode.
-
-If you want to test the secure server route locally, use `vercel dev` so the `api/` function runs alongside the Vite app.
-
-## Environment Variables
-
-Copy [`.env.example`](D:\Ai Student Copilot\.env.example) to `.env` and adjust it for local mock mode or secure mode.
-
-```env
-VITE_AI_PROVIDER=mock
-
-# Server-side only variables for Vercel Functions or `vercel dev`
-# Hugging Face Inference Providers uses an OpenAI-compatible chat endpoint.
-HF_TOKEN=
-AI_API_KEY=
-AI_BASE_URL=https://router.huggingface.co/v1
-AI_MODEL=Qwen/Qwen2.5-7B-Instruct-1M:fastest
-```
-
-Recommended Vercel setup:
-
-- Frontend env var: `VITE_AI_PROVIDER=server`
-- Server env vars: `HF_TOKEN` or `AI_API_KEY`, plus `AI_BASE_URL` and `AI_MODEL`
-
-Hugging Face notes:
-
-- The route expects a Hugging Face user access token on the server side.
-- Free Hugging Face accounts get a small monthly Inference Providers credit, not unlimited free usage.
-- Because the app only needs chat-completion style calls, Hugging Face's OpenAI-compatible router is a good fit here.
-
-If `VITE_AI_PROVIDER` is left as `mock`, the product stays in demo mode.
-
-## Build
-
-```bash
-npm run build
-npm run lint
-```
-
-## Demo Flow
-
-1. Open Study Copilot and paste notes.
-2. Generate a summary.
-3. Generate quiz questions.
-4. Switch to Performance Dashboard and enter marks.
-5. Review charts and AI insights.
-6. Open Homework Solver and solve a sample problem.
-
-## Project Structure
+## 🏗 Architecture
 
 ```text
-src/
-  components/
-    ui.tsx
-  data/
-    sampleData.ts
-  hooks/
-    useLocalStorageState.ts
-  lib/
-    ai-contract.ts
-    ai.ts
-    export.ts
-    mockAi.ts
-  modules/
-    StudyCopilot.tsx
-    PerformanceDashboard.tsx
-    HomeworkSolver.tsx
-  App.tsx
-  index.css
-api/
-  ai.ts
-vercel.json
+React Native (Expo + NativeWind)      
+       ↓                          
+─────────────────────────────────────────
+       NeoTunes Backend API (Express.js)
+─────────────────────────────────────────
+      YouTube API │ Jamendo API        
+─────────────────────────────────────────
+      Supabase (Auth + PostgreSQL)     
 ```
 
-## Current Status
+## 🚀 Quick Setup
 
-- Build passes
-- Lint passes
-- Secure AI route is implemented through `/api/ai`
-- Preview deployment is available on Vercel
+### 1. Initialize the Backend
+```bash
+cd neotunes-api
+npm install
+# Add your YOUTUBE_API_KEY and JAMENDO_CLIENT_ID to .env
+node index.js
+```
+
+### 2. Initialize the App
+```bash
+cd neotunes
+npm install
+npx expo start
+```
+
+## 🎨 Design Philosophy
+NeoTunes completely avoids generic Material or flat designs. It relies heavily on **Brutalist / Blocky** UI principles:
+- Absolute, pure dark backgrounds (`#0A0A0A`).
+- Aggressive solid borders with unapologetically sharp, bold shadows (`4px 4px 0px rgba(x,x,x,1)`).
+- Kinetic neon accents complementing the artwork's dominant palette (`#7B61FF`, `#00FF85`, `#00D4FF`).
+
+---
+*Developed by codgamerofficial*

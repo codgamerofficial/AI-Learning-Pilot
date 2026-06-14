@@ -28,3 +28,4 @@ dist-ssr
 # Project-specific AI & environment metadata
 .codex
 .gemini
+.env*.local
