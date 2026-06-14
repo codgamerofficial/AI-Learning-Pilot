@@ -247,11 +247,12 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const setSoundProfile = usePreferencesStore((state) => state.setSoundProfile);
 
   React.useEffect(() => {
+    if (ancDevice !== 'None Connected') return;
     const autoDetectTimer = setTimeout(() => {
       const brands = [
         { name: 'Sony WH-1000XM5', codec: 'LDAC', profile: 'sony' as const, anc: 'on' as const },
         { name: 'Apple AirPods Pro', codec: 'AAC', profile: 'bose' as const, anc: 'on' as const },
-        { name: 'Bose QuietComfort Ultra', codec: 'aptX Lossless', profile: 'bose' as const, anc: 'on' as const },
+        { name: 'Bose QC Ultra', codec: 'aptX Lossless', profile: 'bose' as const, anc: 'on' as const },
         { name: 'JBL Live Pro 2', codec: 'AAC', profile: 'jbl' as const, anc: 'on' as const }
       ];
       
@@ -269,7 +270,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
     }, 4000);
 
     return () => clearTimeout(autoDetectTimer);
-  }, [setAncDevice, setSoundProfile, setAncMode]);
+  }, [ancDevice, setAncDevice, setSoundProfile, setAncMode]);
 
   const lastTapRef = useRef<number>(0);
 
@@ -1152,40 +1153,105 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                     Device Monitor
                   </Text>
                 </View>
-                <View style={{
-                  backgroundColor: 'rgba(0, 255, 133, 0.12)',
-                  borderRadius: 6,
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                }}>
-                  <Text style={{ color: '#00FF85', fontSize: 8.5, fontWeight: '900' }}>LDAC 990kbps</Text>
-                </View>
+                {ancDevice !== 'None Connected' ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity onPress={() => {
+                      setAncDevice('None Connected');
+                      setSoundProfile('none');
+                      setAncMode('off');
+                    }}>
+                      <Text style={{ color: '#FF3B30', fontSize: 9, fontWeight: '900', textTransform: 'uppercase' }}>DISCONNECT</Text>
+                    </TouchableOpacity>
+                    <View style={{
+                      backgroundColor: 'rgba(0, 255, 133, 0.12)',
+                      borderRadius: 6,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                    }}>
+                      <Text style={{ color: '#00FF85', fontSize: 8.5, fontWeight: '900' }}>
+                        {ancDevice.includes('Sony') ? 'LDAC 990kbps' :
+                         ancDevice.includes('AirPods') ? 'AAC 256kbps' :
+                         ancDevice.includes('Bose') || ancDevice.includes('QC') ? 'aptX Lossless' :
+                         ancDevice.includes('JBL') ? 'AAC 320kbps' : 'SBC 328kbps'}
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: 6,
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                  }}>
+                    <Text style={{ color: palette.textMuted, fontSize: 8.5, fontWeight: '900' }}>NO DEVICE</Text>
+                  </View>
+                )}
               </View>
 
-              {/* Headphone Selection */}
-              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
-                {['Sony WH-1000XM5', 'Apple AirPods Pro'].map((device) => {
-                  const isActive = ancDevice === device;
-                  return (
-                    <TouchableOpacity
-                      key={device}
-                      onPress={() => setAncDevice(device)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 8,
-                        borderRadius: 10,
-                        backgroundColor: isActive ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.03)',
-                        borderWidth: 1,
-                        borderColor: isActive ? '#D4AF37' : 'transparent',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text style={{ color: isActive ? '#D4AF37' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
-                        {device}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+              {/* Headphone Selection (2x2 Grid) */}
+              <View style={{ gap: 6, marginBottom: 12 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {[
+                    ['Sony WH-1000XM5', 'sony'],
+                    ['Apple AirPods Pro', 'bose']
+                  ].map(([device, profile]) => {
+                    const isActive = ancDevice === device;
+                    return (
+                      <TouchableOpacity
+                        key={device}
+                        onPress={() => {
+                          setAncDevice(device);
+                          setSoundProfile(profile as any);
+                          setAncMode('on');
+                        }}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                          backgroundColor: isActive ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.03)',
+                          borderWidth: 1,
+                          borderColor: isActive ? '#D4AF37' : 'transparent',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: isActive ? '#D4AF37' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                          {device}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {[
+                    ['Bose QC Ultra', 'bose'],
+                    ['JBL Live Pro 2', 'jbl']
+                  ].map(([device, profile]) => {
+                    const isActive = ancDevice === device;
+                    return (
+                      <TouchableOpacity
+                        key={device}
+                        onPress={() => {
+                          setAncDevice(device);
+                          setSoundProfile(profile as any);
+                          setAncMode('on');
+                        }}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          borderRadius: 10,
+                          backgroundColor: isActive ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.03)',
+                          borderWidth: 1,
+                          borderColor: isActive ? '#D4AF37' : 'transparent',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ color: isActive ? '#D4AF37' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                          {device}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
 
               {/* ANC Simulator */}
