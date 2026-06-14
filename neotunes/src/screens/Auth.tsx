@@ -231,46 +231,33 @@ export default function AuthScreen() {
     try {
       const { Biometrics } = require('../lib/Biometrics');
       const supported = await Biometrics.isSupported();
+
+      if (Platform.OS === 'web') {
+        // On web, biometric auth is a mock — guide user to sign in manually
+        setLoading(false);
+        setViewMode('auth');
+        setError('');
+        Alert.alert(
+          '🔐 Biometric Login',
+          'Biometric authentication is available on the NeoTunes Android/iOS app. Please use email & password to sign in on web.'
+        );
+        return;
+      }
+
       if (supported) {
         const success = await Biometrics.authenticate('Log in to NeoTunes Premium');
-        if (success) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: 'developer@neotunes.app',
-            password: 'developerPassword123'
-          });
-          if (signInError) {
-            const { error: signUpError } = await supabase.auth.signUp({
-              email: 'developer@neotunes.app',
-              password: 'developerPassword123',
-              options: {
-                data: {
-                  display_name: 'NeoTunes Developer'
-                }
-              }
-            });
-            if (signUpError) {
-              setError(signUpError.message);
-            }
-          }
+        if (!success) {
+          setError('Biometric authentication was not successful. Try again or use email sign-in.');
         }
+        // On native, biometric unlock is for app lock — actual auth still needs email/password
+        // So redirect to the auth form
+        setViewMode('auth');
       } else {
-        // Fallback for emulator / web
-        Alert.alert('Biometrics Not Supported', 'Signing into Sandbox mode with default credentials.');
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: 'developer@neotunes.app',
-          password: 'developerPassword123'
-        });
-        if (signInError) {
-          await supabase.auth.signUp({
-            email: 'developer@neotunes.app',
-            password: 'developerPassword123',
-            options: {
-              data: {
-                display_name: 'NeoTunes Developer'
-              }
-            }
-          });
-        }
+        Alert.alert(
+          'Biometrics Unavailable',
+          'Your device does not support biometric authentication. Please use email & password to sign in.'
+        );
+        setViewMode('auth');
       }
     } catch (e: any) {
       setError(e.message || 'Biometric authentication failed.');
@@ -278,6 +265,7 @@ export default function AuthScreen() {
       setLoading(false);
     }
   };
+
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
