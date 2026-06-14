@@ -82,6 +82,58 @@ const MOCK_FRIENDS_ACTIVITY = [
   }
 ];
 
+const SUBSCRIBED_PODCASTS = [
+  {
+    id: 'pod1',
+    title: 'The Ranveer Show',
+    publisher: 'BeerBiceps',
+    artwork: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop',
+    color: '#FF4D6D',
+    description: "India's smartest podcast with Ranveer Allahbadia."
+  },
+  {
+    id: 'pod2',
+    title: 'Figuring Out',
+    publisher: 'Raj Shamani',
+    artwork: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?q=80&w=300&auto=format&fit=crop',
+    color: '#00E5A0',
+    description: 'Mindsets, business, and raw conversations.'
+  },
+  {
+    id: 'pod3',
+    title: 'The Joe Rogan Experience',
+    publisher: 'Joe Rogan',
+    artwork: 'https://images.unsplash.com/photo-1610116306796-6ebd30d779c6?q=80&w=300&auto=format&fit=crop',
+    color: '#FFB830',
+    description: 'The biggest conversations on the planet.'
+  }
+];
+
+const SAVED_EPISODES = [
+  {
+    id: 'ep1',
+    podcastId: 'pod1',
+    title: 'How to build the next Unicorn startup in India',
+    podcastTitle: 'The Ranveer Show',
+    artwork: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop',
+    color: '#FF4D6D',
+    duration: '1h 12m',
+    publishedAt: '2 days ago',
+    track_id: 'ep1-audio-mock'
+  },
+  {
+    id: 'ep2',
+    podcastId: 'pod2',
+    title: 'The future of AI and creator economy',
+    podcastTitle: 'Figuring Out',
+    artwork: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?q=80&w=300&auto=format&fit=crop',
+    color: '#00E5A0',
+    duration: '45m',
+    publishedAt: '1 week ago',
+    track_id: 'ep2-audio-mock'
+  }
+];
+
 function isPlaylistsTableMissing(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;
   if (error.code === 'PGRST205') return true;
@@ -150,6 +202,8 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeSegment, setActiveSegment] = useState<'playlists' | 'tracks' | 'artists'>('tracks');
+  const [activeCategory, setActiveCategory] = useState<'music' | 'podcasts'>('music');
+  const [activePodcastSegment, setActivePodcastSegment] = useState<'shows' | 'episodes'>('shows');
   const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
   const [loadingCombo, setLoadingCombo] = useState(false);
   const [offlineOnly, setOfflineOnly] = useState(false);
@@ -411,615 +465,836 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
       <View style={{ flex: 1, padding: 24 }}>
         
         {/* Header */}
-        <Text style={{ color: palette.text, fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1, marginBottom: 20 }}>
+        <Text style={{ color: palette.text, fontSize: 36, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -1, marginBottom: 12 }}>
           My Library.
         </Text>
 
-        {/* Dynamic iOS-like Segment Switcher */}
-        <View style={{
-          flexDirection: 'row',
-          backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 14, 0.45)' : 'rgba(0,0,0,0.04)',
-          borderRadius: 24,
-          padding: 4,
-          marginBottom: 24,
-          borderWidth: 1.2,
-          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-          // @ts-ignore
-          backdropFilter: 'blur(20px)',
-        }}>
-          {[
-            { key: 'playlists', label: 'Playlists' },
-            { key: 'tracks', label: 'Saved Tracks' },
-            { key: 'artists', label: 'Artists Combo' }
-          ].map((seg) => {
-            const isActive = activeSegment === seg.key;
-            return (
-              <TouchableOpacity
-                key={seg.key}
-                onPress={() => setActiveSegment(seg.key as any)}
-                activeOpacity={0.85}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  borderRadius: 20,
-                  backgroundColor: isActive
-                    ? `${palette.accent}20`
-                    : 'transparent',
-                  borderWidth: 1.2,
-                  borderColor: isActive
-                    ? palette.accent
-                    : 'transparent',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  shadowColor: isActive ? palette.accent : 'transparent',
-                  shadowOffset: { width: 0, height: 0 },
-                  shadowOpacity: isActive ? 0.35 : 0,
-                  shadowRadius: 6,
-                  elevation: isActive ? 1 : 0,
-                }}
-              >
-                <Text style={{
-                  color: isActive
-                    ? palette.accent
-                    : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
-                  fontWeight: '800',
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 1,
-                }}>{seg.label}</Text>
-              </TouchableOpacity>
-            );
-          })}
+        {/* Category Switcher (Music vs Podcasts) */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <TouchableOpacity
+            onPress={() => setActiveCategory('music')}
+            activeOpacity={0.8}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: activeCategory === 'music' ? palette.accent : 'rgba(255, 255, 255, 0.05)',
+              borderWidth: 1,
+              borderColor: activeCategory === 'music' ? palette.accent : 'rgba(255,255,255,0.08)',
+            }}
+          >
+            <Text style={{
+              color: activeCategory === 'music' ? '#0A0A0F' : palette.text,
+              fontWeight: '800',
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}>Music</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setActiveCategory('podcasts')}
+            activeOpacity={0.8}
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: activeCategory === 'podcasts' ? palette.accent : 'rgba(255, 255, 255, 0.05)',
+              borderWidth: 1,
+              borderColor: activeCategory === 'podcasts' ? palette.accent : 'rgba(255,255,255,0.08)',
+            }}
+          >
+            <Text style={{
+              color: activeCategory === 'podcasts' ? '#0A0A0F' : palette.text,
+              fontWeight: '800',
+              fontSize: 11,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+            }}>Podcasts</Text>
+          </TouchableOpacity>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* ── PLAYLISTS SEGMENT ── */}
-          {activeSegment === 'playlists' && (
-            <View>
-              <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Playlists</Text>
+        {/* Dynamic iOS-like Segment Switcher */}
+        {activeCategory === 'music' ? (
+          <View style={{
+            flexDirection: 'row',
+            backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 14, 0.45)' : 'rgba(0,0,0,0.04)',
+            borderRadius: 24,
+            padding: 4,
+            marginBottom: 24,
+            borderWidth: 1.2,
+            borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            // @ts-ignore
+            backdropFilter: 'blur(20px)',
+          }}>
+            {[
+              { key: 'playlists', label: 'Playlists' },
+              { key: 'tracks', label: 'Saved Tracks' },
+              { key: 'artists', label: 'Artists Combo' }
+            ].map((seg) => {
+              const isActive = activeSegment === seg.key;
+              return (
+                <TouchableOpacity
+                  key={seg.key}
+                  onPress={() => setActiveSegment(seg.key as any)}
+                  activeOpacity={0.85}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    backgroundColor: isActive
+                      ? `${palette.accent}20`
+                      : 'transparent',
+                    borderWidth: 1.2,
+                    borderColor: isActive
+                      ? palette.accent
+                      : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: isActive ? palette.accent : 'transparent',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: isActive ? 0.35 : 0,
+                    shadowRadius: 6,
+                    elevation: isActive ? 1 : 0,
+                  }}
+                >
+                  <Text style={{
+                    color: isActive
+                      ? palette.accent
+                      : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
+                    fontWeight: '800',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                  }}>{seg.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={{
+            flexDirection: 'row',
+            backgroundColor: themeMode === 'dark' ? 'rgba(12, 12, 14, 0.45)' : 'rgba(0,0,0,0.04)',
+            borderRadius: 24,
+            padding: 4,
+            marginBottom: 24,
+            borderWidth: 1.2,
+            borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            // @ts-ignore
+            backdropFilter: 'blur(20px)',
+          }}>
+            {[
+              { key: 'shows', label: 'Subscribed Shows' },
+              { key: 'episodes', label: 'Saved Episodes' }
+            ].map((seg) => {
+              const isActive = activePodcastSegment === seg.key;
+              return (
+                <TouchableOpacity
+                  key={seg.key}
+                  onPress={() => setActivePodcastSegment(seg.key as any)}
+                  activeOpacity={0.85}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderRadius: 20,
+                    backgroundColor: isActive
+                      ? `${palette.accent}20`
+                      : 'transparent',
+                    borderWidth: 1.2,
+                    borderColor: isActive
+                      ? palette.accent
+                      : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: isActive ? palette.accent : 'transparent',
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: isActive ? 0.35 : 0,
+                    shadowRadius: 6,
+                    elevation: isActive ? 1 : 0,
+                  }}
+                >
+                  <Text style={{
+                    color: isActive
+                      ? palette.accent
+                      : (themeMode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)'),
+                    fontWeight: '800',
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                  }}>{seg.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
-              {playlistSource === 'local' && (
-                <View style={{
-                  backgroundColor: themeMode === 'dark' ? 'rgba(255, 153, 51, 0.08)' : 'rgba(255, 153, 51, 0.06)',
-                  borderWidth: 1.5,
-                  borderColor: 'rgba(255, 153, 51, 0.35)',
-                  padding: 16,
-                  marginBottom: 16,
-                  borderRadius: 14,
-                }}>
-                  <Text style={{ color: themeMode === 'dark' ? '#FFB366' : '#D46B08', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, lineHeight: 16 }}>
-                    Backend playlists table missing. Saving playlists locally until schema fix is applied.
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {activeCategory === 'music' ? (
+            <View>
+              {/* ── PLAYLISTS SEGMENT ── */}
+              {activeSegment === 'playlists' && (
+                <View>
+                  <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Playlists</Text>
+
+                  {playlistSource === 'local' && (
+                    <View style={{
+                      backgroundColor: themeMode === 'dark' ? 'rgba(255, 153, 51, 0.08)' : 'rgba(255, 153, 51, 0.06)',
+                      borderWidth: 1.5,
+                      borderColor: 'rgba(255, 153, 51, 0.35)',
+                      padding: 16,
+                      marginBottom: 16,
+                      borderRadius: 14,
+                    }}>
+                      <Text style={{ color: themeMode === 'dark' ? '#FFB366' : '#D46B08', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.8, lineHeight: 16 }}>
+                        Backend playlists table missing. Saving playlists locally until schema fix is applied.
+                      </Text>
+                      <TouchableOpacity
+                        onPress={retryPlaylistBackend}
+                        disabled={retryingPlaylists}
+                        activeOpacity={0.8}
+                        style={[
+                          {
+                            marginTop: 12,
+                            alignSelf: 'flex-start',
+                            backgroundColor: '#FF9933',
+                            paddingHorizontal: 16,
+                            paddingVertical: 8,
+                            borderRadius: 10,
+                          },
+                          shadow('0px 4px 10px rgba(255,153,51,0.3)', {
+                            shadowColor: '#FF9933',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 4,
+                            elevation: 3,
+                          })
+                        ]}
+                      >
+                        <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          {retryingPlaylists ? 'Checking...' : 'Retry Backend'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  
+                  <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+                    <View style={[
+                      {
+                        flex: 1,
+                        flexDirection: 'row',
+                        borderWidth: 1.5,
+                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                        backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)',
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        // @ts-ignore
+                        backdropFilter: 'blur(20px)',
+                      },
+                      shadow('0px 4px 12px rgba(0,0,0,0.08)', {
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 6,
+                        elevation: 2,
+                      })
+                    ]}>
+                      <TextInput 
+                        style={{
+                          flex: 1,
+                          backgroundColor: 'transparent',
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          fontWeight: '600',
+                          color: palette.text,
+                          fontSize: 14,
+                          letterSpacing: 0.3,
+                        }}
+                        placeholder="NEW PLAYLIST..."
+                        placeholderTextColor={palette.textMuted}
+                        value={newPlaylistTitle}
+                        onChangeText={setNewPlaylistTitle}
+                        onSubmitEditing={createPlaylist}
+                      />
+                      <TouchableOpacity 
+                        onPress={createPlaylist}
+                        style={{
+                          backgroundColor: palette.accentStrong,
+                          justifyContent: 'center',
+                          paddingHorizontal: 14,
+                        }}
+                      >
+                        <Plus size={16} color={themeMode === 'dark' ? '#0A0A0A' : '#FFF'} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <View style={[
+                      {
+                        flex: 1,
+                        flexDirection: 'row',
+                        borderWidth: 1.5,
+                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                        backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)',
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        // @ts-ignore
+                        backdropFilter: 'blur(20px)',
+                      },
+                      shadow('0px 4px 12px rgba(0,0,0,0.08)', {
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.08,
+                        shadowRadius: 6,
+                        elevation: 2,
+                      })
+                    ]}>
+                      <TextInput 
+                        style={{
+                          flex: 1,
+                          backgroundColor: 'transparent',
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          fontWeight: '600',
+                          color: palette.text,
+                          fontSize: 14,
+                          letterSpacing: 0.3,
+                        }}
+                        placeholder="JOIN CODE (NT-...)"
+                        placeholderTextColor={palette.textMuted}
+                        value={joinCode}
+                        onChangeText={setJoinCode}
+                        onSubmitEditing={joinPlaylistByCode}
+                        autoCapitalize="characters"
+                      />
+                      <TouchableOpacity 
+                        onPress={joinPlaylistByCode}
+                        style={{
+                          backgroundColor: palette.accent,
+                          justifyContent: 'center',
+                          paddingHorizontal: 14,
+                        }}
+                      >
+                        <Users size={16} color="#0A0A0A" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {playlists.map((pl) => (
+                    <View key={pl.id} style={[
+                      { 
+                        backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)', 
+                        borderWidth: 1.5, 
+                        borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', 
+                        borderRadius: 16,
+                        padding: 14, 
+                        marginBottom: 10, 
+                        flexDirection: 'row', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        // @ts-ignore
+                        backdropFilter: 'blur(20px)',
+                      },
+                      shadow('0px 4px 12px rgba(0,0,0,0.06)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 })
+                    ]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: pl.id.startsWith('collab-') ? '#00FF85' : palette.accent, shadowColor: pl.id.startsWith('collab-') ? '#00FF85' : palette.accent, shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: palette.text, fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }} numberOfLines={1}>{pl.title}</Text>
+                          {pl.id.startsWith('collab-') && (
+                            <Text style={{ color: '#00FF85', fontSize: 9, fontWeight: '800', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Collaborative Playlist</Text>
+                          )}
+                        </View>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => sharePlaylist(pl)}
+                        activeOpacity={0.8}
+                        style={{
+                          padding: 8,
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: 'rgba(255, 255, 255, 0.08)',
+                        }}
+                      >
+                        <Share2 size={14} color={palette.textSubtle} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {playlists.length === 0 && (
+                    <View style={{ alignItems: 'center', marginTop: 40 }}>
+                      <Text style={{ color: palette.textMuted, fontWeight: '800', textTransform: 'uppercase', fontSize: 11 }}>No playlists created yet.</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* ── SAVED TRACKS SEGMENT ── */}
+              {activeSegment === 'tracks' && (
+                <View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2 }}>Saved Tracks</Text>
+                    
+                    <TouchableOpacity
+                      onPress={() => setOfflineOnly(!offlineOnly)}
+                      activeOpacity={0.8}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: offlineOnly ? 'rgba(0, 255, 133, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: 1,
+                        borderColor: offlineOnly ? '#00FF85' : 'rgba(255,255,255,0.1)',
+                        borderRadius: 12,
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        gap: 6,
+                      }}
+                    >
+                      <WifiOff size={12} color={offlineOnly ? '#00FF85' : palette.textSubtle} />
+                      <Text style={{ color: offlineOnly ? '#00FF85' : palette.textSubtle, fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {offlineOnly ? 'Offline Only' : 'Show All'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {loading ? (
+                    <ActivityIndicator size="large" color={palette.accentStrong} style={{ marginTop: 24 }} />
+                  ) : (offlineOnly ? savedTracks.filter(t => offlineTracks.includes(t.track_id ?? t.id)) : savedTracks).length > 0 ? (
+                    <View>
+                      {(offlineOnly ? savedTracks.filter(t => offlineTracks.includes(t.track_id ?? t.id)) : savedTracks).map((item) => {
+                        const trackKey = item.track_id ?? item.id;
+                        const isDownloaded = offlineTracks.includes(trackKey);
+                        return (
+                          <TouchableOpacity 
+                            key={item.id} 
+                            onPress={() => playSong(item)}
+                            activeOpacity={0.9} 
+                            style={[
+                              { 
+                                flexDirection: 'row', 
+                                alignItems: 'center', 
+                                borderWidth: 1.5, 
+                                borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', 
+                                borderRadius: 16, 
+                                padding: 12, 
+                                marginBottom: 12, 
+                                backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)', 
+                                // @ts-ignore
+                                backdropFilter: 'blur(20px)',
+                              },
+                              shadow(`0px 6px 16px ${item.color}25`, { shadowColor: item.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 })
+                            ]}
+                          >
+                            <SafeImage uri={item.artwork} style={{ width: 56, height: 56, borderRadius: 12, marginRight: 12 }} />
+                            <View style={{ flex: 1, marginRight: 8 }}>
+                              <Text style={{ color: palette.text, fontWeight: '900', fontSize: 15, textTransform: 'uppercase' }} numberOfLines={1}>{item.title}</Text>
+                              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, marginTop: 2 }}>{item.artist}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => toggleOfflineTrack(trackKey)} style={{ marginRight: 10, padding: 4 }}>
+                              <Download stroke={isDownloaded ? '#00FF85' : palette.textSubtle} fill={isDownloaded ? '#00FF85' : 'transparent'} size={18} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => removeTrack(item.id)} style={{ marginRight: 12, padding: 4 }}>
+                              <Trash2 stroke="#FF6B6B" size={18} />
+                            </TouchableOpacity>
+                            <View style={{ width: 34, height: 34, backgroundColor: item.color, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }}>
+                              <Play stroke="#FFF" fill="#FFF" size={13} style={{ marginLeft: 2 }} />
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 40 }}>
+                      <View style={[
+                        {
+                          width: 80,
+                          height: 80,
+                          backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                          borderWidth: 1.5,
+                          borderColor: 'rgba(0, 212, 255, 0.35)',
+                          borderRadius: 40,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          alignSelf: 'center',
+                          marginBottom: 20,
+                        },
+                        shadow('0px 8px 24px rgba(0, 212, 255, 0.25)', {
+                          shadowColor: '#00D4FF',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.25,
+                          shadowRadius: 10,
+                          elevation: 4,
+                        })
+                      ]}>
+                        <Play stroke="#00D4FF" fill="#00D4FF" size={28} style={{ marginLeft: 4 }} />
+                      </View>
+                      <Text style={{ color: palette.text, fontSize: 22, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -0.5, textAlign: 'center' }}>
+                        {offlineOnly ? 'No offline tracks' : "It's quiet here."}
+                      </Text>
+                      <Text style={{ color: palette.textMuted, fontWeight: '700', textAlign: 'center', marginTop: 8 }}>
+                        {offlineOnly 
+                          ? 'Download tracks to make them available offline.' 
+                          : 'Go to Search to find and save some tracks to your library.'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* ── PREFERRED ARTISTS SEGMENT ── */}
+              {activeSegment === 'artists' && (
+                <View>
+                  <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
+                    Favorite Artists Combo
                   </Text>
+                  <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 20 }}>
+                    Choose creators to compile a personalized round-robin blended combo station!
+                  </Text>
+
+                  {/* Combo Station Action Banner */}
                   <TouchableOpacity
-                    onPress={retryPlaylistBackend}
-                    disabled={retryingPlaylists}
-                    activeOpacity={0.8}
+                    onPress={launchArtistComboStation}
+                    disabled={loadingCombo || selectedArtists.length === 0}
+                    activeOpacity={0.88}
                     style={[
                       {
-                        marginTop: 12,
-                        alignSelf: 'flex-start',
-                        backgroundColor: '#FF9933',
-                        paddingHorizontal: 16,
-                        paddingVertical: 8,
-                        borderRadius: 10,
+                        backgroundColor: selectedArtists.length === 0 ? palette.surface : palette.accentStrong,
+                        borderWidth: 1.5,
+                        borderColor: selectedArtists.length === 0 ? (themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : palette.accentStrong,
+                        borderRadius: 20,
+                        padding: 16,
+                        marginBottom: 24,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        // @ts-ignore
+                        backdropFilter: 'blur(20px)',
                       },
-                      shadow('0px 4px 10px rgba(255,153,51,0.3)', {
-                        shadowColor: '#FF9933',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 4,
-                        elevation: 3,
+                      shadow(selectedArtists.length === 0 ? '0px 4px 12px rgba(0,0,0,0.1)' : `0px 8px 24px ${palette.accentStrong}40`, {
+                        shadowColor: selectedArtists.length === 0 ? '#000' : palette.accentStrong,
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: selectedArtists.length === 0 ? 0.1 : 0.3,
+                        shadowRadius: 10,
+                        elevation: selectedArtists.length === 0 ? 2 : 5,
                       })
                     ]}
                   >
-                    <Text style={{ color: '#0A0A0A', fontWeight: '900', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                      {retryingPlaylists ? 'Checking...' : 'Retry Backend'}
-                    </Text>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <Text style={{ color: selectedArtists.length === 0 ? palette.text : (themeMode === 'dark' ? '#0A0A0A' : '#FFF'), fontWeight: '900', fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {loadingCombo ? 'COMPILING COMBOS...' : 'LAUNCH COMBO STATION 🎚️'}
+                      </Text>
+                      <Text style={{ color: selectedArtists.length === 0 ? palette.textSubtle : (themeMode === 'dark' ? 'rgba(10,10,10,0.72)' : 'rgba(255,255,255,0.75)'), fontWeight: '700', fontSize: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {selectedArtists.length === 0 
+                          ? 'SELECT AT LEAST ONE CREATOR BELOW' 
+                          : `BLENDING HITS FROM ${selectedArtists.length} FAVORITE CREATORS`
+                        }
+                      </Text>
+                    </View>
+                    <View style={{ width: 44, height: 44, backgroundColor: selectedArtists.length === 0 ? (themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)') : (themeMode === 'dark' ? '#0A0A0A' : '#FFF'), borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
+                      {loadingCombo ? (
+                        <ActivityIndicator size="small" color={selectedArtists.length === 0 ? palette.text : palette.accentStrong} />
+                      ) : (
+                        <Users stroke={selectedArtists.length === 0 ? palette.textSubtle : (themeMode === 'dark' ? palette.accentStrong : '#000')} size={18} />
+                      )}
+                    </View>
                   </TouchableOpacity>
+
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
+                    {AVAILABLE_ARTISTS.map((artist) => {
+                      const isSelected = selectedArtists.includes(artist.name);
+                      return (
+                        <TouchableOpacity
+                          key={artist.name}
+                          onPress={() => toggleArtist(artist.name)}
+                          activeOpacity={0.9}
+                          style={[
+                            {
+                              width: '47%',
+                              borderRadius: 24,
+                              borderWidth: 1.5,
+                              borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                              backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.55)' : 'rgba(255,255,255,0.75)',
+                              padding: 16,
+                              alignItems: 'center',
+                              marginBottom: 16,
+                              // @ts-ignore
+                              backdropFilter: 'blur(20px)',
+                            },
+                            shadow(isSelected ? `0px 8px 24px ${palette.accentStrong}25` : '0px 4px 12px rgba(0,0,0,0.08)', {
+                              shadowColor: isSelected ? palette.accentStrong : '#000',
+                              shadowOffset: { width: 0, height: 4 },
+                              shadowOpacity: isSelected ? 0.25 : 0.08,
+                              shadowRadius: 8,
+                              elevation: 3,
+                            })
+                          ]}
+                        >
+                          <View style={{
+                            width: 80,
+                            height: 80,
+                            borderRadius: 40,
+                            borderWidth: 1.5,
+                            borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
+                            overflow: 'hidden',
+                            marginBottom: 12,
+                          }}>
+                            <SafeImage uri={artist.avatar} style={{ width: '100%', height: '100%' }} />
+                          </View>
+                          
+                          <Text style={{ color: palette.text, fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={1}>
+                            {artist.name}
+                          </Text>
+
+                          <View style={{
+                            marginTop: 8,
+                            backgroundColor: isSelected ? palette.accentStrong : 'transparent',
+                            borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'),
+                            borderWidth: 1,
+                            borderRadius: 12,
+                            paddingHorizontal: 10,
+                            paddingVertical: 3,
+                          }}>
+                            <Text style={{
+                              color: isSelected ? '#0A0A0A' : palette.textSubtle,
+                              fontWeight: '800',
+                              fontSize: 9,
+                              textTransform: 'uppercase',
+                              letterSpacing: 0.5,
+                            }}>{isSelected ? 'SELECTED' : 'SELECT'}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
               )}
-              
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
-                <View style={[
-                  {
-                    flex: 1,
-                    flexDirection: 'row',
-                    borderWidth: 1.5,
-                    borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                    backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)',
-                    borderRadius: 16,
-                    overflow: 'hidden',
-                    // @ts-ignore
-                    backdropFilter: 'blur(20px)',
-                  },
-                  shadow('0px 4px 12px rgba(0,0,0,0.08)', {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.08,
-                    shadowRadius: 6,
-                    elevation: 2,
-                  })
-                ]}>
-                  <TextInput 
-                    style={{
-                      flex: 1,
-                      backgroundColor: 'transparent',
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      fontWeight: '600',
-                      color: palette.text,
-                      fontSize: 14,
-                      letterSpacing: 0.3,
-                    }}
-                    placeholder="NEW PLAYLIST..."
-                    placeholderTextColor={palette.textMuted}
-                    value={newPlaylistTitle}
-                    onChangeText={setNewPlaylistTitle}
-                    onSubmitEditing={createPlaylist}
-                  />
-                  <TouchableOpacity 
-                    onPress={createPlaylist}
-                    style={{
-                      backgroundColor: palette.accentStrong,
-                      justifyContent: 'center',
-                      paddingHorizontal: 14,
-                    }}
-                  >
-                    <Plus size={16} color={themeMode === 'dark' ? '#0A0A0A' : '#FFF'} />
-                  </TouchableOpacity>
+
+              {/* Friend Activity Feed */}
+              <View style={{ marginTop: 32, marginBottom: 24 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <UsersRound size={18} color={palette.accentStrong} />
+                  <Text style={{ color: palette.text, fontSize: 18, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>
+                    Friend Activity Live
+                  </Text>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00FF85', marginLeft: 4 }} />
                 </View>
 
-                <View style={[
-                  {
-                    flex: 1,
-                    flexDirection: 'row',
-                    borderWidth: 1.5,
-                    borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-                    backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)',
-                    borderRadius: 16,
-                    overflow: 'hidden',
-                    // @ts-ignore
-                    backdropFilter: 'blur(20px)',
-                  },
-                  shadow('0px 4px 12px rgba(0,0,0,0.08)', {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.08,
-                    shadowRadius: 6,
-                    elevation: 2,
-                  })
-                ]}>
-                  <TextInput 
-                    style={{
-                      flex: 1,
-                      backgroundColor: 'transparent',
-                      paddingHorizontal: 16,
-                      paddingVertical: 12,
-                      fontWeight: '600',
-                      color: palette.text,
-                      fontSize: 14,
-                      letterSpacing: 0.3,
-                    }}
-                    placeholder="JOIN CODE (NT-...)"
-                    placeholderTextColor={palette.textMuted}
-                    value={joinCode}
-                    onChangeText={setJoinCode}
-                    onSubmitEditing={joinPlaylistByCode}
-                    autoCapitalize="characters"
-                  />
-                  <TouchableOpacity 
-                    onPress={joinPlaylistByCode}
-                    style={{
-                      backgroundColor: palette.accent,
-                      justifyContent: 'center',
-                      paddingHorizontal: 14,
-                    }}
+                {MOCK_FRIENDS_ACTIVITY.map((friend) => (
+                  <View
+                    key={friend.id}
+                    style={[
+                      {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: themeMode === 'dark' ? 'rgba(28, 28, 30, 0.45)' : 'rgba(255, 255, 255, 0.65)',
+                        borderWidth: 1.5,
+                        borderColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+                        borderRadius: 16,
+                        padding: 12,
+                        marginBottom: 12,
+                        // @ts-ignore
+                        backdropFilter: 'blur(20px)',
+                      },
+                      shadow('0px 4px 12px rgba(0,0,0,0.06)', {
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.06,
+                        shadowRadius: 4,
+                        elevation: 2,
+                      })
+                    ]}
                   >
-                    <Users size={16} color="#0A0A0A" />
-                  </TouchableOpacity>
-                </View>
-              </View>
+                    <View style={{ position: 'relative' }}>
+                      <Image
+                        source={{ uri: friend.avatar }}
+                        style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: friend.activityColor }}
+                      />
+                      {friend.isPlaying && (
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          right: 0,
+                          width: 12,
+                          height: 12,
+                          borderRadius: 6,
+                          backgroundColor: '#00FF85',
+                          borderWidth: 2,
+                          borderColor: themeMode === 'dark' ? '#0C0C0E' : '#FFF'
+                        }} />
+                      )}
+                    </View>
 
-              {playlists.map((pl) => (
-                <View key={pl.id} style={[
-                  { 
-                    backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.65)', 
-                    borderWidth: 1.5, 
-                    borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', 
-                    borderRadius: 16,
-                    padding: 14, 
-                    marginBottom: 10, 
-                    flexDirection: 'row', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    // @ts-ignore
-                    backdropFilter: 'blur(20px)',
-                  },
-                  shadow('0px 4px 12px rgba(0,0,0,0.06)', { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 })
-                ]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: pl.id.startsWith('collab-') ? '#00FF85' : palette.accent, shadowColor: pl.id.startsWith('collab-') ? '#00FF85' : palette.accent, shadowOpacity: 0.8, shadowRadius: 3, elevation: 1 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: palette.text, fontSize: 15, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.5 }} numberOfLines={1}>{pl.title}</Text>
-                      {pl.id.startsWith('collab-') && (
-                        <Text style={{ color: '#00FF85', fontSize: 9, fontWeight: '800', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}>Collaborative Playlist</Text>
+                    <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                      <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
+                        {friend.name}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                        <Text style={{ color: palette.textSubtle, fontSize: 11, fontWeight: '600' }} numberOfLines={1}>
+                          {friend.isPlaying ? 'Listening to ' : 'Last played '}
+                          <Text style={{ color: palette.accentStrong, fontWeight: '700' }}>{friend.trackTitle}</Text> • {friend.artist}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
+                      <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>
+                        {friend.timeAgo}
+                      </Text>
+                      {friend.isPlaying && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            Alert.alert(
+                              'Join Session',
+                              `Do you want to sync playback with ${friend.name} and listen to "${friend.trackTitle}"?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Join', onPress: () => {
+                                  const trackData = {
+                                    id: `friend-${friend.id}`,
+                                    title: friend.trackTitle,
+                                    artist: friend.artist,
+                                    artwork: friend.avatar,
+                                    color: friend.activityColor
+                                  };
+                                  setCurrentTrack(trackData);
+                                  navigation.navigate('Player');
+                                }}
+                              ]
+                            );
+                          }}
+                          activeOpacity={0.8}
+                          style={{
+                            backgroundColor: `${friend.activityColor}15`,
+                            borderWidth: 1,
+                            borderColor: friend.activityColor,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 10,
+                          }}
+                        >
+                          <Text style={{ color: friend.activityColor, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                            JOIN
+                          </Text>
+                        </TouchableOpacity>
                       )}
                     </View>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => sharePlaylist(pl)}
-                    activeOpacity={0.8}
-                    style={{
-                      padding: 8,
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255, 255, 255, 0.08)',
-                    }}
-                  >
-                    <Share2 size={14} color={palette.textSubtle} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {playlists.length === 0 && (
-                <View style={{ alignItems: 'center', marginTop: 40 }}>
-                  <Text style={{ color: palette.textMuted, fontWeight: '800', textTransform: 'uppercase', fontSize: 11 }}>No playlists created yet.</Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* ── SAVED TRACKS SEGMENT ── */}
-          {activeSegment === 'tracks' && (
-            <View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2 }}>Saved Tracks</Text>
-                
-                <TouchableOpacity
-                  onPress={() => setOfflineOnly(!offlineOnly)}
-                  activeOpacity={0.8}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: offlineOnly ? 'rgba(0, 255, 133, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-                    borderWidth: 1,
-                    borderColor: offlineOnly ? '#00FF85' : 'rgba(255,255,255,0.1)',
-                    borderRadius: 12,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    gap: 6,
-                  }}
-                >
-                  <WifiOff size={12} color={offlineOnly ? '#00FF85' : palette.textSubtle} />
-                  <Text style={{ color: offlineOnly ? '#00FF85' : palette.textSubtle, fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {offlineOnly ? 'Offline Only' : 'Show All'}
-                  </Text>
-                </TouchableOpacity>
+                ))}
               </View>
-              
-              {loading ? (
-                <ActivityIndicator size="large" color={palette.accentStrong} style={{ marginTop: 24 }} />
-              ) : (offlineOnly ? savedTracks.filter(t => offlineTracks.includes(t.track_id ?? t.id)) : savedTracks).length > 0 ? (
-                <View>
-                  {(offlineOnly ? savedTracks.filter(t => offlineTracks.includes(t.track_id ?? t.id)) : savedTracks).map((item) => {
-                    const trackKey = item.track_id ?? item.id;
-                    const isDownloaded = offlineTracks.includes(trackKey);
-                    return (
-                      <TouchableOpacity 
-                        key={item.id} 
-                        onPress={() => playSong(item)}
-                        activeOpacity={0.9} 
-                        style={[
-                          { 
-                            flexDirection: 'row', 
-                            alignItems: 'center', 
-                            borderWidth: 1.5, 
-                            borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', 
-                            borderRadius: 16, 
-                            padding: 12, 
-                            marginBottom: 12, 
-                            backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)', 
-                            // @ts-ignore
-                            backdropFilter: 'blur(20px)',
-                          },
-                          shadow(`0px 6px 16px ${item.color}25`, { shadowColor: item.color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 })
-                        ]}
-                      >
-                        <SafeImage uri={item.artwork} style={{ width: 56, height: 56, borderRadius: 12, marginRight: 12 }} />
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                          <Text style={{ color: palette.text, fontWeight: '900', fontSize: 15, textTransform: 'uppercase' }} numberOfLines={1}>{item.title}</Text>
-                          <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, marginTop: 2 }}>{item.artist}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => toggleOfflineTrack(trackKey)} style={{ marginRight: 10, padding: 4 }}>
-                          <Download stroke={isDownloaded ? '#00FF85' : palette.textSubtle} fill={isDownloaded ? '#00FF85' : 'transparent'} size={18} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => removeTrack(item.id)} style={{ marginRight: 12, padding: 4 }}>
-                          <Trash2 stroke="#FF6B6B" size={18} />
-                        </TouchableOpacity>
-                        <View style={{ width: 34, height: 34, backgroundColor: item.color, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }}>
-                          <Play stroke="#FFF" fill="#FFF" size={13} style={{ marginLeft: 2 }} />
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 40 }}>
-                  <View style={[
-                    {
-                      width: 80,
-                      height: 80,
-                      backgroundColor: 'rgba(0, 212, 255, 0.1)',
-                      borderWidth: 1.5,
-                      borderColor: 'rgba(0, 212, 255, 0.35)',
-                      borderRadius: 40,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      alignSelf: 'center',
-                      marginBottom: 20,
-                    },
-                    shadow('0px 8px 24px rgba(0, 212, 255, 0.25)', {
-                      shadowColor: '#00D4FF',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 10,
-                      elevation: 4,
-                    })
-                  ]}>
-                    <Play stroke="#00D4FF" fill="#00D4FF" size={28} style={{ marginLeft: 4 }} />
-                  </View>
-                  <Text style={{ color: palette.text, fontSize: 22, fontWeight: '900', textTransform: 'uppercase', letterSpacing: -0.5, textAlign: 'center' }}>
-                    {offlineOnly ? 'No offline tracks' : "It's quiet here."}
-                  </Text>
-                  <Text style={{ color: palette.textMuted, fontWeight: '700', textAlign: 'center', marginTop: 8 }}>
-                    {offlineOnly 
-                      ? 'Download tracks to make them available offline.' 
-                      : 'Go to Search to find and save some tracks to your library.'}
-                  </Text>
-                </View>
-              )}
             </View>
-          )}
-
-          {/* ── PREFERRED ARTISTS SEGMENT ── */}
-          {activeSegment === 'artists' && (
+          ) : (
             <View>
-              <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
-                Favorite Artists Combo
-              </Text>
-              <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 20 }}>
-                Choose creators to compile a personalized round-robin blended combo station!
-              </Text>
-
-              {/* Combo Station Action Banner */}
-              <TouchableOpacity
-                onPress={launchArtistComboStation}
-                disabled={loadingCombo || selectedArtists.length === 0}
-                activeOpacity={0.88}
-                style={[
-                  {
-                    backgroundColor: selectedArtists.length === 0 ? palette.surface : palette.accentStrong,
-                    borderWidth: 1.5,
-                    borderColor: selectedArtists.length === 0 ? (themeMode === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)') : palette.accentStrong,
-                    borderRadius: 20,
-                    padding: 16,
-                    marginBottom: 24,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    // @ts-ignore
-                    backdropFilter: 'blur(20px)',
-                  },
-                  shadow(selectedArtists.length === 0 ? '0px 4px 12px rgba(0,0,0,0.1)' : `0px 8px 24px ${palette.accentStrong}40`, {
-                    shadowColor: selectedArtists.length === 0 ? '#000' : palette.accentStrong,
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: selectedArtists.length === 0 ? 0.1 : 0.3,
-                    shadowRadius: 10,
-                    elevation: selectedArtists.length === 0 ? 2 : 5,
-                  })
-                ]}
-              >
-                <View style={{ flex: 1, paddingRight: 12 }}>
-                  <Text style={{ color: selectedArtists.length === 0 ? palette.text : (themeMode === 'dark' ? '#0A0A0A' : '#FFF'), fontWeight: '900', fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {loadingCombo ? 'COMPILING COMBOS...' : 'LAUNCH COMBO STATION 🎚️'}
-                  </Text>
-                  <Text style={{ color: selectedArtists.length === 0 ? palette.textSubtle : (themeMode === 'dark' ? 'rgba(10,10,10,0.72)' : 'rgba(255,255,255,0.75)'), fontWeight: '700', fontSize: 10, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {selectedArtists.length === 0 
-                      ? 'SELECT AT LEAST ONE CREATOR BELOW' 
-                      : `BLENDING HITS FROM ${selectedArtists.length} FAVORITE CREATORS`
-                    }
-                  </Text>
-                </View>
-                <View style={{ width: 44, height: 44, backgroundColor: selectedArtists.length === 0 ? (themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)') : (themeMode === 'dark' ? '#0A0A0A' : '#FFF'), borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
-                  {loadingCombo ? (
-                    <ActivityIndicator size="small" color={selectedArtists.length === 0 ? palette.text : palette.accentStrong} />
-                  ) : (
-                    <Users stroke={selectedArtists.length === 0 ? palette.textSubtle : (themeMode === 'dark' ? palette.accentStrong : '#000')} size={18} />
-                  )}
-                </View>
-              </TouchableOpacity>
-
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
-                {AVAILABLE_ARTISTS.map((artist) => {
-                  const isSelected = selectedArtists.includes(artist.name);
-                  return (
-                    <TouchableOpacity
-                      key={artist.name}
-                      onPress={() => toggleArtist(artist.name)}
-                      activeOpacity={0.9}
+              {/* ── PODCAST SHOWS SEGMENT ── */}
+              {activePodcastSegment === 'shows' && (
+                <View>
+                  <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Subscribed Shows</Text>
+                  
+                  {SUBSCRIBED_PODCASTS.map((podcast) => (
+                    <View
+                      key={podcast.id}
                       style={[
                         {
-                          width: '47%',
-                          borderRadius: 24,
+                          flexDirection: 'row',
                           borderWidth: 1.5,
-                          borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
-                          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.55)' : 'rgba(255,255,255,0.75)',
-                          padding: 16,
-                          alignItems: 'center',
-                          marginBottom: 16,
+                          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                          borderRadius: 16,
+                          padding: 12,
+                          marginBottom: 12,
+                          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
                           // @ts-ignore
                           backdropFilter: 'blur(20px)',
                         },
-                        shadow(isSelected ? `0px 8px 24px ${palette.accentStrong}25` : '0px 4px 12px rgba(0,0,0,0.08)', {
-                          shadowColor: isSelected ? palette.accentStrong : '#000',
+                        shadow(`0px 6px 16px ${podcast.color}20`, {
+                          shadowColor: podcast.color,
                           shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: isSelected ? 0.25 : 0.08,
+                          shadowOpacity: 0.15,
                           shadowRadius: 8,
-                          elevation: 3,
-                        })
+                          elevation: 2,
+                        }),
                       ]}
                     >
-                      <View style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 40,
-                        borderWidth: 1.5,
-                        borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'),
-                        overflow: 'hidden',
-                        marginBottom: 12,
-                      }}>
-                        <SafeImage uri={artist.avatar} style={{ width: '100%', height: '100%' }} />
+                      <Image
+                        source={{ uri: podcast.artwork }}
+                        style={{ width: 80, height: 80, borderRadius: 12, marginRight: 14 }}
+                      />
+                      <View style={{ flex: 1, justifyContent: 'center' }}>
+                        <Text style={{ color: palette.text, fontWeight: '900', fontSize: 16, textTransform: 'uppercase' }}>{podcast.title}</Text>
+                        <Text style={{ color: palette.accentStrong, fontWeight: '700', fontSize: 12, marginTop: 2 }}>BY {podcast.publisher.toUpperCase()}</Text>
+                        <Text style={{ color: palette.textSubtle, fontSize: 11, marginTop: 4 }} numberOfLines={2}>{podcast.description}</Text>
                       </View>
-                      
-                      <Text style={{ color: palette.text, fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' }} numberOfLines={1}>
-                        {artist.name}
-                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
 
-                      <View style={{
-                        marginTop: 8,
-                        backgroundColor: isSelected ? palette.accentStrong : 'transparent',
-                        borderColor: isSelected ? palette.accentStrong : (themeMode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'),
-                        borderWidth: 1,
-                        borderRadius: 12,
-                        paddingHorizontal: 10,
-                        paddingVertical: 3,
-                      }}>
-                        <Text style={{
-                          color: isSelected ? '#0A0A0A' : palette.textSubtle,
-                          fontWeight: '800',
-                          fontSize: 9,
-                          textTransform: 'uppercase',
-                          letterSpacing: 0.5,
-                        }}>{isSelected ? 'SELECTED' : 'SELECT'}</Text>
+              {/* ── PODCAST EPISODES SEGMENT ── */}
+              {activePodcastSegment === 'episodes' && (
+                <View>
+                  <Text style={{ color: palette.accentStrong, fontWeight: 'bold', fontSize: 20, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Saved Episodes</Text>
+                  
+                  {SAVED_EPISODES.map((episode) => (
+                    <TouchableOpacity
+                      key={episode.id}
+                      onPress={() => {
+                        if (jamConnected && jamRole === 'guest') {
+                          Alert.alert('Jam Mode Active', 'Only the host can change queue and tracks during a Jam session.');
+                          return;
+                        }
+                        const trackData = {
+                          id: episode.track_id,
+                          title: episode.title,
+                          artist: episode.podcastTitle,
+                          artwork: episode.artwork,
+                          color: episode.color,
+                        };
+                        setQueue([trackData]);
+                        setCurrentTrack(trackData);
+                        navigation.navigate('Player');
+                      }}
+                      activeOpacity={0.9}
+                      style={[
+                        {
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          borderWidth: 1.5,
+                          borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                          borderRadius: 16,
+                          padding: 12,
+                          marginBottom: 12,
+                          backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.5)' : 'rgba(255,255,255,0.7)',
+                          // @ts-ignore
+                          backdropFilter: 'blur(20px)',
+                        },
+                        shadow(`0px 6px 16px ${episode.color}25`, {
+                          shadowColor: episode.color,
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 8,
+                          elevation: 3,
+                        }),
+                      ]}
+                    >
+                      <Image
+                        source={{ uri: episode.artwork }}
+                        style={{ width: 56, height: 56, borderRadius: 12, marginRight: 12 }}
+                      />
+                      <View style={{ flex: 1, marginRight: 8 }}>
+                        <Text style={{ color: palette.text, fontWeight: '900', fontSize: 14, textTransform: 'uppercase' }} numberOfLines={1}>
+                          {episode.title}
+                        </Text>
+                        <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, marginTop: 2 }}>
+                          {episode.podcastTitle} • {episode.publishedAt}
+                        </Text>
+                        <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '800', marginTop: 4, textTransform: 'uppercase' }}>
+                          {episode.duration}
+                        </Text>
+                      </View>
+                      <View style={{ width: 34, height: 34, backgroundColor: episode.color, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }}>
+                        <Play stroke="#FFF" fill="#FFF" size={13} style={{ marginLeft: 2 }} />
                       </View>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
-          {/* Friend Activity Feed */}
-          <View style={{ marginTop: 32, marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <UsersRound size={18} color={palette.accentStrong} />
-              <Text style={{ color: palette.text, fontSize: 18, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 }}>
-                Friend Activity Live
-              </Text>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#00FF85', marginLeft: 4 }} />
-            </View>
-
-            {MOCK_FRIENDS_ACTIVITY.map((friend) => (
-              <View
-                key={friend.id}
-                style={[
-                  {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: themeMode === 'dark' ? 'rgba(28, 28, 30, 0.45)' : 'rgba(255, 255, 255, 0.65)',
-                    borderWidth: 1.5,
-                    borderColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
-                    borderRadius: 16,
-                    padding: 12,
-                    marginBottom: 12,
-                    // @ts-ignore
-                    backdropFilter: 'blur(20px)',
-                  },
-                  shadow('0px 4px 12px rgba(0,0,0,0.06)', {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 4,
-                    elevation: 2,
-                  })
-                ]}
-              >
-                <View style={{ position: 'relative' }}>
-                  <Image
-                    source={{ uri: friend.avatar }}
-                    style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: friend.activityColor }}
-                  />
-                  {friend.isPlaying && (
-                    <View style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      right: 0,
-                      width: 12,
-                      height: 12,
-                      borderRadius: 6,
-                      backgroundColor: '#00FF85',
-                      borderWidth: 2,
-                      borderColor: themeMode === 'dark' ? '#0C0C0E' : '#FFF'
-                    }} />
-                  )}
-                </View>
-
-                <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
-                  <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
-                    {friend.name}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                    <Text style={{ color: palette.textSubtle, fontSize: 11, fontWeight: '600' }} numberOfLines={1}>
-                      {friend.isPlaying ? 'Listening to ' : 'Last played '}
-                      <Text style={{ color: palette.accentStrong, fontWeight: '700' }}>{friend.trackTitle}</Text> • {friend.artist}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={{ alignItems: 'flex-end', justifyContent: 'center' }}>
-                  <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '700', marginBottom: 4 }}>
-                    {friend.timeAgo}
-                  </Text>
-                  {friend.isPlaying && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        Alert.alert(
-                          'Join Session',
-                          `Do you want to sync playback with ${friend.name} and listen to "${friend.trackTitle}"?`,
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Join', onPress: () => {
-                              const trackData = {
-                                id: `friend-${friend.id}`,
-                                title: friend.trackTitle,
-                                artist: friend.artist,
-                                artwork: friend.avatar,
-                                color: friend.activityColor
-                              };
-                              setCurrentTrack(trackData);
-                              navigation.navigate('Player');
-                            }}
-                          ]
-                        );
-                      }}
-                      activeOpacity={0.8}
-                      style={{
-                        backgroundColor: `${friend.activityColor}15`,
-                        borderWidth: 1,
-                        borderColor: friend.activityColor,
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 10,
-                      }}
-                    >
-                      <Text style={{ color: friend.activityColor, fontSize: 9, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 0.3 }}>
-                        JOIN
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
           
           <View style={{ height: 200 }} />
         </ScrollView>

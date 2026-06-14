@@ -315,7 +315,7 @@ const Tab = createBottomTabNavigator();
 function MobileTabs() {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const isDark = themeMode === 'dark';
-  const shellBackground = isDark ? '#050506' : '#F8F9FA';
+  const shellBackground = isDark ? '#0A0A0F' : '#F8F9FA';
   const palette = getThemePalette(themeMode);
   const accentColor = palette.accent;
 
@@ -411,7 +411,7 @@ function MainTabs({ navigation }: any) {
   const isDesktop = width >= 1024;
   
   return (
-    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: isDark ? '#050506' : '#F8F9FA' }}>
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: isDark ? '#0A0A0F' : '#F8F9FA' }}>
       {/* Sidebar (Desktop) or Rail (Tablet) */}
       <View style={{
         width: isDesktop ? 240 : 80,
@@ -569,7 +569,7 @@ function MainTabs({ navigation }: any) {
       </View>
 
       {/* Main Content Area */}
-      <View style={{ flex: 1, backgroundColor: isDark ? '#050506' : '#F8F9FA' }}>
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0A0A0F' : '#F8F9FA' }}>
         {activeTab === 'home' && <HomeScreen navigation={navigation} />}
         {activeTab === 'search' && <SearchScreen navigation={navigation} />}
         {activeTab === 'library' && <LibraryScreen navigation={navigation} />}
@@ -767,7 +767,7 @@ export default function App() {
   const [isAppUnlocked, setIsAppUnlocked] = React.useState(false);
 
   const isDark = themeMode === 'dark';
-  const shellBackground = isDark ? '#050506' : '#F8F9FA';
+  const shellBackground = isDark ? '#0A0A0F' : '#F8F9FA';
 
   React.useEffect(() => {
     loadPreferences();
@@ -842,18 +842,18 @@ export default function App() {
 
   if (isBiometricLocked && !isAppUnlocked) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#050506', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: '#0A0A0F', alignItems: 'center', justifyContent: 'center' }}>
         <View style={{
           backgroundColor: 'rgba(12, 12, 14, 0.75)',
           borderWidth: 1.5,
-          borderColor: 'rgba(212, 175, 55, 0.2)',
+          borderColor: 'rgba(255, 77, 109, 0.2)',
           borderRadius: 28,
           padding: 32,
           width: '90%',
           maxWidth: 360,
           alignItems: 'center',
         }}>
-          <Lock stroke="#D4AF37" size={48} style={{ marginBottom: 20 }} />
+          <Lock stroke="#FF4D6D" size={48} style={{ marginBottom: 20 }} />
           <Text style={{ color: '#E2E8F0', fontWeight: '900', fontSize: 18, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
             NEOTUNES SECURED
           </Text>
@@ -869,7 +869,7 @@ export default function App() {
             }}
             activeOpacity={0.8}
             style={{
-              backgroundColor: '#D4AF37',
+              backgroundColor: '#FF4D6D',
               paddingVertical: 14,
               paddingHorizontal: 24,
               borderRadius: 16,
@@ -877,7 +877,7 @@ export default function App() {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: '#050506', fontWeight: '900', fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+            <Text style={{ color: '#0A0A0F', fontWeight: '900', fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' }}>
               UNLOCK APP
             </Text>
           </TouchableOpacity>

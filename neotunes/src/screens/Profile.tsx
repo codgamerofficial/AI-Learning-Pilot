@@ -7,7 +7,8 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming,
   withSequence, Easing, FadeInDown, FadeInRight,
 } from 'react-native-reanimated';
-import { LogOut, Music, Clock, Trash2, RotateCcw, Sun, Moon, Shield, Palette, Headphones, Zap, Bell, BellOff, Volume2 } from 'lucide-react-native';
+import { LogOut, Music, Clock, Trash2, RotateCcw, Sun, Moon, Shield, Palette, Headphones, Zap, Bell, BellOff, Volume2, Download, HelpCircle } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
 import { useRecentStore } from '../store/recentStore';
@@ -17,6 +18,29 @@ import { shadow } from '../lib/shadow';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { getThemePalette } from '../lib/themePalette';
 import { usePlayerStore } from '../store/playerStore';
+
+const FAQ_ITEMS = [
+  {
+    question: "How does background playback work?",
+    answer: "NeoTunes uses a background audio foreground service to ensure your streams continue playing even when the app is minimized, the screen is locked, or you switch to other apps. Keep background permissions enabled in your OS settings."
+  },
+  {
+    question: "What is the NeoMix AI Co-Pilot?",
+    answer: "NeoMix uses natural language processing to curate custom playlists. Just type what you're feeling (e.g., 'driving in rain' or 'gym pump up') on the Home screen and the AI will assemble the perfect track sequence."
+  },
+  {
+    question: "How do I download songs for offline playback?",
+    answer: "Go to your Saved Tracks segment in My Library, and tap the download icon next to any song. A green checkmark indicates that the song is cached locally and available in Offline Mode."
+  },
+  {
+    question: "How does headphone auto-detection work?",
+    answer: "When you connect a Bluetooth headphone, NeoTunes automatically identifies the brand and applies custom Bose, Sony, or JBL equalization profiles to maximize soundstage and detail."
+  },
+  {
+    question: "How do I create or join a Jam session?",
+    answer: "Open the player and tap the 'Start Jam' button. You will receive a unique 6-digit code. Share this code with friends. They can enter it in their player to listen together in real-time."
+  }
+];
 
 export default function ProfileScreen() {
   const { user } = useAuthStore();
@@ -31,6 +55,41 @@ export default function ProfileScreen() {
     loadPreferences, resetStore: resetPreferencesStore,
   } = usePreferencesStore();
   const [draftDisplayName, setDraftDisplayName] = useState('');
+  const [downloadQuality, setDownloadQuality] = useState<'sd' | 'hd'>('hd');
+  const [dataSaverEnabled, setDataSaverEnabled] = useState(false);
+  const [expandedFaqIndex, setExpandedFaqIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const loadDownloadPrefs = async () => {
+      try {
+        const dq = await AsyncStorage.getItem('neotunes:downloadQuality');
+        if (dq === 'sd' || dq === 'hd') setDownloadQuality(dq);
+        const ds = await AsyncStorage.getItem('neotunes:dataSaver');
+        if (ds !== null) setDataSaverEnabled(ds === 'true');
+      } catch {
+        // ignore
+      }
+    };
+    loadDownloadPrefs();
+  }, []);
+
+  const toggleDownloadQuality = async () => {
+    const nextQuality = downloadQuality === 'sd' ? 'hd' : 'sd';
+    setDownloadQuality(nextQuality);
+    try {
+      await AsyncStorage.setItem('neotunes:downloadQuality', nextQuality);
+    } catch {}
+    Alert.alert('Download Quality', `Switched download quality to ${nextQuality.toUpperCase()}.`);
+  };
+
+  const toggleDataSaver = async () => {
+    const nextVal = !dataSaverEnabled;
+    setDataSaverEnabled(nextVal);
+    try {
+      await AsyncStorage.setItem('neotunes:dataSaver', String(nextVal));
+    } catch {}
+    Alert.alert('Data Saver', nextVal ? 'Data saver enabled. Audio streams will optimize for bandwidth.' : 'Data saver disabled.');
+  };
 
   useEffect(() => {
     loadPreferences();
@@ -637,6 +696,24 @@ export default function ProfileScreen() {
         />
 
         <ActionButton
+          icon={<Download stroke={downloadQuality === 'hd' ? '#00FF85' : palette.textSubtle} size={20} />}
+          label="Download Quality"
+          onPress={toggleDownloadQuality}
+          color={downloadQuality === 'hd' ? '#00FF85' : palette.textMuted}
+          badge={downloadQuality.toUpperCase()}
+          delay={330}
+        />
+
+        <ActionButton
+          icon={<Zap stroke={dataSaverEnabled ? '#FFB830' : palette.textSubtle} size={20} />}
+          label="Data Saver"
+          onPress={toggleDataSaver}
+          color={dataSaverEnabled ? '#FFB830' : palette.textMuted}
+          badge={dataSaverEnabled ? 'ON' : 'OFF'}
+          delay={340}
+        />
+
+        <ActionButton
           icon={notificationsEnabled
             ? <Bell stroke="#00FF85" size={20} />
             : <BellOff stroke="#FF6B6B" size={20} />
@@ -724,6 +801,67 @@ export default function ProfileScreen() {
           color="#FF9933"
           delay={425}
         />
+
+        {/* FAQ / Support Section */}
+        <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12, marginTop: 20 }}>
+          FAQ & Support
+        </Text>
+
+        <GlassCard delay={450}>
+          {FAQ_ITEMS.map((faq, index) => {
+            const isExpanded = expandedFaqIndex === index;
+            return (
+              <View
+                key={index}
+                style={{
+                  borderBottomWidth: index === FAQ_ITEMS.length - 1 ? 0 : 1.2,
+                  borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                  paddingVertical: 12,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => setExpandedFaqIndex(isExpanded ? null : index)}
+                  activeOpacity={0.8}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    color: palette.text,
+                    fontWeight: '700',
+                    fontSize: 13,
+                    flex: 1,
+                    paddingRight: 12,
+                    letterSpacing: 0.2,
+                  }}>
+                    {faq.question}
+                  </Text>
+                  <Text style={{
+                    color: palette.accentStrong,
+                    fontWeight: '900',
+                    fontSize: 16,
+                  }}>
+                    {isExpanded ? '−' : '+'}
+                  </Text>
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <Text style={{
+                    color: palette.textSubtle,
+                    fontSize: 12,
+                    lineHeight: 18,
+                    marginTop: 8,
+                    fontWeight: '600',
+                  }}>
+                    {faq.answer}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </GlassCard>
 
         {/* Sign Out */}
         <Animated.View entering={FadeInDown.delay(475).springify()}>

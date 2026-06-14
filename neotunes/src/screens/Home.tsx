@@ -256,8 +256,25 @@ const ARTIST_SPOTLIGHT = {
 const COMMUNITY_PICKS = [
   { id: 'cp-1', title: 'Kun Faya Kun', artist: 'A.R. Rahman, Javed Ali, Mohit Chauhan', artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80', color: '#7B61FF', searchQuery: 'Kun Faya Kun Rockstar official audio' },
   { id: 'cp-2', title: 'Fix You', artist: 'Coldplay', artwork: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&q=80', color: '#00D4FF', searchQuery: 'Coldplay Fix You official audio' },
-  { id: 'cp-3', title: 'Kabira', artist: 'Pritam, Tochi Raina, Rekha Bhardwaj', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#D4AF37', searchQuery: 'Kabira Yeh Jawaani Hai Deewani official audio' },
+  { id: 'cp-3', title: 'Kabira', artist: 'Pritam, Tochi Raina, Rekha Bhardwaj', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FF4D6D', searchQuery: 'Kabira Yeh Jawaani Hai Deewani official audio' },
 ];
+
+const REGIONAL_CHARTS = [
+  { id: 'rc-punjab', title: 'Top 50 Punjab', artist: 'Trending Punjabi Hits', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FFB830', searchQuery: 'AP Dhillon Diljit Dosanjh Punjabi hit songs latest' },
+  { id: 'rc-maharashtra', title: 'Top 50 Maharashtra', artist: 'Marathi & Bollywood Crossover', artwork: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&q=80', color: '#FF4D6D', searchQuery: 'Marathi top popular songs hit' },
+  { id: 'rc-tamil', title: 'Top 50 Tamil Nadu', artist: 'Kollywood Beats', artwork: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&q=80', color: '#00D4FF', searchQuery: 'Anirudh AR Rahman Tamil hit songs' }
+];
+
+const isVerifiedArtist = (name: string): boolean => {
+  const verifiedList = [
+    'arijit', 'rahman', 'diljit', 'pritam', 'dhillon', 'ghoshal', 
+    'coldplay', 'weeknd', 'daft punk', 'sheeran', 'dua lipa', 
+    'taylor swift', 'styles', 'cyrus', 'bieber', 'laroi', 'javed ali',
+    'mohit chauhan', 'rekha bhardwaj', 'tochi raina'
+  ];
+  const lower = name.toLowerCase();
+  return verifiedList.some(v => lower.includes(v));
+};
 
 const TOP_CHARTS_TRACKS: Track[] = [
   {
@@ -1281,7 +1298,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#00FF85', shadowColor: '#00FF85', shadowOpacity: 0.8, shadowRadius: 4, elevation: 2 }} />
                   <Text style={{ color: palette.text, fontWeight: '900', fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                    AI VIBE CO-PILOT
+                    NEOMIX AI CO-PILOT
                   </Text>
                 </View>
                 <View style={{
@@ -1316,7 +1333,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               }}>
                 <Search stroke={palette.textSubtle} size={18} style={{ marginRight: 10 }} />
                 <TextInput
-                  placeholder="Ask Magic DJ to synthesize a vibe..."
+                  placeholder="I'm feeling energetic for a workout..."
                   placeholderTextColor={themeMode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.4)'}
                   value={aiPrompt}
                   onChangeText={setAiPrompt}
@@ -1857,6 +1874,120 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </ScrollView>
         </View>
 
+        {/* ── REGIONAL STATE CHARTS ── */}
+        <View style={{ marginTop: 8, marginBottom: 26 }}>
+          <Text style={{ color: palette.accent, fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+            Regional State Charts
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingVertical: 4 }}>
+            {REGIONAL_CHARTS.map((chart) => {
+              const isCurrentLoading = loadingCarouselId === chart.id;
+              return (
+                <TouchableOpacity
+                  key={chart.id}
+                  onPress={async () => {
+                    if (loadingCarouselId) return;
+                    setLoadingCarouselId(chart.id);
+                    try {
+                      const tracks = await fetchSearch(chart.searchQuery, 'youtube');
+                      if (tracks && tracks.length > 0) {
+                        const prepared = tracks.map((t: any, idx: number) => idx === 0 ? {
+                          ...t,
+                          title: chart.title,
+                          artist: chart.artist,
+                          artwork: chart.artwork,
+                          color: chart.color
+                        } : t);
+                        playSong(prepared[0], prepared, 'fusion');
+                      } else {
+                        const fallbackTrack: Track = {
+                          id: chart.id,
+                          title: chart.title,
+                          artist: chart.artist,
+                          artwork: chart.artwork,
+                          color: chart.color,
+                          searchQuery: chart.searchQuery,
+                        };
+                        playSong(fallbackTrack, [fallbackTrack], 'fusion');
+                      }
+                    } catch (e) {
+                      const fallbackTrack: Track = {
+                        id: chart.id,
+                        title: chart.title,
+                        artist: chart.artist,
+                        artwork: chart.artwork,
+                        color: chart.color,
+                        searchQuery: chart.searchQuery,
+                      };
+                      playSong(fallbackTrack, [fallbackTrack], 'fusion');
+                    } finally {
+                      setLoadingCarouselId(null);
+                    }
+                  }}
+                  activeOpacity={0.88}
+                  style={[
+                    {
+                      width: 140,
+                      marginRight: 16,
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      borderColor: themeMode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                      backgroundColor: themeMode === 'dark' ? 'rgba(28,28,30,0.45)' : 'rgba(255,255,255,0.7)',
+                      padding: 10,
+                      alignItems: 'center',
+                    },
+                    shadow(`0px 6px 14px ${chart.color}15`, {
+                      shadowColor: chart.color,
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.2,
+                      shadowRadius: 8,
+                      elevation: 3,
+                    })
+                  ]}
+                >
+                  <View style={{ position: 'relative', borderRadius: 12, overflow: 'hidden' }}>
+                    <SafeImage uri={chart.artwork} style={{ width: 120, height: 120 }} resizeMode="cover" />
+                    <View style={{
+                      position: 'absolute',
+                      bottom: 6,
+                      left: 6,
+                      backgroundColor: 'rgba(0,0,0,0.75)',
+                      borderRadius: 6,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                    }}>
+                      <Text style={{ color: '#FFB830', fontSize: 7.5, fontWeight: '900', letterSpacing: 0.5 }}>STATE CHART</Text>
+                    </View>
+                    <View style={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: 'rgba(5,5,6,0.75)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {isCurrentLoading ? (
+                        <ActivityIndicator size="small" color={chart.color} />
+                      ) : (
+                        <Play stroke={chart.color} fill={chart.color} size={10} />
+                      )}
+                    </View>
+                  </View>
+                  <Text style={{ color: palette.text, fontSize: 12, fontWeight: '900', marginTop: 10, textTransform: 'uppercase', textAlign: 'center' }} numberOfLines={1}>
+                    {chart.title}
+                  </Text>
+                  <Text style={{ color: palette.textSubtle, fontSize: 9.5, fontWeight: '700', marginTop: 2, textAlign: 'center' }} numberOfLines={1}>
+                    {chart.artist}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* ── CONCERT DISCOVERY ── */}
         <View style={{ marginTop: 8, marginBottom: 26 }}>
           <Text style={{ color: '#00FF85', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
@@ -1889,9 +2020,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               >
                 <SafeImage uri={concert.artwork} style={{ width: 68, height: 68, borderRadius: 10 }} resizeMode="cover" />
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ color: palette.text, fontWeight: '900', fontSize: 12.5, textTransform: 'uppercase' }} numberOfLines={1}>
-                    {concert.artist}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={{ color: palette.text, fontWeight: '900', fontSize: 12.5, textTransform: 'uppercase' }} numberOfLines={1}>
+                      {concert.artist}
+                    </Text>
+                    {isVerifiedArtist(concert.artist) && (
+                      <View style={{ backgroundColor: '#00D4FF', width: 10, height: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: '#0A0A0F', fontSize: 7, fontWeight: '900', marginTop: -1 }}>✓</Text>
+                      </View>
+                    )}
+                  </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3, gap: 4 }}>
                     <MapPin stroke={palette.textSubtle} size={10} />
                     <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 9.5 }} numberOfLines={1}>
@@ -1951,10 +2089,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   FEATURED MAESTRO
                 </Text>
               </View>
-              <Text style={{ color: palette.text, fontWeight: '900', fontSize: 20, textTransform: 'uppercase' }}>
-                {ARTIST_SPOTLIGHT.name}
-              </Text>
-              <Text style={{ color: palette.textSubtle, fontWeight: '600', fontSize: 11.5, lineHeight: 18, marginTop: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <Text style={{ color: palette.text, fontWeight: '900', fontSize: 20, textTransform: 'uppercase' }}>
+                  {ARTIST_SPOTLIGHT.name}
+                </Text>
+                <View style={{ backgroundColor: '#00D4FF', width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ color: '#0A0A0F', fontSize: 9, fontWeight: '900', marginTop: -1 }}>✓</Text>
+                </View>
+              </View>
+              <Text style={{ color: palette.textSubtle, fontWeight: '600', fontSize: 11.5, lineHeight: 18, marginTop: 4 }}>
                 {ARTIST_SPOTLIGHT.bio}
               </Text>
               <TouchableOpacity
@@ -2180,9 +2323,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                       <Text style={{ color: palette.text, fontWeight: '900', fontSize: 15, textTransform: 'uppercase', letterSpacing: 0.5 }} numberOfLines={2}>
                         {item.title}
                       </Text>
-                      <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, marginTop: 4, textTransform: 'uppercase', letterSpacing: 0.8 }} numberOfLines={1}>
-                        {item.artist}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <Text style={{ color: palette.textSubtle, fontWeight: '700', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8 }} numberOfLines={1}>
+                          {item.artist}
+                        </Text>
+                        {isVerifiedArtist(item.artist) && (
+                          <View style={{ backgroundColor: '#00D4FF', width: 10, height: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ color: '#0A0A0F', fontSize: 7, fontWeight: '900', marginTop: -1 }}>✓</Text>
+                          </View>
+                        )}
+                      </View>
                       <EditorialTagStrip tags={tags} />
                     </View>
                     <View style={{ position: 'absolute', bottom: 14, right: 14, width: 36, height: 36, backgroundColor: palette.text, borderRadius: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 3, elevation: 4 }}>

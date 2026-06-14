@@ -87,7 +87,7 @@ export default function AuthScreen() {
       title: 'Studio Acoustics',
       description: 'Experience professional 10-band equalization, spatial 3D surround sound, and sound curves custom-tuned for legendary headsets.',
       icon: Music,
-      color: '#D4AF37', // Gold
+      color: '#FF4D6D', // Gold
       element: (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 60, marginTop: 10 }}>
           {[30, 50, 75, 45, 80, 60, 35, 55, 40, 20].map((h, i) => (
@@ -97,7 +97,7 @@ export default function AuthScreen() {
                 width: 4,
                 height: h,
                 borderRadius: 2,
-                backgroundColor: i % 2 === 0 ? '#D4AF37' : 'rgba(255,255,255,0.25)',
+                backgroundColor: i % 2 === 0 ? '#FF4D6D' : 'rgba(255,255,255,0.25)',
               }}
             />
           ))}
@@ -124,7 +124,7 @@ export default function AuthScreen() {
           width: '80%',
         }}>
           <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#00D4FF', alignItems: 'center', justifyContent: 'center' }}>
-            <Volume2 color="#050506" size={18} />
+            <Volume2 color="#0A0A0F" size={18} />
           </View>
           <View style={{ flex: 1, alignItems: 'flex-start' }}>
             <View style={{ width: 80, height: 8, borderRadius: 4, backgroundColor: '#FFF' }} />
@@ -339,11 +339,11 @@ export default function AuthScreen() {
   const SlideIcon = currentSlide.icon;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#050506', overflow: 'hidden' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#0A0A0F', overflow: 'hidden' }}>
       {/* Dynamic Glowing Background Orbs */}
       <View style={{
         position: 'absolute', top: -180, right: -120, width: 400, height: 400, borderRadius: 200,
-        backgroundColor: viewMode === 'welcome' ? currentSlide.color : '#D4AF37', opacity: 0.08,
+        backgroundColor: viewMode === 'welcome' ? currentSlide.color : '#FF4D6D', opacity: 0.08,
         // @ts-ignore
         filter: 'blur(100px)'
       }} />
@@ -385,14 +385,14 @@ export default function AuthScreen() {
             </View>
 
             <Text style={{
-              color: '#D4AF37',
+              color: '#FF4D6D',
               fontSize: 24,
               fontWeight: '900',
               textTransform: 'uppercase',
               letterSpacing: 6,
               textAlign: 'center',
               marginBottom: 4,
-              textShadowColor: 'rgba(255, 211, 0, 0.25)',
+              textShadowColor: 'rgba(255, 77, 109, 0.25)',
               textShadowOffset: { width: 0, height: 2 },
               textShadowRadius: 8,
             }}>
@@ -496,15 +496,15 @@ export default function AuthScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: '#D4AF37',
+                  backgroundColor: '#FF4D6D',
                   borderRadius: 18,
                   height: 54,
                   width: '100%',
                   gap: 10,
                   marginBottom: 12,
                 },
-                shadow('0px 10px 24px rgba(212, 175, 55, 0.25)', {
-                  shadowColor: '#D4AF37',
+                shadow('0px 10px 24px rgba(255, 77, 109, 0.25)', {
+                  shadowColor: '#FF4D6D',
                   shadowOffset: { width: 0, height: 6 },
                   shadowOpacity: 0.25,
                   shadowRadius: 10,
@@ -512,10 +512,10 @@ export default function AuthScreen() {
                 })
               ]}
             >
-              <Text style={{ color: '#0A0A0B', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+              <Text style={{ color: '#0A0A0F', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                 Get Started
               </Text>
-              <ArrowRight size={16} color="#0A0A0B" />
+              <ArrowRight size={16} color="#0A0A0F" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -557,7 +557,7 @@ export default function AuthScreen() {
               backdropFilter: 'blur(30px)',
             },
             shadow('0px 24px 48px rgba(0, 0, 0, 0.55)', {
-              shadowColor: '#D4AF37',
+              shadowColor: '#FF4D6D',
               shadowOffset: { width: 0, height: 18 },
               shadowOpacity: 0.1,
               shadowRadius: 36,
@@ -603,12 +603,12 @@ export default function AuthScreen() {
                   paddingVertical: 10,
                   alignItems: 'center',
                   borderRadius: 12,
-                  backgroundColor: !isSignUp ? 'rgba(212,175,55,0.12)' : 'transparent',
+                  backgroundColor: !isSignUp ? 'rgba(255, 77, 109,0.12)' : 'transparent',
                   borderWidth: 1,
-                  borderColor: !isSignUp ? '#D4AF37' : 'transparent',
+                  borderColor: !isSignUp ? '#FF4D6D' : 'transparent',
                 }}
               >
-                <Text style={{ color: !isSignUp ? '#D4AF37' : 'rgba(255,255,255,0.4)', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ color: !isSignUp ? '#FF4D6D' : 'rgba(255,255,255,0.4)', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Sign In
                 </Text>
               </TouchableOpacity>
@@ -623,12 +623,12 @@ export default function AuthScreen() {
                   paddingVertical: 10,
                   alignItems: 'center',
                   borderRadius: 12,
-                  backgroundColor: isSignUp ? 'rgba(212,175,55,0.12)' : 'transparent',
+                  backgroundColor: isSignUp ? 'rgba(255, 77, 109,0.12)' : 'transparent',
                   borderWidth: 1,
-                  borderColor: isSignUp ? '#D4AF37' : 'transparent',
+                  borderColor: isSignUp ? '#FF4D6D' : 'transparent',
                 }}
               >
-                <Text style={{ color: isSignUp ? '#D4AF37' : 'rgba(255,255,255,0.4)', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ color: isSignUp ? '#FF4D6D' : 'rgba(255,255,255,0.4)', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Sign Up
                 </Text>
               </TouchableOpacity>
@@ -744,7 +744,7 @@ export default function AuthScreen() {
 
             {/* Submit Actions */}
             {loading ? (
-              <ActivityIndicator size="large" color="#D4AF37" style={{ marginVertical: 12 }} />
+              <ActivityIndicator size="large" color="#FF4D6D" style={{ marginVertical: 12 }} />
             ) : (
               <TouchableOpacity
                 onPress={handleEmailAuth}
@@ -761,7 +761,7 @@ export default function AuthScreen() {
                   shadow('0px 4px 12px rgba(255,255,255,0.1)')
                 ]}
               >
-                <Text style={{ color: '#050506', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
+                <Text style={{ color: '#0A0A0F', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>
                   {isSignUp ? 'REGISTER ACCOUNT' : 'SECURE SIGN IN'}
                 </Text>
               </TouchableOpacity>
@@ -804,15 +804,15 @@ export default function AuthScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: 'rgba(212, 175, 55, 0.04)',
+                  backgroundColor: 'rgba(255, 77, 109, 0.04)',
                   borderWidth: 1.2,
-                  borderColor: 'rgba(212, 175, 55, 0.25)',
+                  borderColor: 'rgba(255, 77, 109, 0.25)',
                   borderRadius: 14,
                   height: 48,
                 }}
               >
-                <Fingerprint size={16} color="#D4AF37" style={{ marginRight: 8 }} />
-                <Text style={{ color: '#D4AF37', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Fingerprint size={16} color="#FF4D6D" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#FF4D6D', fontWeight: '800', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   Biometric Login
                 </Text>
               </TouchableOpacity>

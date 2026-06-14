@@ -8,26 +8,32 @@ export interface ThemePalette {
   textMuted: string;
   textSubtle: string;
   border: string;
-  accent: string;       // Premium Gold
-  accentStrong: string; // Electric Blue
-  accentPurple: string; // Aurora Purple
-  accentSilver: string; // Titanium Silver
+  accent: string;       // Brand Magenta-Red (#FF4D6D)
+  accentStrong: string; // Success Green (#00E5A0)
+  accentPurple: string; // Aurora Purple (#7B61FF)
+  accentSilver: string; // Premium Gold (#FFB830)
   dangerSurface: string;
+  primary: string;
+  green: string;
+  gold: string;
 }
 
 const DARK_PALETTE: ThemePalette = {
-  background: '#050506', // Neo Black (AMOLED)
-  surface: '#0C0C0E',    // Spatial UI Surface
-  surfaceAlt: '#141417', // Secondary surface
-  text: '#E2E8F0',       // Titanium Silver text
-  textMuted: 'rgba(226,232,240,0.75)',
-  textSubtle: 'rgba(226,232,240,0.45)',
-  border: 'rgba(226,232,240,0.06)',
-  accent: '#D4AF37',       // Premium Gold
-  accentStrong: '#00D4FF', // Electric Blue
+  background: '#0A0A0F', // Deepest background - slightly purple-tinted black
+  surface: '#141418',    // Card / panel background
+  surfaceAlt: '#1E1E26', // Elevated / active panels
+  text: '#FFFFFF',       // Primary text
+  textMuted: '#A0A0B8',  // Secondary / metadata
+  textSubtle: '#5C5C7A', // Caption / disabled
+  border: 'rgba(255,255,255,0.08)',
+  accent: '#FF4D6D',       // Brand Magenta-Red
+  accentStrong: '#00E5A0', // Success Green
   accentPurple: '#7B61FF', // Aurora Purple
-  accentSilver: '#E2E8F0', // Titanium Silver
+  accentSilver: '#FFB830', // Premium Gold
   dangerSurface: '#2A1010',
+  primary: '#FF4D6D',
+  green: '#00E5A0',
+  gold: '#FFB830',
 };
 
 const LIGHT_PALETTE: ThemePalette = {
@@ -38,11 +44,14 @@ const LIGHT_PALETTE: ThemePalette = {
   textMuted: '#495057',
   textSubtle: '#868E96',
   border: 'rgba(0,0,0,0.06)',
-  accent: '#C59B27',       // Gold for light mode
-  accentStrong: '#00A3C4', // Cyan/Blue
+  accent: '#E63956',       // Brand color for light mode
+  accentStrong: '#00B880', // Green for light mode
   accentPurple: '#6741D9', // Violet/Purple
-  accentSilver: '#495057', // Silver/Grey
+  accentSilver: '#C59B27', // Gold for light mode
   dangerSurface: '#FFE3E3',
+  primary: '#E63956',
+  green: '#00B880',
+  gold: '#C59B27',
 };
 
 export function getThemePalette(themeMode: ThemeMode): ThemePalette {

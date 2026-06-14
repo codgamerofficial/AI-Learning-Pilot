@@ -131,6 +131,143 @@ const DEFAULT_LYRICS: LyricLine[] = [
   { time: 65, text: "Enjoy the continuous background playback!" },
 ];
 
+const LYRIC_INSIGHTS: Record<string, Record<string, { translation: string; backdrop: string }>> = {
+  'top-1': {
+    "I'm tryna put you in the worst mood, ah": {
+      translation: "I am trying to put you in the worst mood.",
+      backdrop: "The Weeknd starts the track by boasting about his wealth and status, deliberately intending to make his haters envious and put them in a bad mood."
+    },
+    "P1 cleaner than your church shoes, ah": {
+      translation: "My McLaren P1 supercar is cleaner than the shoes you wear to church.",
+      backdrop: "The McLaren P1 is a limited-production hybrid sports car worth over $1.2M. 'Church shoes' represents one's cleanest, most pristine footwear, making the comparison highly boastful."
+    },
+    "Milli point two on the coupe, ah": {
+      translation: "One point two million dollars spent on the car.",
+      backdrop: "Confirms the price tag of his McLaren P1 coupe, highlighting the extreme level of luxury and financial success."
+    },
+    "Twenty racks a table cut from ebony": {
+      translation: "Twenty thousand dollars for a table custom-made from ebony wood.",
+      backdrop: "Ebony is a dense black hardwood, very rare and expensive. 'Racks' is slang for thousands of dollars."
+    },
+    "Cut that ivory into skinny pieces": {
+      translation: "Slicing that ivory (metaphor) into thin strips.",
+      backdrop: "A double-meaning reference. While it literally refers to carving precious ivory keys, it is also a common party lifestyle metaphor in pop/R&B history."
+    },
+    "Then she clean it with her face": {
+      translation: "Then she cleans it using her face.",
+      backdrop: "Refers to the fast-paced, hedonistic lifestyle of VIP afterparties in Hollywood and Toronto circles."
+    },
+    "You talkin' money, need a hearing aid": {
+      translation: "If you're bragging about your money, I can't hear you over my own wealth.",
+      backdrop: "A classic hip-hop/R&B trope suggesting the speaker's wealth is so massive it drowns out anyone else's complaints or boasts."
+    },
+    "Look what you've done": {
+      translation: "See what you have caused.",
+      backdrop: "A dual reference: addressing his detractors who forced him to adapt, and acknowledging the music industry that transformed him into a global pop icon."
+    },
+    "I'm a motherfuckin' starboy": {
+      translation: "I am a starboy.",
+      backdrop: "'Starboy' is Jamaican Patois slang for a cool, successful, or high-achieving male who attracts attention. The Weeknd popularized this term globally with this album."
+    }
+  },
+  'top-2': {
+    "I look around and Sin City's cold and empty": {
+      translation: "I look around and Las Vegas (Sin City) feels cold and empty.",
+      backdrop: "Sin City is a moniker for Las Vegas. The Weeknd uses the bright, bustling neon lights of Vegas as a contrast to his internal feelings of isolation and loneliness."
+    },
+    "No one's around to judge me": {
+      translation: "There is nobody around to pass judgment on me.",
+      backdrop: "Refers to the freedom and vulnerability of driving through empty city streets in the dead of night, seeking escape from public scrutiny."
+    },
+    "I said, ooh, I'm blinded by the lights": {
+      translation: "I am blinded by the flashing lights.",
+      backdrop: "Metaphor for both the blinding headlights of city traffic/paparazzi and the overwhelming allure of fame and romance."
+    }
+  },
+  'top-3': {
+    "The club isn't the best place to find a lover": {
+      translation: "The nightclub is not the ideal venue to search for a romantic partner.",
+      backdrop: "Ed Sheeran contrasts the loud, superficial atmosphere of dance clubs with the more conversational, intimate environment of a local bar."
+    },
+    "So the bar is where I go": {
+      translation: "Therefore, I head to the bar.",
+      backdrop: "Setting up a grounded, relatable narrative of meeting someone organically over drinks."
+    },
+    "Put Van the Man on the jukebox": {
+      translation: "Play Van Morrison songs on the jukebox.",
+      backdrop: "'Van the Man' refers to legendary Irish singer-songwriter Van Morrison. Ed is paying homage to his soulful, romantic musical style."
+    },
+    "We push and pull like a magnet do": {
+      translation: "We attract and repel each other like magnets.",
+      backdrop: "A simple but effective simile describing physical and emotional attraction, highlighting the effortless pull between the two people."
+    }
+  }
+};
+
+const DEFAULT_LYRIC_INSIGHTS: Record<string, { translation: string; backdrop: string }> = {
+  "Close your eyes and feel the melody...": {
+    translation: "Close your eyes and feel the music flow.",
+    backdrop: "This line invites the listener to practice active listening, disengaging other senses to heighten auditory immersion."
+  },
+  "Let the rhythm wash over you...": {
+    translation: "Let the steady beat cleanse your mind.",
+    backdrop: "Psychological studies show that rhythmic synchronization reduces stress levels and matches the brain's alpha waves."
+  },
+  "Antigravity Beat Sync System is active ⚡": {
+    translation: "The Google DeepMind Antigravity audio synchronization is running.",
+    backdrop: "NeoTunes' signature engine, ensuring millisecond-level audio sync across background processes, lock screens, and connected hardware."
+  },
+  "Experiencing premium sound waves...": {
+    translation: "You are hearing high-definition lossless audio.",
+    backdrop: "NeoTunes streams in 24-bit FLAC quality. The audio codec dynamically scales based on network throughput to prevent buffer underruns."
+  },
+  "Enjoy the continuous background playback!": {
+    translation: "Enjoy uninterrupted music even when the screen is off.",
+    backdrop: "Uses Android Foreground Service and iOS AVQueuePlayer wrappers to guarantee persistent audio decoding even under deep sleep OS states."
+  }
+};
+
+const getLyricInsight = (trackId: string, lineText: string) => {
+  const trackMap = LYRIC_INSIGHTS[trackId];
+  if (trackMap && trackMap[lineText]) {
+    return trackMap[lineText];
+  }
+  if (DEFAULT_LYRIC_INSIGHTS[lineText]) {
+    return DEFAULT_LYRIC_INSIGHTS[lineText];
+  }
+  return {
+    translation: `"${lineText}"`,
+    backdrop: "This line reflects the artistic expression of the creator. Our AI Engine analyzes the lyrics to find poetic linkages and emotional resonances within Indian and global music charts."
+  };
+};
+
+const MOCK_AI_PREDICTED_TRACKS = [
+  {
+    id: 'ai-1',
+    title: 'Starboy (NeoMix Fusion Remix)',
+    artist: 'The Weeknd ft. Daft Punk',
+    artwork: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=150&auto=format&fit=crop',
+    color: '#FF4D6D',
+    matchPercentage: '98% MATCH'
+  },
+  {
+    id: 'ai-2',
+    title: 'Pasoori (Deep House Edit)',
+    artist: 'Ali Sethi • Shae Gill',
+    artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150&auto=format&fit=crop',
+    color: '#FFB830',
+    matchPercentage: '94% MATCH'
+  },
+  {
+    id: 'ai-3',
+    title: 'Kesariya (Unplugged Lounge)',
+    artist: 'Arijit Singh',
+    artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop',
+    color: '#00E5A0',
+    matchPercentage: '91% MATCH'
+  }
+];
+
 
 
 const SLEEP_TIMER_OPTIONS = [
@@ -158,6 +295,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const prevTrack = usePlayerStore((state) => state.prevTrack);
   const queue = usePlayerStore((state) => state.queue);
   const setCurrentTrack = usePlayerStore((state) => state.setCurrentTrack);
+  const setQueue = usePlayerStore((state) => state.setQueue);
   const shuffleEnabled = usePlayerStore((state) => state.shuffleEnabled);
   const repeatMode = usePlayerStore((state) => state.repeatMode);
   const toggleShuffle = usePlayerStore((state) => state.toggleShuffle);
@@ -309,6 +447,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const lyricsScrollViewRef = useRef<ScrollView>(null);
 
   const [activeTab, setActiveTab] = useState<'upnext' | 'lyrics' | 'audio'>('upnext');
+  const [selectedLyricInsight, setSelectedLyricInsight] = useState<{ lineText: string; translation: string; backdrop: string } | null>(null);
   const glowPulseAnim = useRef(new Animated.Value(1)).current;
 
   const aura1Anim = useRef(new Animated.Value(0)).current;
@@ -1059,6 +1198,66 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                 );
               })
             )}
+
+            {/* AI Smart Queue Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20, marginBottom: 12 }}>
+              <Sparkles stroke={palette.accentStrong} fill={palette.accentStrong} size={15} />
+              <Text style={{ color: palette.text, fontWeight: '800', fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' }}>
+                NeoMix AI Smart Queue (Predicted)
+              </Text>
+            </View>
+
+            {MOCK_AI_PREDICTED_TRACKS.map((track) => (
+              <TouchableOpacity
+                key={track.id}
+                onPress={() => {
+                  if (controlsLocked) { lockMessage(); return; }
+                  const trackData = {
+                    id: track.id,
+                    title: track.title,
+                    artist: track.artist,
+                    artwork: track.artwork,
+                    color: track.color
+                  };
+                  // Prepend track to queue and play
+                  const nextQueue = [trackData, ...queue.filter(q => q.id !== track.id)];
+                  setQueue(nextQueue);
+                  setCurrentTrack(trackData);
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  borderRadius: 14,
+                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 255, 255, 0.04)',
+                  padding: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <SafeImage uri={track.artwork} style={{ width: 42, height: 42, borderRadius: 8 }} resizeMode="cover" />
+                <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                  <Text numberOfLines={1} style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.3 }}>
+                    {track.title}
+                  </Text>
+                  <Text numberOfLines={1} style={{ color: palette.textMuted, fontWeight: '600', fontSize: 10.5, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                    {track.artist}
+                  </Text>
+                </View>
+                <View style={{
+                  backgroundColor: 'rgba(255, 77, 109, 0.15)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(255, 77, 109, 0.35)',
+                  borderRadius: 8,
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                }}>
+                  <Text style={{ color: '#FF4D6D', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.3 }}>
+                    {track.matchPercentage}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -1100,6 +1299,12 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                           lockMessage();
                         } else {
                           seekTo(line.time);
+                          const insight = getLyricInsight(currentTrack.id, line.text);
+                          setSelectedLyricInsight({
+                            lineText: line.text,
+                            translation: insight.translation,
+                            backdrop: insight.backdrop
+                          });
                         }
                       }}
                       style={{
@@ -1208,13 +1413,13 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                           flex: 1,
                           paddingVertical: 8,
                           borderRadius: 10,
-                          backgroundColor: isActive ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.03)',
+                          backgroundColor: isActive ? 'rgba(255, 77, 109,0.15)' : 'rgba(0,0,0,0.03)',
                           borderWidth: 1,
-                          borderColor: isActive ? '#D4AF37' : 'transparent',
+                          borderColor: isActive ? '#FF4D6D' : 'transparent',
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: isActive ? '#D4AF37' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                        <Text style={{ color: isActive ? '#FF4D6D' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
                           {device}
                         </Text>
                       </TouchableOpacity>
@@ -1239,13 +1444,13 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                           flex: 1,
                           paddingVertical: 8,
                           borderRadius: 10,
-                          backgroundColor: isActive ? 'rgba(212,175,55,0.15)' : 'rgba(0,0,0,0.03)',
+                          backgroundColor: isActive ? 'rgba(255, 77, 109,0.15)' : 'rgba(0,0,0,0.03)',
                           borderWidth: 1,
-                          borderColor: isActive ? '#D4AF37' : 'transparent',
+                          borderColor: isActive ? '#FF4D6D' : 'transparent',
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: isActive ? '#D4AF37' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                        <Text style={{ color: isActive ? '#FF4D6D' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
                           {device}
                         </Text>
                       </TouchableOpacity>
@@ -1405,9 +1610,9 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                         paddingHorizontal: 12,
                         paddingVertical: 6,
                         borderRadius: 12,
-                        backgroundColor: isActive ? '#D4AF37' : 'rgba(0,0,0,0.03)',
+                        backgroundColor: isActive ? '#FF4D6D' : 'rgba(0,0,0,0.03)',
                         borderWidth: 1,
-                        borderColor: isActive ? '#D4AF37' : 'transparent',
+                        borderColor: isActive ? '#FF4D6D' : 'transparent',
                         marginRight: 6,
                       }}
                     >
@@ -1699,6 +1904,76 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
               style={[styles.modalBtn, { marginTop: 12, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
             >
               <Text style={[styles.modalBtnText, { color: palette.text }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Lyric Insights Modal */}
+      <Modal
+        visible={selectedLyricInsight !== null}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedLyricInsight(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: isDark ? '#141418' : '#F5F5FA',
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            borderWidth: 1.5,
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            padding: 24,
+            paddingBottom: 40,
+            maxHeight: '70%',
+            // @ts-ignore
+            backdropFilter: 'blur(30px)',
+          }}>
+            {/* Header / Drag Bar */}
+            <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 20 }} />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <Sparkles stroke={currentTrack.color || accentColor} fill={currentTrack.color || accentColor} size={20} />
+              <Text style={{ color: palette.text, fontWeight: '900', fontSize: 18, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                AI Lyric Insights
+              </Text>
+            </View>
+
+            {selectedLyricInsight && (
+              <ScrollView showsVerticalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                {/* Original Lyric Line */}
+                <Text style={{ color: palette.textMuted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Original Lyric</Text>
+                <Text style={{ color: palette.text, fontSize: 20, fontWeight: '800', fontStyle: 'italic', marginBottom: 20 }}>
+                  "{selectedLyricInsight.lineText}"
+                </Text>
+
+                {/* English Translation */}
+                <Text style={{ color: palette.textMuted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Translation</Text>
+                <Text style={{ color: palette.text, fontSize: 16, fontWeight: '700', marginBottom: 20, lineHeight: 22 }}>
+                  {selectedLyricInsight.translation}
+                </Text>
+
+                {/* Cultural backdrop / backstory */}
+                <Text style={{ color: palette.textMuted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Cultural Backstory & Insight</Text>
+                <Text style={{ color: palette.textSubtle, fontSize: 14, fontWeight: '600', lineHeight: 20 }}>
+                  {selectedLyricInsight.backdrop}
+                </Text>
+              </ScrollView>
+            )}
+
+            <TouchableOpacity
+              onPress={() => setSelectedLyricInsight(null)}
+              style={{
+                backgroundColor: currentTrack.color || accentColor,
+                borderWidth: 1.5,
+                borderColor: currentTrack.color || accentColor,
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: isDark ? '#0A0A0A' : '#FFF', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>Close Insight</Text>
             </TouchableOpacity>
           </View>
         </View>
