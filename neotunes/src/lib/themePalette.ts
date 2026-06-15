@@ -44,14 +44,14 @@ const LIGHT_PALETTE: ThemePalette = {
   textMuted: '#495057',
   textSubtle: '#868E96',
   border: 'rgba(0,0,0,0.06)',
-  accent: '#E63956',       // Brand color for light mode
-  accentStrong: '#00B880', // Green for light mode
-  accentPurple: '#6741D9', // Violet/Purple
-  accentSilver: '#C59B27', // Gold for light mode
+  accent: '#7C3AED',       // Aurora Purple (#7C3AED)
+  accentStrong: '#00B4D8', // Cyber Blue for light mode
+  accentPurple: '#7C3AED', // Aurora Purple
+  accentSilver: '#FFB703', // Neon Gold for light mode
   dangerSurface: '#FFE3E3',
-  primary: '#E63956',
-  green: '#00B880',
-  gold: '#C59B27',
+  primary: '#7C3AED',
+  green: '#00B4D8',
+  gold: '#FFB703',
 };
 
 export function getThemePalette(themeMode: ThemeMode): ThemePalette {

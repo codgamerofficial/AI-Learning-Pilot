@@ -8,7 +8,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        neonPurple: '#7B61FF',
+        neonPurple: '#7C3AED',
         electricBlue: '#00D4FF',
         acidGreen: '#00FF85',
         deepBlack: '#0A0A0A',
