@@ -88,7 +88,7 @@ const SUBSCRIBED_PODCASTS = [
     title: 'The Ranveer Show',
     publisher: 'BeerBiceps',
     artwork: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop',
-    color: '#FF4D6D',
+    color: '#7C3AED',
     description: "India's smartest podcast with Ranveer Allahbadia."
   },
   {
@@ -96,7 +96,7 @@ const SUBSCRIBED_PODCASTS = [
     title: 'Figuring Out',
     publisher: 'Raj Shamani',
     artwork: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?q=80&w=300&auto=format&fit=crop',
-    color: '#00E5A0',
+    color: '#00D4FF',
     description: 'Mindsets, business, and raw conversations.'
   },
   {
@@ -104,7 +104,7 @@ const SUBSCRIBED_PODCASTS = [
     title: 'The Joe Rogan Experience',
     publisher: 'Joe Rogan',
     artwork: 'https://images.unsplash.com/photo-1610116306796-6ebd30d779c6?q=80&w=300&auto=format&fit=crop',
-    color: '#FFB830',
+    color: '#FFC857',
     description: 'The biggest conversations on the planet.'
   }
 ];
@@ -116,7 +116,7 @@ const SAVED_EPISODES = [
     title: 'How to build the next Unicorn startup in India',
     podcastTitle: 'The Ranveer Show',
     artwork: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=300&auto=format&fit=crop',
-    color: '#FF4D6D',
+    color: '#7C3AED',
     duration: '1h 12m',
     publishedAt: '2 days ago',
     track_id: 'ep1-audio-mock'
@@ -127,7 +127,7 @@ const SAVED_EPISODES = [
     title: 'The future of AI and creator economy',
     podcastTitle: 'Figuring Out',
     artwork: 'https://images.unsplash.com/photo-1589903308904-1010c2294adc?q=80&w=300&auto=format&fit=crop',
-    color: '#00E5A0',
+    color: '#00D4FF',
     duration: '45m',
     publishedAt: '1 week ago',
     track_id: 'ep2-audio-mock'
@@ -484,7 +484,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
             }}
           >
             <Text style={{
-              color: activeCategory === 'music' ? '#0A0A0F' : palette.text,
+              color: activeCategory === 'music' ? '#09090B' : palette.text,
               fontWeight: '800',
               fontSize: 11,
               textTransform: 'uppercase',
@@ -504,7 +504,7 @@ export default function LibraryScreen({ navigation }: LibraryScreenProps) {
             }}
           >
             <Text style={{
-              color: activeCategory === 'podcasts' ? '#0A0A0F' : palette.text,
+              color: activeCategory === 'podcasts' ? '#09090B' : palette.text,
               fontWeight: '800',
               fontSize: 11,
               textTransform: 'uppercase',

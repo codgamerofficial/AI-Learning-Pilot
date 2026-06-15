@@ -705,10 +705,10 @@ export default function ProfileScreen() {
         />
 
         <ActionButton
-          icon={<Zap stroke={dataSaverEnabled ? '#FFB830' : palette.textSubtle} size={20} />}
+          icon={<Zap stroke={dataSaverEnabled ? '#FFC857' : palette.textSubtle} size={20} />}
           label="Data Saver"
           onPress={toggleDataSaver}
-          color={dataSaverEnabled ? '#FFB830' : palette.textMuted}
+          color={dataSaverEnabled ? '#FFC857' : palette.textMuted}
           badge={dataSaverEnabled ? 'ON' : 'OFF'}
           delay={340}
         />

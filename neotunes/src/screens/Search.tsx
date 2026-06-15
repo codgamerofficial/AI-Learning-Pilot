@@ -166,7 +166,7 @@ function VoiceWaveform() {
             {
               width: 6,
               borderRadius: 3,
-              backgroundColor: '#FF4D6D',
+              backgroundColor: '#7C3AED',
             },
             style
           ]}
@@ -471,7 +471,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
                   }}
                 >
                   <Text style={{
-                    color: isSelected ? (isDark ? '#0A0A0F' : '#FFFFFF') : palette.textSubtle,
+                    color: isSelected ? (isDark ? '#09090B' : '#FFFFFF') : palette.textSubtle,
                     fontWeight: '800',
                     fontSize: 11,
                     textTransform: 'uppercase',
@@ -846,7 +846,7 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
               borderColor: 'rgba(255, 255, 255, 0.1)',
             },
             shadow('0px 12px 36px rgba(0, 0, 0, 0.5)', {
-              shadowColor: '#FF4D6D',
+              shadowColor: '#7C3AED',
               shadowOffset: { width: 0, height: 12 },
               shadowOpacity: 0.2,
               shadowRadius: 24,
@@ -855,13 +855,13 @@ export default function SearchScreen({ navigation }: SearchScreenProps) {
           ]}>
             <View style={{
               width: 64, height: 64, borderRadius: 32,
-              backgroundColor: 'rgba(255, 77, 109, 0.1)',
+              backgroundColor: 'rgba(124, 58, 237, 0.1)',
               borderWidth: 1.5,
-              borderColor: '#FF4D6D',
+              borderColor: '#7C3AED',
               alignItems: 'center', justifyContent: 'center',
               marginBottom: 16,
             }}>
-              <Mic size={28} color="#FF4D6D" />
+              <Mic size={28} color="#7C3AED" />
             </View>
             
             <Text style={{

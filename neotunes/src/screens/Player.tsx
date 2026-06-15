@@ -247,7 +247,7 @@ const MOCK_AI_PREDICTED_TRACKS = [
     title: 'Starboy (NeoMix Fusion Remix)',
     artist: 'The Weeknd ft. Daft Punk',
     artwork: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=150&auto=format&fit=crop',
-    color: '#FF4D6D',
+    color: '#7C3AED',
     matchPercentage: '98% MATCH'
   },
   {
@@ -255,7 +255,7 @@ const MOCK_AI_PREDICTED_TRACKS = [
     title: 'Pasoori (Deep House Edit)',
     artist: 'Ali Sethi • Shae Gill',
     artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150&auto=format&fit=crop',
-    color: '#FFB830',
+    color: '#FFC857',
     matchPercentage: '94% MATCH'
   },
   {
@@ -263,7 +263,7 @@ const MOCK_AI_PREDICTED_TRACKS = [
     title: 'Kesariya (Unplugged Lounge)',
     artist: 'Arijit Singh',
     artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=150&auto=format&fit=crop',
-    color: '#00E5A0',
+    color: '#00D4FF',
     matchPercentage: '91% MATCH'
   }
 ];
@@ -1245,14 +1245,14 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                   </Text>
                 </View>
                 <View style={{
-                  backgroundColor: 'rgba(255, 77, 109, 0.15)',
+                  backgroundColor: 'rgba(124, 58, 237, 0.15)',
                   borderWidth: 1,
-                  borderColor: 'rgba(255, 77, 109, 0.35)',
+                  borderColor: 'rgba(124, 58, 237, 0.35)',
                   borderRadius: 8,
                   paddingHorizontal: 8,
                   paddingVertical: 3,
                 }}>
-                  <Text style={{ color: '#FF4D6D', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.3 }}>
+                  <Text style={{ color: '#7C3AED', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.3 }}>
                     {track.matchPercentage}
                   </Text>
                 </View>
@@ -1413,13 +1413,13 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                           flex: 1,
                           paddingVertical: 8,
                           borderRadius: 10,
-                          backgroundColor: isActive ? 'rgba(255, 77, 109,0.15)' : 'rgba(0,0,0,0.03)',
+                          backgroundColor: isActive ? 'rgba(124, 58, 237,0.15)' : 'rgba(0,0,0,0.03)',
                           borderWidth: 1,
-                          borderColor: isActive ? '#FF4D6D' : 'transparent',
+                          borderColor: isActive ? '#7C3AED' : 'transparent',
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: isActive ? '#FF4D6D' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                        <Text style={{ color: isActive ? '#7C3AED' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
                           {device}
                         </Text>
                       </TouchableOpacity>
@@ -1444,13 +1444,13 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                           flex: 1,
                           paddingVertical: 8,
                           borderRadius: 10,
-                          backgroundColor: isActive ? 'rgba(255, 77, 109,0.15)' : 'rgba(0,0,0,0.03)',
+                          backgroundColor: isActive ? 'rgba(124, 58, 237,0.15)' : 'rgba(0,0,0,0.03)',
                           borderWidth: 1,
-                          borderColor: isActive ? '#FF4D6D' : 'transparent',
+                          borderColor: isActive ? '#7C3AED' : 'transparent',
                           alignItems: 'center',
                         }}
                       >
-                        <Text style={{ color: isActive ? '#FF4D6D' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
+                        <Text style={{ color: isActive ? '#7C3AED' : palette.textSubtle, fontWeight: '800', fontSize: 10 }}>
                           {device}
                         </Text>
                       </TouchableOpacity>
@@ -1539,14 +1539,14 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                     flex: 1,
                     padding: 12,
                     borderRadius: 12,
-                    backgroundColor: headTracking ? 'rgba(123,97,255,0.1)' : 'rgba(0,0,0,0.03)',
+                    backgroundColor: headTracking ? 'rgba(124, 58, 237,0.1)' : 'rgba(0,0,0,0.03)',
                     borderWidth: 1,
-                    borderColor: headTracking ? '#7B61FF' : 'transparent',
+                    borderColor: headTracking ? '#7C3AED' : 'transparent',
                     alignItems: 'center',
                     opacity: spatialAudio ? 1 : 0.45,
                   }}
                 >
-                  <Text style={{ color: headTracking ? '#7B61FF' : palette.textSubtle, fontWeight: '800', fontSize: 11 }}>
+                  <Text style={{ color: headTracking ? '#7C3AED' : palette.textSubtle, fontWeight: '800', fontSize: 11 }}>
                     HEAD TRACKING
                   </Text>
                   <Text style={{ color: palette.textMuted, fontSize: 8.5, fontWeight: '600', marginTop: 2 }}>
@@ -1610,9 +1610,9 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                         paddingHorizontal: 12,
                         paddingVertical: 6,
                         borderRadius: 12,
-                        backgroundColor: isActive ? '#FF4D6D' : 'rgba(0,0,0,0.03)',
+                        backgroundColor: isActive ? '#7C3AED' : 'rgba(0,0,0,0.03)',
                         borderWidth: 1,
-                        borderColor: isActive ? '#FF4D6D' : 'transparent',
+                        borderColor: isActive ? '#7C3AED' : 'transparent',
                         marginRight: 6,
                       }}
                     >
@@ -1918,7 +1918,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
           <View style={{
-            backgroundColor: isDark ? '#141418' : '#F5F5FA',
+            backgroundColor: isDark ? '#121217' : '#F5F5FA',
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             borderWidth: 1.5,

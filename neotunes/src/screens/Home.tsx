@@ -68,7 +68,7 @@ const CURATED_PODCASTS: Track[] = [
     title: 'The Ranveer Show - BeerBiceps (Hindi/Eng)',
     artist: 'Ranveer Allahbadia',
     artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=300&auto=format&fit=crop',
-    color: '#7B61FF',
+    color: '#7C3AED',
     searchQuery: 'The Ranveer Show BeerBiceps podcast hindi english latest',
     playbackId: 'jAcQ1-LqN1s',
   },
@@ -161,7 +161,7 @@ const CURATED_AUDIOBOOKS: Track[] = [
     title: 'Chanakya Neeti Life Rules (Hindi)',
     artist: 'Acharya Chanakya',
     artwork: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=300&auto=format&fit=crop',
-    color: '#7B61FF',
+    color: '#7C3AED',
     searchQuery: 'Chanakya Neeti Hindi audiobook full stories',
     playbackId: '_lq-HF05C0g',
   },
@@ -227,7 +227,7 @@ const HERO_CAROUSEL_ITEMS = [
     title: 'Aashiqui 2 Soundtrack',
     artist: 'Mithoon, Ankit Tiwari',
     artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
-    color: '#7B61FF',
+    color: '#7C3AED',
     tagline: '#1 Trending in India Spotlight',
     searchQuery: 'Aashiqui 2 full album songs audio jukebox',
   }
@@ -236,7 +236,7 @@ const HERO_CAROUSEL_ITEMS = [
 const RADIO_STATIONS = [
   { id: 'radio-1', title: 'Neo Gold Classics', artist: 'Retro Hits & Melodies', artwork: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=300&q=80', color: '#D4AF37', searchQuery: '70s 80s classic retro hit songs' },
   { id: 'radio-2', title: 'Electric Vibe FM', artist: 'Future House & Cyber Synth', artwork: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=300&q=80', color: '#00D4FF', searchQuery: 'future house synthwave electro club dance' },
-  { id: 'radio-3', title: 'Chillout Space Radio', artist: 'Lofi Ambient Beats', artwork: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&q=80', color: '#7B61FF', searchQuery: 'lofi hip hop ambient beats space study' },
+  { id: 'radio-3', title: 'Chillout Space Radio', artist: 'Lofi Ambient Beats', artwork: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300&q=80', color: '#7C3AED', searchQuery: 'lofi hip hop ambient beats space study' },
   { id: 'radio-4', title: 'Bollywood Spice', artist: 'Latest Dance & Romance', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FF6B6B', searchQuery: 'bollywood latest party rom-com hits 2024' },
 ];
 
@@ -254,14 +254,14 @@ const ARTIST_SPOTLIGHT = {
 };
 
 const COMMUNITY_PICKS = [
-  { id: 'cp-1', title: 'Kun Faya Kun', artist: 'A.R. Rahman, Javed Ali, Mohit Chauhan', artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80', color: '#7B61FF', searchQuery: 'Kun Faya Kun Rockstar official audio' },
+  { id: 'cp-1', title: 'Kun Faya Kun', artist: 'A.R. Rahman, Javed Ali, Mohit Chauhan', artwork: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=300&q=80', color: '#7C3AED', searchQuery: 'Kun Faya Kun Rockstar official audio' },
   { id: 'cp-2', title: 'Fix You', artist: 'Coldplay', artwork: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&q=80', color: '#00D4FF', searchQuery: 'Coldplay Fix You official audio' },
-  { id: 'cp-3', title: 'Kabira', artist: 'Pritam, Tochi Raina, Rekha Bhardwaj', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FF4D6D', searchQuery: 'Kabira Yeh Jawaani Hai Deewani official audio' },
+  { id: 'cp-3', title: 'Kabira', artist: 'Pritam, Tochi Raina, Rekha Bhardwaj', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#7C3AED', searchQuery: 'Kabira Yeh Jawaani Hai Deewani official audio' },
 ];
 
 const REGIONAL_CHARTS = [
-  { id: 'rc-punjab', title: 'Top 50 Punjab', artist: 'Trending Punjabi Hits', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FFB830', searchQuery: 'AP Dhillon Diljit Dosanjh Punjabi hit songs latest' },
-  { id: 'rc-maharashtra', title: 'Top 50 Maharashtra', artist: 'Marathi & Bollywood Crossover', artwork: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&q=80', color: '#FF4D6D', searchQuery: 'Marathi top popular songs hit' },
+  { id: 'rc-punjab', title: 'Top 50 Punjab', artist: 'Trending Punjabi Hits', artwork: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&q=80', color: '#FFC857', searchQuery: 'AP Dhillon Diljit Dosanjh Punjabi hit songs latest' },
+  { id: 'rc-maharashtra', title: 'Top 50 Maharashtra', artist: 'Marathi & Bollywood Crossover', artwork: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=300&q=80', color: '#7C3AED', searchQuery: 'Marathi top popular songs hit' },
   { id: 'rc-tamil', title: 'Top 50 Tamil Nadu', artist: 'Kollywood Beats', artwork: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=300&q=80', color: '#00D4FF', searchQuery: 'Anirudh AR Rahman Tamil hit songs' }
 ];
 
@@ -309,7 +309,7 @@ const TOP_CHARTS_TRACKS: Track[] = [
     title: 'Bad Habits',
     artist: 'Ed Sheeran',
     artwork: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300&auto=format&fit=crop',
-    color: '#7B61FF',
+    color: '#7C3AED',
     searchQuery: 'Ed Sheeran Bad Habits official audio',
     playbackId: 'HeOpRzcqKrE',
   },
@@ -360,7 +360,7 @@ const NEW_RELEASES_TRACKS = [
     title: 'Stay',
     artist: 'The Kid LAROI & Justin Bieber',
     artwork: 'https://images.unsplash.com/photo-1487180142328-054b783fc471?q=80&w=300&auto=format&fit=crop',
-    color: '#7B61FF',
+    color: '#7C3AED',
     date: 'NEW • MAY 18',
     searchQuery: 'The Kid LAROI Justin Bieber Stay official audio',
     playbackId: 'rkYlZnIbe2E',
@@ -372,7 +372,7 @@ const MADE_FOR_YOU_MIXES = [
     id: 'mix-chill',
     title: 'Chill Mix',
     subtitle: 'Relaxing ambient and acoustic tracks',
-    gradient: ['#00D4FF', '#7B61FF'],
+    gradient: ['#00D4FF', '#7C3AED'],
     tracks: [
       {
         id: 'chill-1',
@@ -388,7 +388,7 @@ const MADE_FOR_YOU_MIXES = [
         title: 'Sunset Boulevard',
         artist: 'Lo-Fi beats',
         artwork: 'https://images.unsplash.com/photo-1518173946687-a4c8a383392f?q=80&w=300&auto=format&fit=crop',
-        color: '#7B61FF',
+        color: '#7C3AED',
         searchQuery: 'lofi sunset boulevard chill beats',
         playbackId: 'P6eLilGU4kU',
       },
@@ -458,7 +458,7 @@ interface MarketFocus {
   color: string;
 }
 
-const BLOCK_COLORS = ['#7B61FF', '#00D4FF', '#00FF85', '#FF6B6B', '#FFD700', '#FF4ECD'];
+const BLOCK_COLORS = ['#7C3AED', '#00D4FF', '#00FF85', '#FF6B6B', '#FFD700', '#FF4ECD'];
 
 const MOOD_QUERIES: Record<string, string> = {
   Focus: 'lofi study music',
@@ -495,7 +495,7 @@ const MARKET_FOCUS: MarketFocus[] = [
     title: 'Diaspora Wave',
     subtitle: 'South Asian diaspora creators blending India with global styles.',
     query: 'south asian diaspora music english hindi',
-    color: '#7B61FF',
+    color: '#7C3AED',
   },
   {
     key: 'regional-rise',
@@ -753,7 +753,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           title: 'A.R. Rahman Hits Jukebox',
           artist: 'A.R. Rahman',
           artwork: ARTIST_SPOTLIGHT.artwork,
-          color: '#7B61FF'
+          color: '#7C3AED'
         } : t);
         playSong(prepared[0], prepared, 'india');
       } else {
@@ -762,7 +762,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           title: 'A.R. Rahman Showcase',
           artist: 'A.R. Rahman',
           artwork: ARTIST_SPOTLIGHT.artwork,
-          color: '#7B61FF',
+          color: '#7C3AED',
         };
         playSong(fallbackTrack, [fallbackTrack], 'india');
       }
@@ -772,7 +772,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         title: 'A.R. Rahman Showcase',
         artist: 'A.R. Rahman',
         artwork: ARTIST_SPOTLIGHT.artwork,
-        color: '#7B61FF',
+        color: '#7C3AED',
       };
       playSong(fallbackTrack, [fallbackTrack], 'india');
     } finally {
@@ -1956,7 +1956,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                       paddingHorizontal: 6,
                       paddingVertical: 2,
                     }}>
-                      <Text style={{ color: '#FFB830', fontSize: 7.5, fontWeight: '900', letterSpacing: 0.5 }}>STATE CHART</Text>
+                      <Text style={{ color: '#FFC857', fontSize: 7.5, fontWeight: '900', letterSpacing: 0.5 }}>STATE CHART</Text>
                     </View>
                     <View style={{
                       position: 'absolute',
@@ -2026,7 +2026,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                     </Text>
                     {isVerifiedArtist(concert.artist) && (
                       <View style={{ backgroundColor: '#00D4FF', width: 10, height: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ color: '#0A0A0F', fontSize: 7, fontWeight: '900', marginTop: -1 }}>✓</Text>
+                        <Text style={{ color: '#09090B', fontSize: 7, fontWeight: '900', marginTop: -1 }}>✓</Text>
                       </View>
                     )}
                   </View>
@@ -2061,20 +2061,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         {/* ── ARTIST SPOTLIGHT ── */}
         <View style={{ marginTop: 8, marginBottom: 28 }}>
-          <Text style={{ color: '#7B61FF', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
+          <Text style={{ color: '#7C3AED', fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>
             Artist Spotlight
           </Text>
           <View style={[
             {
               borderRadius: 22,
               borderWidth: 1.5,
-              borderColor: 'rgba(123, 97, 255, 0.25)',
+              borderColor: 'rgba(124, 58, 237, 0.25)',
               backgroundColor: themeMode === 'dark' ? 'rgba(20, 20, 24, 0.7)' : 'rgba(255, 255, 255, 0.85)',
               overflow: 'hidden',
               position: 'relative',
             },
-            shadow('0px 8px 24px rgba(123, 97, 255, 0.15)', {
-              shadowColor: '#7B61FF',
+            shadow('0px 8px 24px rgba(124, 58, 237, 0.15)', {
+              shadowColor: '#7C3AED',
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.15,
               shadowRadius: 16,
@@ -2084,8 +2084,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <SafeImage uri={ARTIST_SPOTLIGHT.artwork} style={{ width: '100%', height: 160 }} resizeMode="cover" />
             <View style={{ padding: 18 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#7B61FF' }} />
-                <Text style={{ color: '#7B61FF', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#7C3AED' }} />
+                <Text style={{ color: '#7C3AED', fontWeight: '900', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5 }}>
                   FEATURED MAESTRO
                 </Text>
               </View>
@@ -2094,7 +2094,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   {ARTIST_SPOTLIGHT.name}
                 </Text>
                 <View style={{ backgroundColor: '#00D4FF', width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: '#0A0A0F', fontSize: 9, fontWeight: '900', marginTop: -1 }}>✓</Text>
+                  <Text style={{ color: '#09090B', fontSize: 9, fontWeight: '900', marginTop: -1 }}>✓</Text>
                 </View>
               </View>
               <Text style={{ color: palette.textSubtle, fontWeight: '600', fontSize: 11.5, lineHeight: 18, marginTop: 4 }}>
@@ -2105,7 +2105,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 disabled={loadingCarouselId === 'spotlight'}
                 style={{
                   marginTop: 14,
-                  backgroundColor: '#7B61FF',
+                  backgroundColor: '#7C3AED',
                   borderRadius: 12,
                   paddingVertical: 10,
                   alignItems: 'center',
@@ -2329,7 +2329,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                         </Text>
                         {isVerifiedArtist(item.artist) && (
                           <View style={{ backgroundColor: '#00D4FF', width: 10, height: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={{ color: '#0A0A0F', fontSize: 7, fontWeight: '900', marginTop: -1 }}>✓</Text>
+                            <Text style={{ color: '#09090B', fontSize: 7, fontWeight: '900', marginTop: -1 }}>✓</Text>
                           </View>
                         )}
                       </View>
