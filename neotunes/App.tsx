@@ -14,6 +14,7 @@ import PlayerScreen from './src/screens/Player';
 import AuthScreen from './src/screens/Auth';
 import LibraryScreen from './src/screens/Library';
 import ProfileScreen from './src/screens/Profile';
+import PulseScreen from './src/screens/Pulse';
 
 // Components
 import MiniPlayer from './src/components/MiniPlayer';
@@ -355,7 +356,7 @@ function MobileTabs() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 ...(focused ? {
-                  backgroundColor: isDark ? 'rgba(255,211,0,0.12)' : 'rgba(249,208,15,0.1)',
+                  backgroundColor: isDark ? 'rgba(124,58,237,0.15)' : 'rgba(124,58,237,0.08)',
                   borderRadius: 16,
                   paddingHorizontal: 14,
                   paddingVertical: 6,
@@ -363,6 +364,7 @@ function MobileTabs() {
               }}>
                 {route.name === 'HomeTab' && <Home stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
                 {route.name === 'SearchTab' && <Search stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
+                {route.name === 'PulseTab' && <Sparkles stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
                 {route.name === 'LibraryTab' && <Library stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
                 {route.name === 'ProfileTab' && <User stroke={color} size={iconSize} strokeWidth={focused ? 2.5 : 1.8} />}
               </View>
@@ -384,6 +386,7 @@ function MobileTabs() {
       >
         <Tab.Screen name="HomeTab" component={HomeScreen} />
         <Tab.Screen name="SearchTab" component={SearchScreen} />
+        <Tab.Screen name="PulseTab" component={PulseScreen} />
         <Tab.Screen name="LibraryTab" component={LibraryScreen} />
         <Tab.Screen name="ProfileTab" component={ProfileScreen} />
       </Tab.Navigator>
@@ -402,7 +405,7 @@ function MainTabs({ navigation }: any) {
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   
-  const [activeTab, setActiveTab] = React.useState<'home' | 'search' | 'library' | 'profile'>('home');
+  const [activeTab, setActiveTab] = React.useState<'home' | 'search' | 'pulse' | 'library' | 'profile'>('home');
 
   if (width < 768) {
     return <MobileTabs />;
@@ -446,6 +449,7 @@ function MainTabs({ navigation }: any) {
             {[
               { id: 'home', label: 'Home', icon: Home },
               { id: 'search', label: 'Search', icon: Search },
+              { id: 'pulse', label: 'Pulse', icon: Sparkles },
               { id: 'library', label: 'Library', icon: Library },
               { id: 'profile', label: 'Profile', icon: User },
             ].map((item) => {
@@ -464,7 +468,7 @@ function MainTabs({ navigation }: any) {
                     paddingHorizontal: isDesktop ? 16 : 0,
                     borderRadius: 14,
                     backgroundColor: isActive 
-                      ? (isDark ? 'rgba(255,211,0,0.12)' : 'rgba(249,208,15,0.08)')
+                      ? (isDark ? 'rgba(124,58,237,0.15)' : 'rgba(124,58,237,0.08)')
                       : 'transparent',
                     borderWidth: 1,
                     borderColor: isActive ? palette.accent + '30' : 'transparent',
@@ -572,6 +576,7 @@ function MainTabs({ navigation }: any) {
       <View style={{ flex: 1, backgroundColor: isDark ? '#09090B' : '#F8F9FA' }}>
         {activeTab === 'home' && <HomeScreen navigation={navigation} />}
         {activeTab === 'search' && <SearchScreen navigation={navigation} />}
+        {activeTab === 'pulse' && <PulseScreen navigation={navigation} />}
         {activeTab === 'library' && <LibraryScreen navigation={navigation} />}
         {activeTab === 'profile' && <ProfileScreen />}
       </View>

@@ -35,6 +35,7 @@ import {
   Settings,
   Headphones,
   Sparkles,
+  Sliders,
 } from 'lucide-react-native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAuthStore } from '../store/authStore';
@@ -48,7 +49,7 @@ import { getThemePalette } from '../lib/themePalette';
 import { useJamStore } from '../store/jamStore';
 import EqualizerBars from '../components/EqualizerBars';
 import SafeImage from '../components/SafeImage';
-import Svg, { Circle, Line, G } from 'react-native-svg';
+import Svg, { Circle, Line, G, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { EQ_FREQUENCIES, EQ_PRESETS } from '../lib/EqualizerEngine';
 
 type PlayerScreenProps = {
@@ -282,11 +283,16 @@ const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const { width: SCREEN_W, height: SCREEN_H } = useWindowDimensions();
-  const ART_SIZE = Math.min(SCREEN_W - 64, SCREEN_H * 0.35, 320);
+  const ART_SIZE = Math.min(SCREEN_W - 48, SCREEN_H * 0.45, 380);
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const displayName = usePreferencesStore((state) => state.displayName);
   const palette = getThemePalette(themeMode);
   const isDark = themeMode === 'dark';
+  
+  const [translationEnabled, setTranslationEnabled] = useState(false);
+  const [karaokeMode, setKaraokeMode] = useState(false);
+  const [eqModalVisible, setEqModalVisible] = useState(false);
+  const prevEqBandsRef = useRef<number[]>([]);
 
   const currentTrack = usePlayerStore((state) => state.currentTrack);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
@@ -383,6 +389,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
   const setEqBands = usePreferencesStore((state) => state.setEqBands);
   const setEqBandValue = usePreferencesStore((state) => state.setEqBandValue);
   const setSoundProfile = usePreferencesStore((state) => state.setSoundProfile);
+  const audioQuality = usePreferencesStore((state) => state.audioQuality);
 
   React.useEffect(() => {
     if (ancDevice !== 'None Connected') return;
@@ -723,6 +730,40 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
     cycleRepeatMode();
   };
 
+  const handleToggleKaraoke = () => {
+    if (controlsLocked) { lockMessage(); return; }
+    
+    const nextKaraoke = !karaokeMode;
+    setKaraokeMode(nextKaraoke);
+    
+    if (nextKaraoke) {
+      // Save current bands
+      prevEqBandsRef.current = [...eqBands];
+      // Apply Vocal-Cut EQ preset (human vocals are prominent around 250Hz - 4kHz)
+      const vocalCutBands = [...eqBands];
+      vocalCutBands[4] = -12; // 500Hz
+      vocalCutBands[5] = -12; // 1kHz
+      vocalCutBands[6] = -12; // 2kHz
+      vocalCutBands[7] = -10; // 4kHz
+      
+      // Boost bass & high treble slightly to make instrumental stand out
+      vocalCutBands[0] = Math.min(12, vocalCutBands[0] + 4);
+      vocalCutBands[1] = Math.min(12, vocalCutBands[1] + 4);
+      vocalCutBands[8] = Math.min(12, vocalCutBands[8] + 4);
+      
+      setEqBands(vocalCutBands);
+      Alert.alert('🎙️ Karaoke Mode Active', 'Human vocals are attenuated using real-time EQ filters.');
+    } else {
+      // Restore previous bands
+      if (prevEqBandsRef.current.length > 0) {
+        setEqBands(prevEqBandsRef.current);
+      } else {
+        setEqBands([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+      }
+      Alert.alert('🎙️ Karaoke Mode Disabled', 'Restored normal audio frequencies.');
+    }
+  };
+
   const jamSyncLabel = jamLastSyncAt
     ? new Date(jamLastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : 'not synced yet';
@@ -744,8 +785,24 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
     </View>
   );
 
+  const stopBgColor = isDark ? '#09090B' : '#F8FAFC';
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }}>
+      {/* Dynamic Live-Blurred Background Gradient extracted from active track */}
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: stopBgColor }}>
+        <Svg height="100%" width="100%">
+          <Defs>
+            <LinearGradient id="bgGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <Stop offset="0%" stopColor={currentTrack.color || '#7C3AED'} stopOpacity={isDark ? 0.35 : 0.22} />
+              <Stop offset="60%" stopColor={stopBgColor} stopOpacity={0.92} />
+              <Stop offset="100%" stopColor={stopBgColor} stopOpacity={1} />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#bgGradient)" />
+        </Svg>
+      </View>
+
       {/* Dynamic Animated Ambient Aura Glow */}
       <Animated.View style={{
         position: 'absolute',
@@ -755,7 +812,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         height: 340,
         borderRadius: 170,
         backgroundColor: currentTrack.color || palette.accent,
-        opacity: isDark ? 0.16 : 0.08,
+        opacity: isDark ? 0.12 : 0.05,
         // @ts-ignore
         ...Platform.select({
           web: { filter: 'blur(90px)' },
@@ -771,7 +828,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         height: 300,
         borderRadius: 150,
         backgroundColor: palette.accent,
-        opacity: isDark ? 0.12 : 0.06,
+        opacity: isDark ? 0.08 : 0.04,
         // @ts-ignore
         ...Platform.select({
           web: { filter: 'blur(80px)' },
@@ -787,7 +844,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         height: 320,
         borderRadius: 160,
         backgroundColor: palette.accentStrong,
-        opacity: isDark ? 0.08 : 0.04,
+        opacity: isDark ? 0.06 : 0.03,
         // @ts-ignore
         ...Platform.select({
           web: { filter: 'blur(100px)' },
@@ -850,8 +907,8 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Cover Art Deck */}
-        <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 28 }}>
+        {/* Cover Art Deck (Dominant, covers ~55-65% height area of screen depending on ratio) */}
+        <View style={{ height: SCREEN_H * 0.52, justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 16 }}>
           <View style={{ width: ART_SIZE, height: ART_SIZE, justifyContent: 'center', alignItems: 'center' }}>
             {/* Ambient Pulsing Glow Halo */}
             <Animated.View style={{
@@ -897,7 +954,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
           </View>
         </View>
 
-        {/* Track Info */}
+        {/* Track Info & Interactive Equalizer Bar -> EQ HUD */}
         <View style={{ marginBottom: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flex: 1, paddingRight: 16 }}>
             <View style={{ width: 32, height: 3, backgroundColor: currentTrack.color, borderRadius: 2, marginBottom: 10 }} />
@@ -913,52 +970,111 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
             >
               {currentTrack.artist}
             </Text>
-            {currentTrack.source && (
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                backgroundColor: currentTrack.source === 'youtube' 
-                  ? 'rgba(255, 0, 0, 0.12)' 
-                  : currentTrack.source === 'jamendo' 
-                    ? 'rgba(0, 255, 133, 0.12)' 
-                    : currentTrack.source === 'archive' 
-                      ? 'rgba(0, 212, 255, 0.12)'
-                      : 'rgba(255, 215, 0, 0.12)',
-                borderRadius: 8,
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                marginTop: 8,
-                alignSelf: 'flex-start'
-              }}>
-                <Text style={{
-                  color: currentTrack.source === 'youtube' 
-                    ? '#FF3B30' 
+            
+            {/* Dynamic Quality Badges */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, alignItems: 'center' }}>
+              {currentTrack.source && (
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: currentTrack.source === 'youtube' 
+                    ? 'rgba(255, 0, 0, 0.12)' 
                     : currentTrack.source === 'jamendo' 
-                      ? '#00FF85' 
+                      ? 'rgba(0, 255, 133, 0.12)' 
                       : currentTrack.source === 'archive' 
-                        ? '#00D4FF'
-                        : '#FFD700',
-                  fontSize: 10,
-                  fontWeight: '800',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5
+                        ? 'rgba(0, 212, 255, 0.12)'
+                        : 'rgba(255, 215, 0, 0.12)',
+                  borderRadius: 6,
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
                 }}>
-                  {currentTrack.source === 'youtube' 
-                    ? 'YouTube Music' 
-                    : currentTrack.source === 'jamendo' 
-                      ? 'Jamendo' 
-                      : currentTrack.source === 'archive' 
-                        ? 'Internet Archive'
-                        : currentTrack.source === 'spotify_proxy' 
-                          ? 'Spotify Preview' 
-                          : currentTrack.source}
+                  <Text style={{
+                    color: currentTrack.source === 'youtube' 
+                      ? '#FF3B30' 
+                      : currentTrack.source === 'jamendo' 
+                        ? '#00FF85' 
+                        : currentTrack.source === 'archive' 
+                          ? '#00D4FF'
+                          : '#FFD700',
+                    fontSize: 8.5,
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5
+                  }}>
+                    {currentTrack.source === 'youtube' 
+                      ? 'YT Music' 
+                      : currentTrack.source === 'jamendo' 
+                        ? 'Jamendo' 
+                        : currentTrack.source === 'archive' 
+                          ? 'Archive'
+                          : currentTrack.source === 'spotify_proxy' 
+                            ? 'Spotify' 
+                            : currentTrack.source}
+                  </Text>
+                </View>
+              )}
+
+              <View style={{
+                backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                borderRadius: 6,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+              }}>
+                <Text style={{ color: palette.textSubtle, fontSize: 8.5, fontWeight: '800', letterSpacing: 0.5 }}>
+                  {audioQuality === 'studio' || audioQuality === 'lossless' ? '24-BIT HI-RES' : 'LOSSLESS'}
                 </Text>
               </View>
-            )}
+
+              {spatialAudio && (
+                <View style={{
+                  backgroundColor: 'rgba(0, 212, 255, 0.12)',
+                  borderRadius: 6,
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderWidth: 0.8,
+                  borderColor: 'rgba(0, 212, 255, 0.3)',
+                }}>
+                  <Text style={{ color: '#00D4FF', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.5 }}>
+                    SPATIAL
+                  </Text>
+                </View>
+              )}
+
+              {ancMode !== 'off' && (
+                <View style={{
+                  backgroundColor: 'rgba(0, 255, 133, 0.12)',
+                  borderRadius: 6,
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderWidth: 0.8,
+                  borderColor: 'rgba(0, 255, 133, 0.3)',
+                }}>
+                  <Text style={{ color: '#00FF85', fontSize: 8.5, fontWeight: '900', letterSpacing: 0.5 }}>
+                    ANC
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-          <View style={{ minHeight: 48, justifyContent: 'center' }}>
-            <EqualizerBars color={currentTrack.color} barCount={7} height={36} active={isPlaying} />
-          </View>
+
+          {/* Interactive EQ bars -> Tapping opens Equalizer HUD */}
+          <TouchableOpacity
+            onPress={() => setEqModalVisible(true)}
+            style={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              borderWidth: 1.2,
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              borderRadius: 16,
+              padding: 10,
+              minWidth: 54,
+              minHeight: 54
+            }}
+          >
+            <EqualizerBars color={currentTrack.color} barCount={6} height={24} active={isPlaying} />
+            <Text style={{ color: currentTrack.color || accentColor, fontSize: 7.5, fontWeight: '900', marginTop: 4, letterSpacing: 0.5 }}>EQ HUD</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Progress Slider */}
@@ -1282,6 +1398,49 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
               </View>
             </View>
 
+            {/* Synced Lyrics HUD controls (Bilingual Translation & Karaoke) */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TouchableOpacity
+                onPress={() => setTranslationEnabled(!translationEnabled)}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 8,
+                  borderRadius: 12,
+                  backgroundColor: translationEnabled ? `${accentColor}20` : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                  borderWidth: 1,
+                  borderColor: translationEnabled ? `${accentColor}40` : 'transparent',
+                }}
+              >
+                <Sparkles stroke={translationEnabled ? accentColor : palette.textSubtle} size={14} />
+                <Text style={{ color: translationEnabled ? accentColor : palette.textSubtle, fontWeight: '800', fontSize: 10, marginLeft: 6 }}>
+                  {translationEnabled ? 'BILINGUAL ON' : 'TRANSLATE'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleToggleKaraoke}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: 8,
+                  borderRadius: 12,
+                  backgroundColor: karaokeMode ? 'rgba(0, 255, 133, 0.15)' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                  borderWidth: 1,
+                  borderColor: karaokeMode ? '#00FF85' : 'transparent',
+                }}
+              >
+                <Headphones stroke={karaokeMode ? '#00FF85' : palette.textSubtle} size={14} />
+                <Text style={{ color: karaokeMode ? '#00FF85' : palette.textSubtle, fontWeight: '800', fontSize: 10, marginLeft: 6 }}>
+                  {karaokeMode ? 'VOCAL CUT ON' : 'KARAOKE'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={{ height: 260 }}>
               <ScrollView
                 ref={lyricsScrollViewRef}
@@ -1308,7 +1467,7 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                         }
                       }}
                       style={{
-                        height: 46,
+                        paddingVertical: 10,
                         justifyContent: 'center',
                         alignItems: 'center',
                         width: '100%',
@@ -1332,6 +1491,20 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
                       >
                         {line.text}
                       </Text>
+                      {translationEnabled && (
+                        <Text style={{
+                          color: isActive ? '#00D4FF' : palette.textSubtle,
+                          fontWeight: '700',
+                          fontSize: isActive ? 12 : 10.5,
+                          textAlign: 'center',
+                          opacity: isActive ? 0.95 : 0.35,
+                          marginTop: 4,
+                          textTransform: 'uppercase',
+                          letterSpacing: 0.3
+                        }}>
+                          {getLyricInsight(currentTrack.id, line.text).translation}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
@@ -1565,9 +1738,24 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
               borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
               marginBottom: 16,
             }}>
-              <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase', marginBottom: 12 }}>
-                10-Band Equalizer
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={{ color: palette.text, fontWeight: '800', fontSize: 13, textTransform: 'uppercase' }}>
+                  10-Band Equalizer
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setEqModalVisible(true)}
+                  style={{
+                    backgroundColor: `${(currentTrack.color || accentColor)}15`,
+                    borderWidth: 1.2,
+                    borderColor: `${(currentTrack.color || accentColor)}35`,
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 4
+                  }}
+                >
+                  <Text style={{ color: currentTrack.color || accentColor, fontSize: 8.5, fontWeight: '900' }}>FULL HUD ↗</Text>
+                </TouchableOpacity>
+              </View>
 
               {/* Sound Profile Presets */}
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
@@ -1904,6 +2092,184 @@ export default function PlayerScreen({ navigation }: PlayerScreenProps) {
               style={[styles.modalBtn, { marginTop: 12, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
             >
               <Text style={[styles.modalBtnText, { color: palette.text }]}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── 10-BAND EQUALIZER HUD MODAL ── */}
+      <Modal
+        visible={eqModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEqModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+          <View style={{
+            backgroundColor: isDark ? '#121217' : '#F5F5FA',
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            borderWidth: 1.5,
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            padding: 24,
+            paddingBottom: 40,
+            maxHeight: '80%',
+            // @ts-ignore
+            backdropFilter: 'blur(30px)',
+          }}>
+            {/* Header / Drag Bar */}
+            <View style={{ width: 40, height: 5, borderRadius: 3, backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)', alignSelf: 'center', marginBottom: 20 }} />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Sliders stroke={currentTrack.color || accentColor} size={20} />
+                <Text style={{ color: palette.text, fontWeight: '900', fontSize: 18, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                  10-Band Equalizer HUD
+                </Text>
+              </View>
+              <View style={{
+                backgroundColor: `${(currentTrack.color || accentColor)}20`,
+                borderRadius: 8,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderWidth: 1,
+                borderColor: `${(currentTrack.color || accentColor)}40`,
+              }}>
+                <Text style={{ color: currentTrack.color || accentColor, fontSize: 8, fontWeight: '900', letterSpacing: 0.5 }}>STUDIO EQ ⚡</Text>
+              </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Presets Selection */}
+              <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Sound Presets</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                {['flat', 'bassBoost', 'vocalBoost', 'cinema', 'gaming', 'podcast', 'rock', 'jazz', 'classical'].map((preset) => {
+                  const isActive = eqPreset === preset;
+                  const presetLabels: Record<string, string> = {
+                    flat: 'FLAT',
+                    bassBoost: 'BASS BOOST',
+                    vocalBoost: 'VOCAL BOOST',
+                    cinema: 'CINEMA',
+                    gaming: 'GAMING',
+                    podcast: 'PODCAST',
+                    rock: 'ROCK',
+                    jazz: 'JAZZ',
+                    classical: 'CLASSICAL'
+                  };
+                  return (
+                    <TouchableOpacity
+                      key={preset}
+                      onPress={() => {
+                        setEqPreset(preset);
+                        setEqBands(EQ_PRESETS[preset]);
+                      }}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 12,
+                        backgroundColor: isActive ? (currentTrack.color || accentColor) : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                        borderWidth: 1,
+                        borderColor: isActive ? (currentTrack.color || accentColor) : 'transparent',
+                        marginRight: 6,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#FFF' : palette.textSubtle, fontWeight: '800', fontSize: 10, textTransform: 'uppercase' }}>
+                        {presetLabels[preset] || preset}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Sound Signature Tuning */}
+              <Text style={{ color: palette.textMuted, fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Acoustic Curve Signature</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
+                {['none', 'sony', 'bose', 'jbl', 'harman', 'studio'].map((profile) => {
+                  const isActive = soundProfile === profile;
+                  return (
+                    <TouchableOpacity
+                      key={profile}
+                      onPress={() => setSoundProfile(profile as any)}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 12,
+                        backgroundColor: isActive ? '#7C3AED' : (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'),
+                        borderWidth: 1,
+                        borderColor: isActive ? '#7C3AED' : 'transparent',
+                        marginRight: 6,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#FFF' : palette.textSubtle, fontWeight: '800', fontSize: 10, textTransform: 'uppercase' }}>
+                        {profile === 'none' ? 'BYPASS' : `${profile.toUpperCase()} CURVE`}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Slider Slats */}
+              <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                height: 140,
+                paddingVertical: 8,
+                backgroundColor: isDark ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.02)',
+                borderRadius: 20,
+                paddingHorizontal: 12,
+                marginBottom: 20,
+                borderWidth: 1,
+                borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+              }}>
+                {eqBands.map((gain, index) => {
+                  const freq = EQ_FREQUENCIES[index];
+                  const freqLabel = freq >= 1000 ? `${freq / 1000}k` : freq;
+                  return (
+                    <View key={index} style={{ flex: 1, alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ color: gain > 0 ? (currentTrack.color || accentColor) : palette.textSubtle, fontSize: 8, fontWeight: '900' }}>
+                        {gain > 0 ? `+${gain}` : gain}
+                      </Text>
+                      {/* Interactive Gain bar */}
+                      <View style={{ height: 90, width: 8, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.08)', borderRadius: 4, justifyContent: 'flex-end', position: 'relative' }}>
+                        <TouchableOpacity
+                          activeOpacity={1}
+                          onPress={(evt) => {
+                            const touchY = evt.nativeEvent.locationY;
+                            const mappedGain = Math.round(12 - (touchY / 90) * 24);
+                            setEqBandValue(index, Math.max(-12, Math.min(12, mappedGain)));
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: -4, right: -4, top: 0, bottom: 0,
+                          }}
+                        />
+                        <View style={{
+                          height: `${((gain + 12) / 24) * 100}%`,
+                          backgroundColor: currentTrack.color || accentColor,
+                          borderRadius: 4,
+                        }} />
+                      </View>
+                      <Text style={{ color: palette.textMuted, fontSize: 8, fontWeight: '800', marginTop: 4 }}>
+                        {freqLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={() => setEqModalVisible(false)}
+              style={{
+                backgroundColor: currentTrack.color || accentColor,
+                borderRadius: 14,
+                paddingVertical: 14,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ color: isDark ? '#0A0A0A' : '#FFF', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1 }}>Close HUD</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, Text, Platform } from 'react-native';
-import Svg, { Circle, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { getThemePalette } from '../lib/themePalette';
 
 export default function BrandLogo({ style }: { style?: any }) {
   const themeMode = usePreferencesStore((state) => state.themeMode);
   const palette = getThemePalette(themeMode);
+  const isDark = themeMode === 'dark';
 
   return (
     <View style={[{ flexDirection: 'row', alignItems: 'center' }, style]}>
-      {/* Visual Concept: Neon Gradient Ring + N-shaped Waveform + ◉ circle dot */}
+      {/* Visual Concept: Neo Pulse Logo v4.2 (Liquid N-shaped wave + concentric glowing rings) */}
       <View style={{
         width: 36,
         height: 36,
@@ -20,56 +21,68 @@ export default function BrandLogo({ style }: { style?: any }) {
       }}>
         <Svg width={36} height={36} viewBox="0 0 36 36">
           <Defs>
-            <LinearGradient id="neoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="#7C3AED" />   {/* Aurora Purple */}
-              <Stop offset="100%" stopColor="#00D4FF" />  {/* Electric Blue */}
+            <LinearGradient id="neoPulseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <Stop offset="0%" stopColor="#7C3AED" />
+              <Stop offset="50%" stopColor="#00D4FF" />
+              <Stop offset="100%" stopColor="#FFC857" />
             </LinearGradient>
           </Defs>
           
-          {/* Outer Neon Gradient Ring */}
+          {/* Outer Pulsing Dashed Gradient Ring */}
           <Circle
             cx="18"
             cy="18"
-            r="16"
-            stroke="url(#neoGrad)"
-            strokeWidth="2"
+            r="16.5"
+            stroke="url(#neoPulseGrad)"
+            strokeWidth="1.5"
             fill="transparent"
-            strokeDasharray="6, 3"
-            opacity="0.85"
+            strokeDasharray="4, 4"
+            opacity="0.75"
           />
 
-          {/* Pulse wave background circle */}
+          {/* Inner Glowing Ring */}
           <Circle
             cx="18"
             cy="18"
-            r="12"
-            stroke="#7C3AED"
-            strokeWidth="0.5"
+            r="13.5"
+            stroke="url(#neoPulseGrad)"
+            strokeWidth="1"
             fill="transparent"
-            opacity="0.25"
+            opacity="0.2"
           />
           
-          {/* N-shaped Waveform: ╱╲╱╲ forming N */}
+          {/* Overlapping Liquid Wave 1 (Background Depth Wave) */}
           <Path
-            d="M 10 24 L 15 13 L 20 23 L 25 12"
-            stroke="url(#neoGrad)"
+            d="M 12.5,26 C 12.5,16 12.5,12 16.5,12 C 20.5,12 18.5,26 22.5,26 C 26.5,26 26.5,22 26.5,12"
+            fill="none"
+            stroke="#00D4FF"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.4"
+          />
+
+          {/* Overlapping Liquid Wave 2 (Foreground Primary Wave forming 'N') */}
+          <Path
+            d="M 11,25 C 11,15 11,11 15,11 C 19,11 17,25 21,25 C 25,25 25,21 25,11"
+            fill="none"
+            stroke="url(#neoPulseGrad)"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
-            fill="transparent"
           />
 
-          {/* ◉ Circle Dot at the top */}
+          {/* Glowing Neon Gold Dot at the top right of the wave N */}
           <Circle
-            cx="18"
-            cy="7"
-            r="2.5"
-            fill="#FFC857"  // Neon Gold dot
+            cx="25"
+            cy="7.5"
+            r="2.2"
+            fill="#FFC857"
           />
         </Svg>
       </View>
       <Text style={{
-        color: '#FFFFFF',
+        color: palette.text,
         fontSize: 22,
         fontWeight: '900',
         letterSpacing: -0.5,
